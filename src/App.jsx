@@ -14,6 +14,7 @@ import {
   deleteDoc,
   doc,
   getDoc,
+  getDocs,
   getFirestore,
   onSnapshot,
   serverTimestamp,
@@ -37,34 +38,41 @@ const db = getFirestore(app);
 
 const S = {
   page: {
-  minHeight: "100vh",
-  width: "100%",
-  background: "#f4f4f5",
-  color: "#18181b",
-  fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-  padding: 0,
-  margin: 0,
-  boxSizing: "border-box",
-  overflowX: "hidden",
-},
-wrap: {
-  width: "100%",
-  maxWidth: "none",
-  minHeight: "100vh",
-  margin: 0,
-  background: "#f4f4f5",
-  borderRadius: 0,
-  padding: "clamp(12px, 3vw, 24px)",
-  boxSizing: "border-box",
-  overflowX: "hidden",
-},
+    minHeight: "100vh",
+    width: "100%",
+    background: "#f4f4f5",
+    color: "#18181b",
+    fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+    padding: 0,
+    margin: 0,
+    boxSizing: "border-box",
+    overflowX: "hidden",
+  },
+  wrap: {
+    width: "100%",
+    maxWidth: "none",
+    minHeight: "100vh",
+    margin: 0,
+    background: "#f4f4f5",
+    borderRadius: 0,
+    padding: "12px 16px",
+    boxSizing: "border-box",
+    overflowX: "hidden",
+  },
+  card: {
+    background: "white",
+    border: "1px solid #e4e4e7",
+    borderRadius: 16,
+    padding: 12,
+    boxShadow: "0 4px 16px rgba(0,0,0,0.035)",
+  },
   input: {
   width: "100%",
   boxSizing: "border-box",
   border: "1px solid #d4d4d8",
-  borderRadius: 16,
-  padding: "12px 14px",
-  fontSize: 14,
+  borderRadius: 12,
+  padding: "8px 10px",
+  fontSize: 13,
   outline: "none",
   background: "white",
   color: "#18181b",
@@ -75,11 +83,11 @@ wrap: {
   width: "100%",
   boxSizing: "border-box",
   border: "1px solid #d4d4d8",
-  borderRadius: 16,
-  padding: "12px 14px",
-  fontSize: 14,
+  borderRadius: 12,
+  padding: "8px 10px",
+  fontSize: 13,
   outline: "none",
-  minHeight: 90,
+  minHeight: 54,
   resize: "vertical",
   background: "white",
   color: "#18181b",
@@ -88,8 +96,8 @@ wrap: {
 },
   button: {
     border: "none",
-    borderRadius: 16,
-    padding: "12px 16px",
+    borderRadius: 12,
+    padding: "8px 12px",
     fontWeight: 800,
     cursor: "pointer",
     background: "#18181b",
@@ -97,30 +105,30 @@ wrap: {
   },
   lightButton: {
     border: "1px solid #d4d4d8",
-    borderRadius: 16,
-    padding: "12px 16px",
+    borderRadius: 12,
+    padding: "8px 12px",
     fontWeight: 800,
     cursor: "pointer",
     background: "white",
     color: "#18181b",
   },
-  small: { color: "#71717a", fontSize: 13 },
+  small: { color: "#71717a", fontSize: 12 },
   label: {
     display: "block",
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: 800,
     color: "#3f3f46",
-    marginBottom: 6,
+    marginBottom: 4,
   },
   grid2: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-    gap: 14,
+    gap: 10,
   },
   grid3: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-    gap: 14,
+    gap: 10,
   },
   modalBg: {
     position: "fixed",
@@ -138,8 +146,8 @@ wrap: {
     maxHeight: "90vh",
     overflow: "auto",
     background: "white",
-    borderRadius: 28,
-    padding: 22,
+    borderRadius: 20,
+    padding: 16,
   },
 };
 
@@ -172,6 +180,16 @@ const formatStudy = (sec) => {
   return `${m}분`;
 };
 
+const getReadableTextColor = (hex) => {
+  const clean = String(hex || "#dcfce7").replace("#", "");
+  if (clean.length !== 6) return "#18181b";
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+  return brightness > 145 ? "#18181b" : "white";
+};
+
 const normalizeId = (v) => v.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 12);
 const normalizePw = (v) => v.replace(/[^a-zA-Z0-9*-]/g, "").slice(0, 20);
 const normalizeRoomCode = (v) =>
@@ -202,7 +220,7 @@ function Modal({ title, onClose, children }) {
 
 function Field({ label, children }) {
   return (
-    <div style={{ marginBottom: 12 }}>
+    <div style={{ marginBottom: 8 }}>
       <label style={S.label}>{label}</label>
       {children}
     </div>
@@ -214,11 +232,11 @@ function SectionTitle({ children }) {
     <div
       style={{
         borderTop: "1px solid #d4d4d8",
-        paddingTop: 10,
-        marginTop: 22,
-        fontSize: 12,
+        paddingTop: 6,
+        marginTop: 12,
+        fontSize: 10,
         fontWeight: 900,
-        letterSpacing: 1.5,
+        letterSpacing: 1.2,
         color: "#52525b",
       }}
     >
@@ -229,6 +247,7 @@ function SectionTitle({ children }) {
 
 export default function App() {
   const today = todayString();
+  const isCompactScreen = typeof window !== "undefined" && window.innerWidth <= 900;
 
   const [user, setUser] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
@@ -257,6 +276,7 @@ export default function App() {
   const [groupMsg, setGroupMsg] = useState("");
 
   const [createOpen, setCreateOpen] = useState(false);
+  const [roomMenuOpen, setRoomMenuOpen] = useState(false);
   const [createRoom, setCreateRoom] = useState({
     name: "",
     description: "",
@@ -311,6 +331,7 @@ export default function App() {
   const [plannerDate, setPlannerDate] = useState(today);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [memos, setMemos] = useState({});
+  const [plannerTimeColor, setPlannerTimeColor] = useState("#dcfce7");
 
   const uid = user?.uid || "";
   const userId = profile?.userId || "";
@@ -488,6 +509,26 @@ export default function App() {
   };
 
   const recordsByHour = (hour, list) => list.filter((r) => getRecordHour(r.start) === hour);
+
+  const groupedPlannerContents = (list) => {
+    const map = new Map();
+
+    list.forEach((record) => {
+      const subjectName = String(record.subject || "과목 없음").trim() || "과목 없음";
+      const detailText = String(record.detail || "세부 내용 없음").trim() || "세부 내용 없음";
+
+      if (!map.has(subjectName)) {
+        map.set(subjectName, new Set());
+      }
+
+      map.get(subjectName).add(detailText);
+    });
+
+    return Array.from(map.entries()).map(([subjectName, details]) => ({
+      subject: subjectName,
+      details: Array.from(details),
+    }));
+  };
 
   const getCalendarCells = () => {
     const y = calendarMonth.getFullYear();
@@ -750,6 +791,47 @@ export default function App() {
     }
   };
 
+  const deleteGroup = async (group) => {
+  if (!group) return;
+
+  if (group.ownerUid !== uid) {
+    alert("방장만 방을 없앨 수 있어.");
+    return;
+  }
+
+  const ok = window.confirm(
+    `정말 "${group.name}" 방을 없애시겠습니까?\n\n삭제하면 방 정보, 그룹원 정보, 채팅 기록이 삭제되며 되돌릴 수 없습니다.`
+  );
+
+  if (!ok) return;
+
+  try {
+    const membersSnap = await getDocs(collection(db, "groups", group.id, "members"));
+    await Promise.all(membersSnap.docs.map((memberDoc) => deleteDoc(memberDoc.ref)));
+
+    const messagesSnap = await getDocs(collection(db, "groups", group.id, "messages"));
+    await Promise.all(messagesSnap.docs.map((messageDoc) => deleteDoc(messageDoc.ref)));
+
+    if (group.roomCode) {
+      await deleteDoc(doc(db, "roomCodes", group.roomCode));
+    }
+
+    await deleteDoc(doc(db, "groups", group.id));
+
+    if (enteredGroupId === group.id) {
+      setEnteredGroupId("");
+    }
+
+    if (selectedGroupId === group.id) {
+      setSelectedGroupId("");
+    }
+
+    setGroupMsg(`"${group.name}" 방을 삭제했어.`);
+  } catch (error) {
+    console.error(error);
+    setGroupMsg("방 삭제 중 오류가 생겼어.");
+  }
+};
   const addSubject = () => {
     const value = newSubject.trim();
     if (!value || studying) return;
@@ -759,27 +841,36 @@ export default function App() {
   };
 
   const startStudy = async () => {
-    if (!enteredGroupId || !subject || !detail.trim()) return;
+    if (!subject || !detail.trim()) {
+      alert("과목과 자세한 공부 내용을 입력해줘.");
+      return;
+    }
 
     setStudying(true);
     setStartedAt(nowTime());
     setSessionSec(0);
     setUnread(0);
 
-    await setDoc(
-      doc(db, "groups", enteredGroupId, "members", uid),
-      {
-        uid,
-        userId,
-        displayName,
-        role: currentGroup?.ownerUid === uid ? "방장" : "참여자",
-        subject,
-        detail,
-        studying: true,
-        updatedAt: serverTimestamp(),
-      },
-      { merge: true }
-    );
+    if (enteredGroupId) {
+      try {
+        await setDoc(
+          doc(db, "groups", enteredGroupId, "members", uid),
+          {
+            uid,
+            userId,
+            displayName,
+            role: currentGroup?.ownerUid === uid ? "방장" : "참여자",
+            subject,
+            detail,
+            studying: true,
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true }
+        );
+      } catch (error) {
+        console.error("그룹 상태 업데이트 실패:", error);
+      }
+    }
   };
 
   const stopStudy = async () => {
@@ -899,6 +990,218 @@ export default function App() {
     );
   };
 
+
+  const renderTodayPlannerCompact = (list, total, date) => {
+    return (
+      <div
+        style={{
+          ...S.card,
+          padding: 10,
+          marginTop: 0,
+          height: "100%",
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+          minHeight: 0,
+        }}
+      >
+        <div
+          style={{
+            background: "#15803d",
+            color: "white",
+            padding: "8px 10px",
+            borderRadius: 12,
+            marginBottom: 8,
+            flex: "0 0 auto",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <div>
+            <div style={{ fontSize: 9, letterSpacing: 1.2, opacity: 0.85 }}>
+              PERSONAL STUDY PLANNER
+            </div>
+            <h3 style={{ margin: "2px 0 0", fontSize: 16 }}>{date} 플래너</h3>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: 10, opacity: 0.85 }}>오늘 순공</div>
+            <b style={{ fontSize: 18 }}>{formatStudy(total)}</b>
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: isCompactScreen ? "1fr" : "minmax(0, 1.15fr) minmax(190px, 0.85fr)",
+            gap: 10,
+            flex: 1,
+            minHeight: 0,
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              <div>
+                <SectionTitle>DATE</SectionTitle>
+                <div style={{ fontSize: 13, fontWeight: 800 }}>{date}</div>
+              </div>
+              <div>
+                <SectionTitle>D-DAY</SectionTitle>
+                <select
+                  style={{ ...S.input, padding: "6px 8px", fontSize: 11 }}
+                  value={plannerDdayId}
+                  onChange={(e) => setPlannerDdayId(e.target.value)}
+                >
+                  <option value="">D-DAY 없음</option>
+                  {ddays.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.title} · {formatDday(d.date)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {plannerDday && (
+              <div
+                style={{
+                  background: "#f4f4f5",
+                  border: "1px solid #e4e4e7",
+                  borderRadius: 10,
+                  padding: 6,
+                  marginTop: 6,
+                  fontSize: 11,
+                }}
+              >
+                <b>{plannerDday.title}</b> {formatDday(plannerDday.date)} · {plannerDday.category}
+              </div>
+            )}
+
+            <SectionTitle>CONTENTS</SectionTitle>
+            <div
+              style={{
+                background: "#f4f4f5",
+                border: "1px solid #e4e4e7",
+                borderRadius: 10,
+                padding: 7,
+                minHeight: 54,
+                flex: "0 0 auto",
+                overflowY: "auto",
+              }}
+            >
+              {list.length ? (
+                groupedPlannerContents(list).map((group) => (
+                  <div key={group.subject} style={{ fontSize: 11, marginBottom: 6 }}>
+                    <b>{group.subject}</b>
+                    <div style={{ color: "#52525b", marginTop: 2 }}>
+                      {group.details.map((detailText) => (
+                        <div key={detailText}>· {detailText}</div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <span style={{ ...S.small, fontSize: 11 }}>아직 오늘 기록된 공부가 없어.</span>
+              )}
+            </div>
+
+            <SectionTitle>TASK</SectionTitle>
+            <div
+              style={{
+                borderTop: "1px solid #e4e4e7",
+                flex: 1,
+                minHeight: 118,
+                overflowY: "auto",
+              }}
+            >
+              {list.length ? (
+                list.map((r) => (
+                  <div
+                    key={r.id}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "74px 1fr 58px",
+                      gap: 6,
+                      padding: "5px 0",
+                      borderBottom: "1px solid #e4e4e7",
+                      fontSize: 11,
+                    }}
+                  >
+                    <div style={{ color: "#71717a", fontSize: 10 }}>{r.start} - {r.end}</div>
+                    <div>
+                      <b>{r.subject}</b> <span style={{ color: "#71717a" }}>{r.detail}</span>
+                    </div>
+                    <b style={{ textAlign: "right" }}>{formatStudy(r.seconds || 0)}</b>
+                  </div>
+                ))
+              ) : (
+                <div style={{ padding: 8, ...S.small, fontSize: 11 }}>기록 없음</div>
+              )}
+            </div>
+
+            <SectionTitle>MEMO</SectionTitle>
+            <textarea
+              style={{ ...S.textarea, minHeight: 64, padding: "7px 8px", fontSize: 11 }}
+              value={memos[date] || ""}
+              onChange={(e) => saveMemo(date, e.target.value)}
+              placeholder="오늘 메모. 이 메모는 다른 사람에게 공유되지 않아."
+            />
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
+            <SectionTitle>TIME TABLE</SectionTitle>
+            <div style={{ ...S.small, fontSize: 10 }}>06:00부터 다음날 05:00까지</div>
+            <div
+              style={{
+                marginTop: 6,
+                borderTop: "1px solid #e4e4e7",
+                flex: 1,
+                minHeight: 0,
+                overflowY: "auto",
+              }}
+            >
+              {timeTableHours.map((hour) => {
+                const hourRecords = recordsByHour(hour, list);
+                return (
+                  <div
+                    key={hour}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "42px 1fr",
+                      minHeight: 24,
+                      borderBottom: "1px solid #e4e4e7",
+                    }}
+                  >
+                    <div style={{ paddingTop: 5, fontSize: 9, color: "#71717a" }}>{hour}</div>
+                    <div style={{ padding: 2 }}>
+                      {hourRecords.map((r) => (
+                        <div
+                          key={r.id}
+                          style={{
+                            background: plannerTimeColor,
+                            border: `1px solid ${plannerTimeColor}`,
+                            color: getReadableTextColor(plannerTimeColor),
+                            borderRadius: 7,
+                            padding: 4,
+                            fontSize: 9,
+                            marginBottom: 2,
+                          }}
+                        >
+                          <b>{r.subject}</b> · {r.start}-{r.end} · {formatStudy(r.seconds || 0)}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderPlanner = (list, total, date) => {
     return (
       <div style={S.card}>
@@ -964,9 +1267,14 @@ export default function App() {
               }}
             >
               {list.length ? (
-                list.map((r) => (
-                  <div key={r.id} style={{ fontSize: 14, marginBottom: 8 }}>
-                    <b>{r.subject}</b> · {r.detail}
+                groupedPlannerContents(list).map((group) => (
+                  <div key={group.subject} style={{ fontSize: 14, marginBottom: 10 }}>
+                    <b>{group.subject}</b>
+                    <div style={{ color: "#52525b", marginTop: 3 }}>
+                      {group.details.map((detailText) => (
+                        <div key={detailText}>· {detailText}</div>
+                      ))}
+                    </div>
                   </div>
                 ))
               ) : (
@@ -1043,9 +1351,9 @@ export default function App() {
                         <div
                           key={r.id}
                           style={{
-                            background: "#dcfce7",
-                            border: "1px solid #bbf7d0",
-                            color: "#166534",
+                            background: plannerTimeColor,
+                            border: `1px solid ${plannerTimeColor}`,
+                            color: getReadableTextColor(plannerTimeColor),
                             borderRadius: 10,
                             padding: 7,
                             fontSize: 12,
@@ -1236,18 +1544,76 @@ export default function App() {
           style={{
             display: "flex",
             justifyContent: "space-between",
-            gap: 16,
-            marginBottom: 18,
+            gap: 10,
+            marginBottom: 10,
             flexWrap: "wrap",
           }}
         >
-          <div>
-            <p style={S.small}>Firebase로 실시간 저장되는 스터디 웹앱</p>
-            <h1 style={{ fontSize: 48, margin: "6px 0" }}>Study Room</h1>
+          <div style={{ minWidth: 0, flex: "1 1 620px" }}>
+            <p style={{ ...S.small, margin: 0 }}>Firebase로 실시간 저장되는 스터디 웹앱</p>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "stretch",
+                gap: 12,
+                flexWrap: "wrap",
+                margin: "2px 0 6px",
+              }}
+            >
+              <h1 style={{ fontSize: 32, margin: 0, lineHeight: 1.05, alignSelf: "center" }}>
+                Study Room
+              </h1>
+
+              <div
+                style={{
+                  background: "white",
+                  border: "1px solid #e4e4e7",
+                  borderRadius: 16,
+                  padding: "8px 12px",
+                  minWidth: 320,
+                  boxShadow: "0 4px 14px rgba(0,0,0,0.035)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  flexWrap: "wrap",
+                }}
+              >
+                <div>
+                  <div style={{ ...S.small, fontSize: 10 }}>나의 오늘 순공시간</div>
+                  <div style={{ fontSize: 38, fontWeight: 950, lineHeight: 1 }}>
+                    {formatTimer(totalSec)}
+                  </div>
+                  <div style={{ ...S.small, fontSize: 10, marginTop: 3 }}>
+                    {studying
+                      ? `${startedAt}부터 측정 중 · ${subject}`
+                      : totalSec > 0
+                      ? "측정이 일시 정지되어 있어."
+                      : "과목과 공부 내용을 입력한 뒤 시작해줘."}
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {studying ? (
+                    <button style={S.button} onClick={stopStudy}>
+                      공부 종료
+                    </button>
+                  ) : (
+                    <button
+                      style={S.button}
+                      disabled={!subject || !detail.trim()}
+                      onClick={startStudy}
+                    >
+                      순공 시작
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
 
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <select
-                style={{ ...S.input, width: 260 }}
+                style={{ ...S.input, width: 220 }}
                 value={selectedDdayId}
                 onChange={(e) => {
                   setSelectedDdayId(e.target.value);
@@ -1267,135 +1633,164 @@ export default function App() {
             </div>
           </div>
 
-          <div style={{ minWidth: 260 }}>
-            <div style={{ ...S.card, padding: 14, marginBottom: 8 }}>
+          <div style={{ minWidth: 220 }}>
+            <div style={{ ...S.card, padding: 10 }}>
               <b>{displayName}</b> <span style={S.small}>@{userId}</span>{" "}
               <button style={S.lightButton} onClick={openProfile}>
                 내 정보
               </button>
             </div>
-            <div style={{ ...S.card, padding: 14, marginBottom: 8 }}>
-              현재 입장: <b>{currentGroup?.name || "없음"}</b>
-            </div>
-            <div style={{ ...S.card, padding: 14 }}>
-              공부 중 채팅 알림{" "}
-              <button style={S.lightButton} onClick={() => setChatNotice((v) => !v)}>
-                {chatNotice ? "ON" : "OFF"}
-              </button>
-            </div>
           </div>
         </header>
 
-        <section style={{ ...S.card, marginBottom: 18 }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 12,
-              flexWrap: "wrap",
-            }}
-          >
-            <div>
-              <p style={S.small}>스터디 그룹 선택</p>
-              <h2 style={{ marginTop: 0 }}>내 스터디 그룹</h2>
-              <p style={S.small}>모든 방은 비공개방이야. 방 ID와 숫자 8개 비밀번호로 입장해.</p>
-            </div>
-            <button style={S.button} onClick={() => setCreateOpen(true)}>
-              + 방 만들기
-            </button>
-          </div>
+        <main
+          style={{
+            display: "grid",
+            gridTemplateColumns: isCompactScreen
+              ? "1fr"
+              : "minmax(250px, 0.9fr) minmax(430px, 1.35fr) minmax(250px, 0.9fr)",
+            gap: 10,
+            alignItems: "stretch",
+            minHeight: isCompactScreen ? "auto" : "calc(100vh - 156px)",
+          }}
+        >
+          <section style={{ ...S.card, padding: 12, height: "100%", display: "flex", flexDirection: "column" }}>
+            <h2 style={{ margin: "0 0 8px", fontSize: 22 }}>공부 설정</h2>
 
-          {groups.length ? (
-            <div style={S.grid3}>
-              {groups.map((g) => (
-                <button
-                  key={g.id}
-                  onClick={() => setSelectedGroupId(g.id)}
-                  style={{
-                    textAlign: "left",
-                    borderRadius: 20,
-                    padding: 16,
-                    cursor: "pointer",
-                    border:
-                      selectedGroupId === g.id
-                        ? "1px solid #18181b"
-                        : "1px solid #e4e4e7",
-                    background: selectedGroupId === g.id ? "#18181b" : "white",
-                    color: selectedGroupId === g.id ? "white" : "#18181b",
-                  }}
-                >
-                  <b>{g.name}</b>
-                  <p style={{ opacity: 0.75 }}>{g.description}</p>
-                  <p>인원 {(g.memberUids || []).length}명 · {g.goal}</p>
-                  <p>ID {g.roomCode} · {g.ownerUid === uid ? "방장" : "참여자"}</p>
-                  {enteredGroupId === g.id && <b style={{ color: "#86efac" }}>입장 중</b>}
-                </button>
-              ))}
-            </div>
-          ) : (
-            <p style={S.small}>아직 참여 중인 방이 없어. 방을 만들거나 입장해줘.</p>
-          )}
-
-          {selectedGroup && (
-            <div style={{ marginTop: 14, background: "#f4f4f5", borderRadius: 18, padding: 14 }}>
-              <b>{selectedGroup.name}</b>
-              <p style={S.small}>방 ID: {selectedGroup.roomCode}</p>
-              <button
-                style={S.button}
-                disabled={studying}
-                onClick={() => setEnteredGroupId(selectedGroup.id)}
-              >
-                선택한 그룹 입장
-              </button>
-            </div>
-          )}
-
-          <div style={{ marginTop: 16, border: "1px solid #e4e4e7", borderRadius: 18, padding: 16 }}>
-            <h3>비공개 방 입장</h3>
-            <div style={S.grid2}>
-              <input
-                style={S.input}
-                value={joinRoom.code}
-                onChange={(e) =>
-                  setJoinRoom((p) => ({ ...p, code: normalizeRoomCode(e.target.value) }))
-                }
-                placeholder="영어 8자 방 ID"
-              />
-              <input
-                style={S.input}
-                value={joinRoom.password}
-                onChange={(e) =>
-                  setJoinRoom((p) => ({
-                    ...p,
-                    password: normalizeRoomPw(e.target.value),
-                  }))
-                }
-                placeholder="숫자 8개 비밀번호"
-              />
-            </div>
-            <button style={{ ...S.lightButton, marginTop: 10 }} onClick={joinGroup}>
-              방 ID로 입장
-            </button>
-          </div>
-
-          {groupMsg && (
             <div
               style={{
-                marginTop: 14,
-                background: "#dcfce7",
-                color: "#166534",
-                padding: 12,
+                border: "1px solid #e4e4e7",
                 borderRadius: 14,
+                padding: 10,
+                marginBottom: 10,
+                background: "#fafafa",
               }}
             >
-              {groupMsg}
-            </div>
-          )}
-        </section>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start", flexWrap: "wrap" }}>
+                <div>
+                  <p style={{ ...S.small, margin: 0 }}>내 스터디 그룹</p>
+                  <h3 style={{ margin: "2px 0", fontSize: 16 }}>
+                    {currentGroup?.name || selectedGroup?.name || "입장한 방 없음"}
+                  </h3>
+                  <p style={{ ...S.small, margin: 0 }}>
+                    {currentGroup
+                      ? `현재 입장 중 · 방 ID ${currentGroup.roomCode}`
+                      : selectedGroup
+                      ? `선택됨 · 방 ID ${selectedGroup.roomCode}`
+                      : "우측 하단 방 버튼으로 방을 만들거나 입장할 수 있어."}
+                  </p>
+                </div>
 
-        <main className="app-main">
-          <section style={S.card}>
-            <h2>공부 설정</h2>
+                <button style={S.lightButton} onClick={() => setRoomMenuOpen(true)}>
+                  방 관리
+                </button>
+              </div>
+
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginTop: 8 }}>
+                <select
+                  style={{ ...S.input, flex: "1 1 140px", minWidth: 0 }}
+                  value={selectedGroupId}
+                  onChange={(e) => setSelectedGroupId(e.target.value)}
+                  disabled={studying}
+                >
+                  <option value="">방 선택</option>
+                  {groups.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  style={S.button}
+                  disabled={!selectedGroup || studying}
+                  onClick={() => setEnteredGroupId(selectedGroup.id)}
+                >
+                  입장
+                </button>
+
+                {selectedGroup?.ownerUid === uid && (
+                  <button
+                    style={{
+                      ...S.lightButton,
+                      color: "#dc2626",
+                      borderColor: "#fecaca",
+                      background: "#fff1f2",
+                    }}
+                    disabled={studying}
+                    onClick={() => deleteGroup(selectedGroup)}
+                  >
+                    삭제
+                  </button>
+                )}
+              </div>
+
+              <div
+                style={{
+                  marginTop: 8,
+                  paddingTop: 8,
+                  borderTop: "1px solid #e4e4e7",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 8,
+                    alignItems: "center",
+                  }}
+                >
+                  <div>
+                    <div style={{ ...S.small, fontWeight: 900 }}>공부 중 채팅 알림</div>
+                    <div
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                        marginTop: 4,
+                        padding: "4px 8px",
+                        borderRadius: 999,
+                        fontSize: 11,
+                        fontWeight: 900,
+                        background: chatNotice ? "#dcfce7" : "#f4f4f5",
+                        color: chatNotice ? "#166534" : "#71717a",
+                        border: chatNotice ? "1px solid #bbf7d0" : "1px solid #e4e4e7",
+                      }}
+                    >
+                      현재 {chatNotice ? "켜짐" : "꺼짐"}
+                    </div>
+                  </div>
+                  <button
+                    style={{
+                      ...S.lightButton,
+                      background: chatNotice ? "#18181b" : "white",
+                      color: chatNotice ? "white" : "#18181b",
+                    }}
+                    onClick={() => setChatNotice((v) => !v)}
+                  >
+                    {chatNotice ? "알림 끄기" : "알림 켜기"}
+                  </button>
+                </div>
+                <p style={{ ...S.small, margin: "6px 0 0", lineHeight: 1.35 }}>
+                  이 설정은 순공 중 새 메시지가 왔는지 알려주는 기능이야. 켜도 꺼도 순공 중에는 채팅 내용 자체는 볼 수 없어.
+                </p>
+              </div>
+
+              {groupMsg && (
+                <div
+                  style={{
+                    marginTop: 8,
+                    background: "#dcfce7",
+                    color: "#166534",
+                    padding: 8,
+                    borderRadius: 12,
+                    fontSize: 12,
+                  }}
+                >
+                  {groupMsg}
+                </div>
+              )}
+            </div>
             <div style={S.grid2}>
               <Field label="과목 선택">
                 <select
@@ -1428,56 +1823,57 @@ export default function App() {
 
             <Field label="자세한 공부 내용">
               <textarea
-                style={S.textarea}
+                style={{ ...S.textarea, minHeight: 48 }}
                 value={detail}
                 disabled={studying}
                 onChange={(e) => setDetail(e.target.value)}
               />
             </Field>
 
-            <div style={{ background: "#f4f4f5", borderRadius: 18, padding: 14 }}>
+            <div style={{ background: "#f4f4f5", borderRadius: 12, padding: 8, fontSize: 12 }}>
               <p style={S.small}>현재 그룹 친구에게 표시되는 내용</p>
               <b>{subject} · {detail}</b>
               <p style={S.small}>공부 종료 후 개인 기록으로 저장되고, 참여 중인 방들에 공유돼.</p>
             </div>
 
-            <div style={{ border: "1px solid #e4e4e7", borderRadius: 24, padding: 22, marginTop: 16 }}>
-              <p style={S.small}>나의 오늘 순공시간</p>
-              <div style={{ fontSize: 60, fontWeight: 900 }}>{formatTimer(totalSec)}</div>
-              <p style={S.small}>
-                {studying
-                  ? `${startedAt}부터 측정 중 · ${subject}`
-                  : totalSec > 0
-                  ? "측정이 일시 정지되어 있어."
-                  : "아직 측정을 시작하지 않았어."}
-              </p>
-              <div style={{ display: "flex", gap: 8 }}>
-                {studying ? (
-                  <button style={S.button} onClick={stopStudy}>
-                    공부 종료
-                  </button>
-                ) : (
-                  <button style={S.button} disabled={!enteredGroupId} onClick={startStudy}>
-                    순공 시작
-                  </button>
-                )}
-                <button
-                  style={S.lightButton}
-                  disabled={studying}
-                  onClick={() => setTotalSec(0)}
-                >
-                  초기화
-                </button>
+            <Field label="플래너 시간 표시 색깔">
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <input
+                  type="color"
+                  value={plannerTimeColor}
+                  onChange={(e) => setPlannerTimeColor(e.target.value)}
+                  style={{
+                    width: 44,
+                    height: 34,
+                    border: "1px solid #d4d4d8",
+                    borderRadius: 10,
+                    padding: 2,
+                    background: "white",
+                    cursor: "pointer",
+                  }}
+                />
+                <input
+                  style={S.input}
+                  value={plannerTimeColor}
+                  onChange={(e) => setPlannerTimeColor(e.target.value)}
+                  placeholder="#dcfce7"
+                />
               </div>
-            </div>
-
-            <div style={{ marginTop: 16 }}>{renderPlanner(todayRecords, todayTotal, today)}</div>
+              <div style={{ ...S.small, marginTop: 4 }}>
+                플래너의 시간표 블록 색깔을 원하는 색으로 바꿀 수 있어.
+              </div>
+            </Field>
           </section>
 
-          <aside style={S.card}>
-            <h2>그룹원 현황 · 기록</h2>
-            <p style={S.small}>그룹 현재 순공 합계: {formatTimer(groupLiveTotal)}</p>
+          <section style={{ height: "100%", display: "flex" }}>
+            {renderTodayPlannerCompact(todayRecords, todayTotal, today)}
+          </section>
 
+          <aside style={{ ...S.card, padding: 12, height: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}>
+            <h2 style={{ margin: "0 0 6px", fontSize: 20 }}>그룹원 현황 · 기록</h2>
+            <p style={{ ...S.small, marginTop: 0 }}>그룹 현재 순공 합계: {formatTimer(groupLiveTotal)}</p>
+
+            <div style={{ overflowY: "auto", minHeight: 0, flex: 1 }}>
             {liveMembers.length ? (
               liveMembers.map((m) => {
                 const memberRecords = groupRecords.filter(
@@ -1492,9 +1888,9 @@ export default function App() {
                     key={m.uid}
                     style={{
                       border: "1px solid #e4e4e7",
-                      borderRadius: 18,
-                      padding: 14,
-                      marginBottom: 12,
+                      borderRadius: 14,
+                      padding: 10,
+                      marginBottom: 8,
                     }}
                   >
                     <b>{m.displayName || m.userId}</b>
@@ -1504,7 +1900,7 @@ export default function App() {
                       <br />
                       <span style={S.small}>{m.detail || "공부 내용 없음"}</span>
                     </p>
-                    <h2>{formatTimer(m.liveSeconds || 0)}</h2>
+                    <h2 style={{ margin: "4px 0", fontSize: 22 }}>{formatTimer(m.liveSeconds || 0)}</h2>
                     <div style={{ background: "#f4f4f5", borderRadius: 14, padding: 10 }}>
                       <p style={S.small}>공유된 누적 기록</p>
                       <b>{formatStudy(sum)}</b>
@@ -1515,16 +1911,36 @@ export default function App() {
             ) : (
               <p style={S.small}>아직 그룹원이 없어.</p>
             )}
+            </div>
           </aside>
         </main>
-
+         <button
+  style={{
+    position: "fixed",
+    right: 22,
+    bottom: 148,
+    width: 52,
+    height: 52,
+    borderRadius: "50%",
+    border: "none",
+    background: "#2563eb",
+    color: "white",
+    fontWeight: 900,
+    cursor: "pointer",
+    boxShadow: "0 12px 30px rgba(0,0,0,0.18)",
+    zIndex: 40,
+  }}
+  onClick={() => setRoomMenuOpen(true)}
+>
+  방
+</button>
         <button
           style={{
             position: "fixed",
             right: 22,
-            bottom: 100,
-            width: 62,
-            height: 62,
+            bottom: 86,
+            width: 52,
+            height: 52,
             borderRadius: "50%",
             border: "none",
             background: "#15803d",
@@ -1541,9 +1957,9 @@ export default function App() {
           style={{
             position: "fixed",
             right: 22,
-            bottom: 26,
-            width: 62,
-            height: 62,
+            bottom: 24,
+            width: 52,
+            height: 52,
             borderRadius: "50%",
             border: "none",
             background: "#18181b",
@@ -1659,6 +2075,84 @@ export default function App() {
                 로그아웃
               </button>
             </div>
+          </Modal>
+        )}
+        
+        {roomMenuOpen && (
+          <Modal title="스터디 방 만들기 / 입장" onClose={() => setRoomMenuOpen(false)}>
+            <div style={S.grid2}>
+              <div style={{ ...S.card, boxShadow: "none" }}>
+                <h3 style={{ marginTop: 0 }}>새 방 만들기</h3>
+                <p style={S.small}>새 스터디 방을 만들고 친구에게 방 ID와 비밀번호를 알려줄 수 있어.</p>
+                <button
+                  style={{ ...S.button, width: "100%", marginTop: 8 }}
+                  onClick={() => {
+                    setRoomMenuOpen(false);
+                    setCreateOpen(true);
+                  }}
+                >
+                  방 만들기
+                </button>
+              </div>
+
+              <div style={{ ...S.card, boxShadow: "none" }}>
+                <h3 style={{ marginTop: 0 }}>방 ID로 입장</h3>
+                <p style={S.small}>친구가 알려준 영어 8자 방 ID와 숫자 8개 비밀번호를 입력해.</p>
+
+                <Field label="방 ID">
+                  <input
+                    style={S.input}
+                    value={joinRoom.code}
+                    onChange={(e) =>
+                      setJoinRoom((p) => ({
+                        ...p,
+                        code: normalizeRoomCode(e.target.value),
+                      }))
+                    }
+                    placeholder="예: STUDYABC"
+                  />
+                </Field>
+
+                <Field label="비밀번호">
+                  <input
+                    style={S.input}
+                    value={joinRoom.password}
+                    onChange={(e) =>
+                      setJoinRoom((p) => ({
+                        ...p,
+                        password: normalizeRoomPw(e.target.value),
+                      }))
+                    }
+                    placeholder="숫자 8개"
+                  />
+                </Field>
+
+                <button
+                  style={{ ...S.button, width: "100%" }}
+                  onClick={async () => {
+                    await joinGroup();
+                    setRoomMenuOpen(false);
+                  }}
+                >
+                  방 입장하기
+                </button>
+              </div>
+            </div>
+
+            {groupMsg && (
+              <div
+                style={{
+                  marginTop: 10,
+                  background: "#dcfce7",
+                  color: "#166534",
+                  padding: 10,
+                  borderRadius: 12,
+                  fontSize: 12,
+                }}
+              >
+                {groupMsg}
+              </div>
+            )}
           </Modal>
         )}
 
