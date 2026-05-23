@@ -4001,103 +4001,190 @@ export default function App() {
 
         {profileOpen && (
           <Modal title="나의 정보" onClose={() => setProfileOpen(false)}>
-            <div style={S.grid2}>
-              <div style={{ ...S.card, boxShadow: "none" }}>
-                <p style={S.small}>아이디</p>
-                <h3>{userId}</h3>
-                <p style={S.small}>아이디는 수정할 수 없도록 설정했습니다.</p>
-              </div>
-              <div style={{ ...S.card, boxShadow: "none" }}>
-                <p style={S.small}>표시 이름</p>
-                <h3>{displayName}</h3>
-              </div>
-            </div>
-
-            <Field label="표시 이름">
-              <input
-                style={S.input}
-                value={profileForm.displayName}
-                onChange={(e) =>
-                  setProfileForm((p) => ({
-                    ...p,
-                    displayName: e.target.value.slice(0, 12),
-                  }))
-                }
-              />
-            </Field>
-
-            <Field label="한 줄 소개">
-              <input
-                style={S.input}
-                value={profileForm.bio}
-                onChange={(e) =>
-                  setProfileForm((p) => ({ ...p, bio: e.target.value.slice(0, 40) }))
-                }
-              />
-            </Field>
-
-            <Field label="기본 공부 목표">
-              <input
-                style={S.input}
-                value={profileForm.defaultGoal}
-                onChange={(e) =>
-                  setProfileForm((p) => ({
-                    ...p,
-                    defaultGoal: e.target.value.slice(0, 30),
-                  }))
-                }
-              />
-            </Field>
-
-            <div style={{ ...S.card, boxShadow: "none" }}>
-              <h3>비밀번호 변경</h3>
-              <p style={S.small}>변경하지 않으려면 비워두세요.</p>
-              <input
-                style={{ ...S.input, marginBottom: 8 }}
-                type="password"
-                value={profileForm.newPw}
-                onChange={(e) =>
-                  setProfileForm((p) => ({ ...p, newPw: normalizePw(e.target.value) }))
-                }
-                placeholder="새 비밀번호"
-              />
-              <input
-                style={S.input}
-                type="password"
-                value={profileForm.newPw2}
-                onChange={(e) =>
-                  setProfileForm((p) => ({ ...p, newPw2: normalizePw(e.target.value) }))
-                }
-                placeholder="새 비밀번호 다시 입력"
-              />
-            </div>
-
-            {profileMsg && <p>{profileMsg}</p>}
-
             <div
               style={{
-                position: "sticky",
-                bottom: 0,
-                zIndex: 3,
-                display: "flex",
+                display: "grid",
                 gap: 8,
-                marginTop: 12,
-                paddingTop: 12,
-                paddingBottom: 4,
-                background: "var(--card-bg-solid)",
-                borderTop: "1px solid var(--border-soft)",
               }}
             >
-              <button style={{ ...S.button, flex: 1 }} onClick={saveProfile}>
-                내 정보 저장
-              </button>
-              <button style={{ ...S.lightButton, flex: 1 }} onClick={logout}>
-                로그아웃
-              </button>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 8,
+                }}
+              >
+                <div
+                  style={{
+                    background: "var(--soft-bg)",
+                    border: "1px solid var(--border-soft)",
+                    borderRadius: 16,
+                    padding: 10,
+                    minWidth: 0,
+                  }}
+                >
+                  <div style={{ ...S.small, fontSize: 11, fontWeight: 900 }}>아이디</div>
+                  <div
+                    style={{
+                      marginTop: 2,
+                      fontSize: 15,
+                      fontWeight: 950,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {userId}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    background: "var(--soft-bg)",
+                    border: "1px solid var(--border-soft)",
+                    borderRadius: 16,
+                    padding: 10,
+                    minWidth: 0,
+                  }}
+                >
+                  <div style={{ ...S.small, fontSize: 11, fontWeight: 900 }}>표시 이름</div>
+                  <div
+                    style={{
+                      marginTop: 2,
+                      fontSize: 15,
+                      fontWeight: 950,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {displayName}
+                  </div>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gap: 7,
+                }}
+              >
+                <label style={{ display: "grid", gap: 3 }}>
+                  <span style={{ ...S.label, marginBottom: 0 }}>표시 이름</span>
+                  <input
+                    style={{ ...S.input, padding: "8px 10px", borderRadius: 14 }}
+                    value={profileForm.displayName}
+                    onChange={(e) =>
+                      setProfileForm((p) => ({
+                        ...p,
+                        displayName: e.target.value.slice(0, 12),
+                      }))
+                    }
+                  />
+                </label>
+
+                <label style={{ display: "grid", gap: 3 }}>
+                  <span style={{ ...S.label, marginBottom: 0 }}>한 줄 소개</span>
+                  <input
+                    style={{ ...S.input, padding: "8px 10px", borderRadius: 14 }}
+                    value={profileForm.bio}
+                    onChange={(e) =>
+                      setProfileForm((p) => ({ ...p, bio: e.target.value.slice(0, 40) }))
+                    }
+                  />
+                </label>
+
+                <label style={{ display: "grid", gap: 3 }}>
+                  <span style={{ ...S.label, marginBottom: 0 }}>기본 공부 목표</span>
+                  <input
+                    style={{ ...S.input, padding: "8px 10px", borderRadius: 14 }}
+                    value={profileForm.defaultGoal}
+                    onChange={(e) =>
+                      setProfileForm((p) => ({
+                        ...p,
+                        defaultGoal: e.target.value.slice(0, 30),
+                      }))
+                    }
+                  />
+                </label>
+              </div>
+
+              <div
+                style={{
+                  background: "var(--soft-bg)",
+                  border: "1px solid var(--border-soft)",
+                  borderRadius: 16,
+                  padding: 10,
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "baseline" }}>
+                  <b style={{ fontSize: 13 }}>비밀번호 변경</b>
+                  <span style={{ ...S.small, fontSize: 10 }}>변경하지 않으면 비워두세요.</span>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 8,
+                    marginTop: 8,
+                  }}
+                >
+                  <input
+                    style={{ ...S.input, padding: "8px 10px", borderRadius: 14 }}
+                    type="password"
+                    value={profileForm.newPw}
+                    onChange={(e) =>
+                      setProfileForm((p) => ({ ...p, newPw: normalizePw(e.target.value) }))
+                    }
+                    placeholder="새 비밀번호"
+                  />
+                  <input
+                    style={{ ...S.input, padding: "8px 10px", borderRadius: 14 }}
+                    type="password"
+                    value={profileForm.newPw2}
+                    onChange={(e) =>
+                      setProfileForm((p) => ({ ...p, newPw2: normalizePw(e.target.value) }))
+                    }
+                    placeholder="다시 입력"
+                  />
+                </div>
+              </div>
+
+              {profileMsg && (
+                <div
+                  style={{
+                    padding: "8px 10px",
+                    borderRadius: 14,
+                    background: "var(--accent-soft)",
+                    color: "var(--accent-text)",
+                    fontSize: 12,
+                    fontWeight: 850,
+                  }}
+                >
+                  {profileMsg}
+                </div>
+              )}
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 8,
+                  marginTop: 2,
+                }}
+              >
+                <button style={{ ...S.button, padding: "10px 12px" }} onClick={saveProfile}>
+                  내 정보 저장
+                </button>
+                <button style={{ ...S.lightButton, padding: "10px 12px" }} onClick={logout}>
+                  로그아웃
+                </button>
+              </div>
             </div>
           </Modal>
         )}
-        
+
         {roomMenuOpen && (
           <Modal title="스터디 방 만들기 / 입장" onClose={() => setRoomMenuOpen(false)}>
             <div style={S.grid2}>
