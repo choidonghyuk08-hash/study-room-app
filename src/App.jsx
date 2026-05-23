@@ -2626,6 +2626,94 @@ export default function App() {
     </main>
   );
 
+  const renderEasyPlannerSection = () => (
+    <main
+      key={`easy-planner-${sectionTransitionKey}`}
+      style={{
+        minWidth: 0,
+        display: easyLayout && mobileTab === "planner" ? "grid" : "none",
+        gap: 12,
+        animation: easyLayout && mobileTab === "planner" ? "srFadeSlideIn 520ms cubic-bezier(0.16, 1, 0.3, 1)" : "none",
+      }}
+    >
+      <section style={{ ...S.card, padding: easyLayout ? 12 : 16 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            marginBottom: 12,
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <button style={S.lightButton} onClick={() => moveMonth(-1)}>
+            이전
+          </button>
+          <b style={{ fontSize: easyLayout ? 14 : 16, textAlign: "center" }}>
+            {calendarMonth.getFullYear()}년 {calendarMonth.getMonth() + 1}월
+          </b>
+          <button style={S.lightButton} onClick={() => moveMonth(1)}>
+            다음
+          </button>
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(7, 1fr)",
+            gap: easyLayout ? 4 : 6,
+            textAlign: "center",
+            fontSize: 11,
+            color: "#71717a",
+            marginBottom: 6,
+          }}
+        >
+          {["일", "월", "화", "수", "목", "금", "토"].map((d) => (
+            <div key={d}>{d}</div>
+          ))}
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: easyLayout ? 4 : 6 }}>
+          {getCalendarCells().map((date, idx) => {
+            const amount = date && recordDateMap[date];
+            const selected = date === plannerDate;
+
+            return (
+              <button
+                key={idx}
+                disabled={!date}
+                onClick={() => date && setPlannerDate(date)}
+                style={{
+                  minHeight: easyLayout ? 46 : 60,
+                  border: "1px solid var(--border)",
+                  borderRadius: easyLayout ? 12 : 14,
+                  background: selected ? "var(--text-main)" : "var(--card-bg-solid)",
+                  color: selected ? "white" : "var(--text-main)",
+                  opacity: date ? 1 : 0,
+                  cursor: date ? "pointer" : "default",
+                  padding: easyLayout ? 4 : 6,
+                }}
+              >
+                {date && (
+                  <>
+                    <b>{Number(date.split("-")[2])}</b>
+                    {amount && (
+                      <div style={{ fontSize: easyLayout ? 9 : 10, marginTop: 2 }}>
+                        {formatStudy(amount)}
+                      </div>
+                    )}
+                  </>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {renderPlanner(plannerRecords, plannerTotal, plannerDate)}
+    </main>
+  );
+
   const renderMobileChatSection = () => (
     <main
       key={`easy-chat-${sectionTransitionKey}`}
@@ -4561,19 +4649,7 @@ export default function App() {
               </main>
             )}
 
-            {easyLayout && mobileTab === "planner" && (
-              <main
-                key={`easy-planner-${sectionTransitionKey}`}
-                style={{
-                  minWidth: 0,
-                  display: "grid",
-                  gap: 12,
-                  animation: "srFadeSlideIn 520ms cubic-bezier(0.16, 1, 0.3, 1)",
-                }}
-              >
-                {renderTodayPlannerCompact(todayRecords, todayTotal, today)}
-              </main>
-            )}
+            {renderEasyPlannerSection()}
 
             {renderMobileChatSection()}
 
