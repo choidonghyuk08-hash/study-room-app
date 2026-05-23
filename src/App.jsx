@@ -218,19 +218,25 @@ const S = {
     inset: 0,
     background: "rgba(0,0,0,0.25)",
     display: "flex",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "center",
     zIndex: 50,
     padding: 16,
+    overflowY: "auto",
+    overscrollBehavior: "contain",
+    WebkitOverflowScrolling: "touch",
   },
   modal: {
     width: "100%",
     maxWidth: 850,
-    maxHeight: "90vh",
-    overflow: "auto",
+    maxHeight: "calc(100dvh - 32px)",
+    overflowY: "auto",
+    overscrollBehavior: "contain",
+    WebkitOverflowScrolling: "touch",
     background: "var(--card-bg-solid)",
     borderRadius: 28,
     padding: 18,
+    margin: "0 auto",
   },
 };
 
@@ -4068,11 +4074,24 @@ export default function App() {
 
             {profileMsg && <p>{profileMsg}</p>}
 
-            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-              <button style={S.button} onClick={saveProfile}>
+            <div
+              style={{
+                position: "sticky",
+                bottom: 0,
+                zIndex: 3,
+                display: "flex",
+                gap: 8,
+                marginTop: 12,
+                paddingTop: 12,
+                paddingBottom: 4,
+                background: "var(--card-bg-solid)",
+                borderTop: "1px solid var(--border-soft)",
+              }}
+            >
+              <button style={{ ...S.button, flex: 1 }} onClick={saveProfile}>
                 내 정보 저장
               </button>
-              <button style={S.lightButton} onClick={logout}>
+              <button style={{ ...S.lightButton, flex: 1 }} onClick={logout}>
                 로그아웃
               </button>
             </div>
