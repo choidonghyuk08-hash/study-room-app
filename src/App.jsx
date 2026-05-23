@@ -2783,7 +2783,7 @@ export default function App() {
                   친구와 공부하기 전, 먼저 로그인해 주세요.
                 </h1>
                 <p style={{ color: "#d4d4d8" }}>
-                  회원가입, 방, 채팅, 공부 기록이 Firebase에 저장돼.
+                  귀하의 데이터는 안전하게 보관됩니다.
                 </p>
                 <div
                   style={{
