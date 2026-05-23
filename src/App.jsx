@@ -331,6 +331,16 @@ const weatherDayLabel = (date, index) => {
   return date;
 };
 
+const RIGHT_PANEL_DEFAULT_ORDER = ["theme", "total", "weather", "dday", "rank"];
+
+const RIGHT_PANEL_LABELS = {
+  theme: "테마",
+  total: "오늘 총 공부시간",
+  weather: "주간 날씨",
+  dday: "오늘 할 일",
+  rank: "그룹원 현황 및 랭킹",
+};
+
 function Modal({ title, onClose, children }) {
   return (
     <div style={S.modalBg}>
@@ -383,6 +393,7 @@ export default function App() {
 
   const [authMode, setAuthMode] = useState("login");
   const [authMsg, setAuthMsg] = useState("");
+  const [mobileTab, setMobileTab] = useState("home");
   const [themeKey, setThemeKey] = useState(() => {
     if (typeof window === "undefined") return "blue";
     return window.localStorage.getItem("studyRoomTheme") || "blue";
@@ -505,6 +516,34 @@ export default function App() {
   const [weatherMsg, setWeatherMsg] = useState("위치 권한을 허용하면 주간 날씨를 볼 수 있습니다.");
   const [weatherToast, setWeatherToast] = useState("");
 
+  const [rightPanelOrder, setRightPanelOrder] = useState(() => {
+    if (typeof window === "undefined") return RIGHT_PANEL_DEFAULT_ORDER;
+    try {
+      const saved = JSON.parse(window.localStorage.getItem("studyRoomRightPanelOrder") || "null");
+      if (Array.isArray(saved)) {
+        const valid = saved.filter((item) => RIGHT_PANEL_DEFAULT_ORDER.includes(item));
+        const missing = RIGHT_PANEL_DEFAULT_ORDER.filter((item) => !valid.includes(item));
+        return [...valid, ...missing];
+      }
+    } catch (error) {
+      console.error("오른쪽 패널 순서 불러오기 실패:", error);
+    }
+    return RIGHT_PANEL_DEFAULT_ORDER;
+  });
+  const [hiddenRightCards, setHiddenRightCards] = useState(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const saved = JSON.parse(window.localStorage.getItem("studyRoomHiddenRightCards") || "[]");
+      return Array.isArray(saved)
+        ? saved.filter((item) => RIGHT_PANEL_DEFAULT_ORDER.includes(item))
+        : [];
+    } catch (error) {
+      console.error("오른쪽 패널 숨김 설정 불러오기 실패:", error);
+      return [];
+    }
+  });
+  const [rightPanelEditOpen, setRightPanelEditOpen] = useState(false);
+
   const uid = user?.uid || "";
   const userId = profile?.userId || "";
   const displayName = profile?.displayName || userId || "나";
@@ -515,6 +554,50 @@ export default function App() {
     (a, b) => (b.bannedAtMs || 0) - (a.bannedAtMs || 0)
   );
   const currentSound = SOUND_OPTIONS.find((item) => item.id === soundType) || SOUND_OPTIONS[0];
+
+  const saveRightPanelSettings = (nextOrder, nextHidden) => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("studyRoomRightPanelOrder", JSON.stringify(nextOrder));
+    window.localStorage.setItem("studyRoomHiddenRightCards", JSON.stringify(nextHidden));
+  };
+
+  const moveRightPanelCard = (cardId, direction) => {
+    setRightPanelOrder((prev) => {
+      const next = [...prev];
+      const index = next.indexOf(cardId);
+      const nextIndex = index + direction;
+
+      if (index < 0 || nextIndex < 0 || nextIndex >= next.length) return prev;
+
+      [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+      saveRightPanelSettings(next, hiddenRightCards);
+      return next;
+    });
+  };
+
+  const hideRightPanelCard = (cardId) => {
+    setHiddenRightCards((prev) => {
+      const nextHidden = Array.from(new Set([...prev, cardId]));
+      saveRightPanelSettings(rightPanelOrder, nextHidden);
+      return nextHidden;
+    });
+  };
+
+  const restoreRightPanelCard = (cardId) => {
+    setHiddenRightCards((prev) => {
+      const nextHidden = prev.filter((item) => item !== cardId);
+      saveRightPanelSettings(rightPanelOrder, nextHidden);
+      return nextHidden;
+    });
+  };
+
+  const resetRightPanelLayout = () => {
+    const nextOrder = RIGHT_PANEL_DEFAULT_ORDER;
+    const nextHidden = [];
+    setRightPanelOrder(nextOrder);
+    setHiddenRightCards(nextHidden);
+    saveRightPanelSettings(nextOrder, nextHidden);
+  };
 
   useEffect(() => {
     if (!weatherToast) return;
@@ -1823,6 +1906,295 @@ export default function App() {
     );
   };
 
+  const RightPanelControlBar = ({ cardId }) => {
+    const index = rightPanelOrder.indexOf(cardId);
+
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 8,
+          marginBottom: 6,
+        }}
+      >
+        <span
+          style={{
+            fontSize: 11,
+            fontWeight: 900,
+            color: "var(--text-sub)",
+          }}
+        >
+          {RIGHT_PANEL_LABELS[cardId]}
+        </span>
+        <div style={{ display: "flex", gap: 4 }}>
+          <button
+            type="button"
+            title="위로 이동"
+            onClick={() => moveRightPanelCard(cardId, -1)}
+            disabled={index <= 0}
+            style={{
+              ...S.lightButton,
+              padding: "4px 7px",
+              fontSize: 11,
+              opacity: index <= 0 ? 0.35 : 1,
+            }}
+          >
+            ↑
+          </button>
+          <button
+            type="button"
+            title="아래로 이동"
+            onClick={() => moveRightPanelCard(cardId, 1)}
+            disabled={index === -1 || index >= rightPanelOrder.length - 1}
+            style={{
+              ...S.lightButton,
+              padding: "4px 7px",
+              fontSize: 11,
+              opacity: index === -1 || index >= rightPanelOrder.length - 1 ? 0.35 : 1,
+            }}
+          >
+            ↓
+          </button>
+          <button
+            type="button"
+            title="숨기기"
+            onClick={() => hideRightPanelCard(cardId)}
+            style={{
+              ...S.lightButton,
+              padding: "4px 7px",
+              fontSize: 11,
+              color: "#dc2626",
+              background: "#fff1f2",
+              borderColor: "#fecaca",
+            }}
+          >
+            삭제
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const RightPanelItem = ({ cardId, children }) => (
+    <div>
+      {!isCompactScreen && rightPanelEditOpen && <RightPanelControlBar cardId={cardId} />}
+      {children}
+    </div>
+  );
+
+  const renderRightPanelCard = (cardId) => {
+    if (hiddenRightCards.includes(cardId)) return null;
+
+    if (cardId === "theme") {
+      return (
+        <RightPanelItem key={cardId} cardId={cardId}>
+          <section style={{ ...S.card, padding: 16 }}>
+            <div style={{ ...S.small, fontWeight: 900, color: "var(--accent)" }}>테마 색상</div>
+            <h3 style={{ margin: "4px 0 10px", fontSize: 18 }}>
+              {currentTheme.label}
+            </h3>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
+              {Object.entries(THEME_COLORS).map(([key, theme]) => (
+                <button
+                  key={key}
+                  type="button"
+                  title={theme.label}
+                  onClick={() => changeTheme(key)}
+                  style={{
+                    position: "relative",
+                    height: 34,
+                    borderRadius: 14,
+                    border: themeKey === key ? `2px solid ${theme.accent}` : "1px solid #e5e8eb",
+                    background: theme.accent,
+                    cursor: "pointer",
+                    boxShadow: themeKey === key ? `0 0 0 4px ${theme.accentShadow}` : "none",
+                  }}
+                >
+                  <span style={{ position: "absolute", opacity: 0 }}>{theme.label}</span>
+                </button>
+              ))}
+            </div>
+            <p style={{ ...S.small, margin: "8px 0 0" }}>
+              빨강, 초록, 파랑, 보라, 검정 중 원하는 색으로 앱의 주요 색상을 바꿀 수 있습니다.
+            </p>
+          </section>
+        </RightPanelItem>
+      );
+    }
+
+    if (cardId === "total") {
+      return (
+        <RightPanelItem key={cardId} cardId={cardId}>
+          <section
+            style={{
+              background: "linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%)",
+              color: "white",
+              borderRadius: 28,
+              padding: "20px 18px",
+              boxShadow: "0 18px 42px var(--accent-shadow)",
+            }}
+          >
+            <div style={{ fontSize: 12, opacity: 0.78, fontWeight: 900 }}>오늘 총 공부시간</div>
+            <div style={{ fontSize: "clamp(44px, 5vw, 68px)", fontWeight: 950, lineHeight: 0.98, letterSpacing: -2, marginTop: 6 }}>
+              {formatTimer(todayTotalWithLive)}
+            </div>
+            <div style={{ fontSize: 12, opacity: 0.78, marginTop: 8 }}>
+              {studying ? "현재 진행 중인 순공시간 포함" : "오늘 저장된 기록 기준"}
+            </div>
+          </section>
+        </RightPanelItem>
+      );
+    }
+
+    if (cardId === "weather") {
+      return (
+        <RightPanelItem key={cardId} cardId={cardId}>
+          <section style={{ ...S.card, padding: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+              <div>
+                <div style={{ ...S.small, fontWeight: 900, color: "var(--accent)" }}>주간 날씨</div>
+                <h3 style={{ margin: "4px 0 0", fontSize: 18 }}>오늘부터 7일 예보</h3>
+              </div>
+              <button
+                type="button"
+                style={{ ...S.lightButton, padding: "8px 10px", fontSize: 12 }}
+                onClick={loadWeather}
+                disabled={weatherLoading}
+              >
+                {weatherLoading ? "불러오는 중" : weatherDays.length ? "새로고침" : "불러오기"}
+              </button>
+            </div>
+
+            <div
+              style={{
+                margin: "10px 0",
+                padding: "10px 12px",
+                borderRadius: 16,
+                background: "var(--accent-soft)",
+                border: "1px solid var(--accent-soft-2)",
+                color: "var(--accent-text)",
+                fontSize: 12,
+                fontWeight: 800,
+                lineHeight: 1.45,
+              }}
+            >
+              {weatherMsg}
+            </div>
+
+            {weatherDays.length > 0 && (
+              <div style={{ display: "grid", gap: 8, maxHeight: 350, overflowY: "auto", paddingRight: 2 }}>
+                {weatherDays.map((day) => {
+                  const shouldCarryUmbrella =
+                    Number(day.rain) >= 50 ||
+                    (Number(day.rain) >= 30 && Number(day.rainAmount) >= 3);
+
+                  return (
+                    <div
+                      key={day.date}
+                      style={{
+                        padding: "10px 11px",
+                        borderRadius: 16,
+                        background: shouldCarryUmbrella ? "#fff7ed" : "var(--soft-bg)",
+                        border: shouldCarryUmbrella ? "1px solid #fed7aa" : "1px solid var(--border-soft)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "52px 1fr auto",
+                          alignItems: "center",
+                          gap: 8,
+                        }}
+                      >
+                        <b style={{ color: shouldCarryUmbrella ? "#c2410c" : "var(--accent-text)", fontSize: 13 }}>
+                          {day.label}
+                        </b>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 900, color: "var(--text-main)" }}>
+                            {day.weather}
+                          </div>
+                          <div style={{ ...S.small, fontSize: 11 }}>
+                            {day.date}
+                          </div>
+                        </div>
+                        <div style={{ textAlign: "right", fontWeight: 950, color: "var(--text-main)" }}>
+                          {day.max}° / {day.min}°
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr 1fr",
+                          gap: 6,
+                          marginTop: 8,
+                          fontSize: 11,
+                        }}
+                      >
+                        <div style={{ color: "var(--text-sub)" }}>강수 {day.rain}%</div>
+                        <div style={{ color: "var(--text-sub)" }}>강수량 {Number(day.rainAmount).toFixed(1)}mm</div>
+                        <div style={{ color: "var(--text-sub)" }}>바람 {day.wind}km/h</div>
+                      </div>
+
+                      {shouldCarryUmbrella && (
+                        <div
+                          style={{
+                            marginTop: 7,
+                            padding: "6px 8px",
+                            borderRadius: 12,
+                            background: "rgba(251,146,60,0.14)",
+                            color: "#c2410c",
+                            fontSize: 11,
+                            fontWeight: 900,
+                          }}
+                        >
+                          우산을 챙기는 것이 좋습니다.
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        </RightPanelItem>
+      );
+    }
+
+    if (cardId === "dday") {
+      return (
+        <RightPanelItem key={cardId} cardId={cardId}>
+          <section style={{ ...S.card, padding: 16 }}>
+            <div style={{ ...S.small, fontWeight: 900, color: "var(--accent)" }}>오늘 할 일</div>
+            <h3 style={{ margin: "4px 0 10px", fontSize: 18 }}>선택한 D-DAY</h3>
+            {selectedDday ? (
+              <div style={{ background: "var(--app-bg)", borderRadius: 16, padding: 12 }}>
+                <b>{selectedDday.title}</b>
+                <div style={{ ...S.small, marginTop: 4 }}>
+                  {formatDday(selectedDday.date)} · {selectedDday.category} · 중요도 {selectedDday.priority}
+                </div>
+              </div>
+            ) : (
+              <p style={S.small}>D-DAY를 설정해두면 여기에서 바로 확인할 수 있습니다.</p>
+            )}
+          </section>
+        </RightPanelItem>
+      );
+    }
+
+    if (cardId === "rank") {
+      return (
+        <RightPanelItem key={cardId} cardId={cardId}>
+          {renderGroupRankCard()}
+        </RightPanelItem>
+      );
+    }
+
+    return null;
+  };
+
   const renderTodayPlannerCompact = (list, total, date) => {
     return (
       <div
@@ -2574,7 +2946,7 @@ export default function App() {
               alignItems: "start",
             }}
           >
-            <main style={{ minWidth: 0 }}>
+            <main style={{ minWidth: 0, display: isCompactScreen && mobileTab !== "home" ? "none" : "block" }}>
               <div
                 style={{
                   display: "grid",
@@ -3041,7 +3413,247 @@ export default function App() {
               </div>
             </main>
 
-            <aside style={{ display: "grid", gap: 12 }}>
+            {isCompactScreen && mobileTab === "group" && (
+              <main style={{ minWidth: 0, display: "grid", gap: 12 }}>
+                <section style={{ ...S.card, padding: 16 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+                    <div>
+                      <div style={{ ...S.small, fontWeight: 900, color: "var(--accent)" }}>그룹</div>
+                      <h2 style={{ margin: "4px 0", fontSize: 21 }}>
+                        {currentGroup?.name || selectedGroup?.name || "입장한 방 없음"}
+                      </h2>
+                      <p style={{ ...S.small, margin: 0 }}>
+                        {currentGroup
+                          ? `현재 입장 중 · 방 ID ${currentGroup.roomCode}`
+                          : selectedGroup
+                          ? `선택됨 · 방 ID ${selectedGroup.roomCode}`
+                          : "아래에서 방을 만들거나 입장할 수 있습니다."}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      style={{ ...S.lightButton, padding: "8px 10px" }}
+                      onClick={() => setChatOpen(true)}
+                      disabled={!currentGroup}
+                    >
+                      채팅
+                    </button>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8, marginTop: 12 }}>
+                    <select
+                      style={S.input}
+                      value={selectedGroupId}
+                      onChange={(e) => setSelectedGroupId(e.target.value)}
+                      disabled={studying}
+                    >
+                      <option value="">방 선택</option>
+                      {groups.map((g) => (
+                        <option key={g.id} value={g.id}>
+                          {g.name}
+                        </option>
+                      ))}
+                    </select>
+
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <button
+                        style={{ ...S.button, flex: 1 }}
+                        disabled={!selectedGroup || studying}
+                        onClick={() => setEnteredGroupId(selectedGroup.id)}
+                      >
+                        입장
+                      </button>
+                      {selectedGroup?.ownerUid === uid && (
+                        <button
+                          style={{ ...S.lightButton, flex: 1, color: "#dc2626", borderColor: "#fecaca", background: "#fff1f2" }}
+                          disabled={studying}
+                          onClick={() => deleteGroup(selectedGroup)}
+                        >
+                          방 삭제
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {selectedGroup?.ownerUid === uid && (
+                    <div
+                      style={{
+                        marginTop: 12,
+                        padding: "10px 12px",
+                        borderRadius: 16,
+                        background: "var(--soft-bg)",
+                        border: "1px solid var(--border-soft)",
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                        <div>
+                          <div style={{ fontSize: 12, fontWeight: 900, color: "var(--text-main)" }}>방 비밀번호</div>
+                          <div style={{ ...S.small, fontSize: 11 }}>방장에게만 보이는 정보입니다.</div>
+                        </div>
+                        <button
+                          type="button"
+                          style={{ ...S.lightButton, padding: "6px 9px", fontSize: 12 }}
+                          onClick={() => setShowRoomPassword((v) => !v)}
+                        >
+                          {showRoomPassword ? "숨기기" : "확인"}
+                        </button>
+                      </div>
+                      <div style={{ marginTop: 8, fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace", fontSize: 18, fontWeight: 900, letterSpacing: 2 }}>
+                        {showRoomPassword ? selectedGroup.password || "저장된 비밀번호 없음" : "••••••••"}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedGroup?.ownerUid === uid && (
+                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border-soft)" }}>
+                      <div style={{ ...S.small, fontWeight: 900 }}>추방 멤버 관리</div>
+                      <p style={{ ...S.small, fontSize: 11, margin: "4px 0 8px" }}>
+                        추방된 멤버는 재입장 허용 전까지 방 ID와 비밀번호를 입력해도 들어올 수 없습니다.
+                      </p>
+                      <div style={{ display: "grid", gap: 6 }}>
+                        {selectedGroupBannedMembers.length ? (
+                          selectedGroupBannedMembers.map((member) => (
+                            <div
+                              key={member.uid}
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                gap: 8,
+                                padding: "8px 10px",
+                                borderRadius: 12,
+                                background: "#fff7ed",
+                                border: "1px solid #fed7aa",
+                              }}
+                            >
+                              <div style={{ minWidth: 0 }}>
+                                <b style={{ display: "block", fontSize: 12, color: "#9a3412" }}>
+                                  {member.displayName || member.userId || "이름 없음"}
+                                </b>
+                                <span style={{ ...S.small, fontSize: 10 }}>
+                                  추방 시간 {member.bannedAtLabel || "정보 없음"}
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => allowMemberReentry(selectedGroup, member)}
+                                style={{ ...S.lightButton, flex: "0 0 auto", padding: "6px 9px", fontSize: 11, color: "var(--accent)", background: "var(--accent-soft)", borderColor: "var(--accent-soft-3)" }}
+                              >
+                                재입장 허용
+                              </button>
+                            </div>
+                          ))
+                        ) : (
+                          <div style={{ padding: "8px 10px", borderRadius: 12, background: "var(--soft-bg)", border: "1px solid var(--border-soft)", ...S.small, fontSize: 11 }}>
+                            추방된 멤버가 없습니다.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {groupMsg && (
+                    <div
+                      style={{
+                        marginTop: 12,
+                        background: "var(--accent-soft)",
+                        color: "var(--accent-text)",
+                        padding: 10,
+                        borderRadius: 14,
+                        fontSize: 12,
+                        fontWeight: 800,
+                      }}
+                    >
+                      {groupMsg}
+                    </div>
+                  )}
+                </section>
+
+                <section style={{ ...S.card, padding: 16 }}>
+                  <div style={{ ...S.small, fontWeight: 900, color: "var(--accent)" }}>새 방 만들기</div>
+                  <h3 style={{ margin: "4px 0 10px", fontSize: 18 }}>스터디 그룹 생성</h3>
+
+                  <Field label="방 이름">
+                    <input
+                      style={S.input}
+                      value={createRoom.name}
+                      onChange={(e) => setCreateRoom((p) => ({ ...p, name: e.target.value }))}
+                      placeholder="예: 중간고사 스터디"
+                    />
+                  </Field>
+
+                  <Field label="방 설명">
+                    <input
+                      style={S.input}
+                      value={createRoom.description}
+                      onChange={(e) => setCreateRoom((p) => ({ ...p, description: e.target.value }))}
+                      placeholder="같이 공부할 친구들을 초대해 보세요"
+                    />
+                  </Field>
+
+                  <Field label="방 목표">
+                    <input
+                      style={S.input}
+                      value={createRoom.goal}
+                      onChange={(e) => setCreateRoom((p) => ({ ...p, goal: e.target.value }))}
+                      placeholder="예: 매일 3시간 이상"
+                    />
+                  </Field>
+
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
+                    <button type="button" style={S.lightButton} onClick={generateRoomCode}>
+                      ID 생성
+                    </button>
+                    <span style={{ ...S.small, fontSize: 11 }}>{pendingCode || "방 ID 자동 생성"}</span>
+                  </div>
+                  <p style={{ ...S.small, marginTop: 0 }}>{codeMsg || "방 ID를 먼저 생성하거나, 만들기 버튼을 누르면 자동 생성됩니다."}</p>
+
+                  <Field label="방 비밀번호">
+                    <input
+                      style={S.input}
+                      value={createRoom.password}
+                      onChange={(e) => setCreateRoom((p) => ({ ...p, password: normalizeRoomPw(e.target.value) }))}
+                      placeholder="숫자 8개"
+                    />
+                  </Field>
+
+                  <button type="button" style={{ ...S.button, width: "100%" }} onClick={createGroup}>
+                    방 만들기
+                  </button>
+                </section>
+
+                <section style={{ ...S.card, padding: 16 }}>
+                  <div style={{ ...S.small, fontWeight: 900, color: "var(--accent)" }}>방 입장</div>
+                  <h3 style={{ margin: "4px 0 10px", fontSize: 18 }}>방 ID로 입장</h3>
+
+                  <Field label="방 ID">
+                    <input
+                      style={S.input}
+                      value={joinRoom.code}
+                      onChange={(e) => setJoinRoom((p) => ({ ...p, code: normalizeRoomCode(e.target.value) }))}
+                      placeholder="예: STUDYABC"
+                    />
+                  </Field>
+
+                  <Field label="비밀번호">
+                    <input
+                      style={S.input}
+                      value={joinRoom.password}
+                      onChange={(e) => setJoinRoom((p) => ({ ...p, password: normalizeRoomPw(e.target.value) }))}
+                      placeholder="숫자 8개"
+                    />
+                  </Field>
+
+                  <button type="button" style={{ ...S.button, width: "100%" }} onClick={joinGroup}>
+                    방 입장하기
+                  </button>
+                </section>
+
+                {renderGroupRankCard()}
+              </main>
+            )}
+
+            <aside style={{ display: isCompactScreen && mobileTab !== "settings" ? "none" : "grid", gap: 12 }}>
               <section style={{ ...S.card, padding: 16 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                   <div>
@@ -3049,187 +3661,71 @@ export default function App() {
                     <h2 style={{ margin: "2px 0", fontSize: 20 }}>{displayName}</h2>
                     <p style={{ ...S.small, margin: 0 }}>@{userId}</p>
                   </div>
-                  <button style={S.lightButton} onClick={openProfile}>
-                    수정
-                  </button>
-                </div>
-              </section>
-
-              <section style={{ ...S.card, padding: 16 }}>
-                <div style={{ ...S.small, fontWeight: 900, color: "var(--accent)" }}>테마 색상</div>
-                <h3 style={{ margin: "4px 0 10px", fontSize: 18 }}>
-                  {currentTheme.label}
-                </h3>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
-                  {Object.entries(THEME_COLORS).map(([key, theme]) => (
-                    <button
-                      key={key}
-                      type="button"
-                      title={theme.label}
-                      onClick={() => changeTheme(key)}
-                      style={{
-                        position: "relative",
-                        height: 34,
-                        borderRadius: 14,
-                        border: themeKey === key ? `2px solid ${theme.accent}` : "1px solid #e5e8eb",
-                        background: theme.accent,
-                        cursor: "pointer",
-                        boxShadow: themeKey === key ? `0 0 0 4px ${theme.accentShadow}` : "none",
-                      }}
-                    >
-                      <span style={{ position: "absolute", opacity: 0 }}>{theme.label}</span>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                    {!isCompactScreen && (
+                      <button
+                        type="button"
+                        style={{
+                          ...S.lightButton,
+                          background: rightPanelEditOpen ? "var(--accent)" : "var(--input-bg)",
+                          color: rightPanelEditOpen ? "white" : "var(--text-main)",
+                          padding: "8px 10px",
+                        }}
+                        onClick={() => setRightPanelEditOpen((v) => !v)}
+                      >
+                        {rightPanelEditOpen ? "편집 완료" : "패널 편집"}
+                      </button>
+                    )}
+                    <button style={{ ...S.lightButton, padding: "8px 10px" }} onClick={openProfile}>
+                      수정
                     </button>
-                  ))}
-                </div>
-                <p style={{ ...S.small, margin: "8px 0 0" }}>
-                  빨강, 초록, 파랑, 보라, 검정 중 원하는 색으로 앱의 주요 색상을 바꿀 수 있습니다.
-                </p>
-
-                </section>
-
-              <section
-                style={{
-                  background: "linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%)",
-                  color: "white",
-                  borderRadius: 28,
-                  padding: "20px 18px",
-                  boxShadow: "0 18px 42px var(--accent-shadow)",
-                }}
-              >
-                <div style={{ fontSize: 12, opacity: 0.78, fontWeight: 900 }}>오늘 총 공부시간</div>
-                <div style={{ fontSize: "clamp(44px, 5vw, 68px)", fontWeight: 950, lineHeight: 0.98, letterSpacing: -2, marginTop: 6 }}>
-                  {formatTimer(todayTotalWithLive)}
-                </div>
-                <div style={{ fontSize: 12, opacity: 0.78, marginTop: 8 }}>
-                  {studying ? "현재 진행 중인 순공시간 포함" : "오늘 저장된 기록 기준"}
+                  </div>
                 </div>
               </section>
 
-              <section style={{ ...S.card, padding: 16 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-                  <div>
-                    <div style={{ ...S.small, fontWeight: 900, color: "var(--accent)" }}>주간 날씨</div>
-                    <h3 style={{ margin: "4px 0 0", fontSize: 18 }}>오늘부터 7일 예보</h3>
+              {!isCompactScreen && rightPanelEditOpen && (
+                <section style={{ ...S.card, padding: 12, border: "1px solid var(--accent-soft-3)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                    <div>
+                      <div style={{ ...S.small, fontWeight: 900, color: "var(--accent)" }}>오른쪽 패널 편집 중</div>
+                      <div style={{ ...S.small, fontSize: 11, marginTop: 2 }}>
+                        각 섹션 위의 ↑↓와 삭제 버튼으로 배치를 바꿀 수 있습니다.
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      style={{ ...S.lightButton, padding: "7px 9px", fontSize: 11 }}
+                      onClick={resetRightPanelLayout}
+                    >
+                      초기화
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    style={{ ...S.lightButton, padding: "8px 10px", fontSize: 12 }}
-                    onClick={loadWeather}
-                    disabled={weatherLoading}
-                  >
-                    {weatherLoading ? "불러오는 중" : weatherDays.length ? "새로고침" : "불러오기"}
-                  </button>
-                </div>
 
-                <div
-                  style={{
-                    margin: "10px 0",
-                    padding: "10px 12px",
-                    borderRadius: 16,
-                    background: "var(--accent-soft)",
-                    border: "1px solid var(--accent-soft-2)",
-                    color: "var(--accent-text)",
-                    fontSize: 12,
-                    fontWeight: 800,
-                    lineHeight: 1.45,
-                  }}
-                >
-                  {weatherMsg}
-                </div>
-
-                {weatherDays.length > 0 && (
-                  <div style={{ display: "grid", gap: 8, maxHeight: 350, overflowY: "auto", paddingRight: 2 }}>
-                    {weatherDays.map((day) => {
-                      const shouldCarryUmbrella =
-                        Number(day.rain) >= 50 ||
-                        (Number(day.rain) >= 30 && Number(day.rainAmount) >= 3);
-
-                      return (
-                        <div
-                          key={day.date}
+                  {hiddenRightCards.length > 0 && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+                      {hiddenRightCards.map((cardId) => (
+                        <button
+                          key={cardId}
+                          type="button"
+                          onClick={() => restoreRightPanelCard(cardId)}
                           style={{
-                            padding: "10px 11px",
-                            borderRadius: 16,
-                            background: shouldCarryUmbrella ? "#fff7ed" : "var(--soft-bg)",
-                            border: shouldCarryUmbrella ? "1px solid #fed7aa" : "1px solid var(--border-soft)",
+                            ...S.lightButton,
+                            padding: "6px 8px",
+                            fontSize: 11,
+                            color: "var(--accent)",
+                            background: "var(--accent-soft)",
+                            borderColor: "var(--accent-soft-3)",
                           }}
                         >
-                          <div
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns: "52px 1fr auto",
-                              alignItems: "center",
-                              gap: 8,
-                            }}
-                          >
-                            <b style={{ color: shouldCarryUmbrella ? "#c2410c" : "var(--accent-text)", fontSize: 13 }}>
-                              {day.label}
-                            </b>
-                            <div style={{ minWidth: 0 }}>
-                              <div style={{ fontSize: 13, fontWeight: 900, color: "var(--text-main)" }}>
-                                {day.weather}
-                              </div>
-                              <div style={{ ...S.small, fontSize: 11 }}>
-                                {day.date}
-                              </div>
-                            </div>
-                            <div style={{ textAlign: "right", fontWeight: 950, color: "var(--text-main)" }}>
-                              {day.max}° / {day.min}°
-                            </div>
-                          </div>
-
-                          <div
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns: "1fr 1fr 1fr",
-                              gap: 6,
-                              marginTop: 8,
-                              fontSize: 11,
-                            }}
-                          >
-                            <div style={{ color: "var(--text-sub)" }}>강수 {day.rain}%</div>
-                            <div style={{ color: "var(--text-sub)" }}>강수량 {Number(day.rainAmount).toFixed(1)}mm</div>
-                            <div style={{ color: "var(--text-sub)" }}>바람 {day.wind}km/h</div>
-                          </div>
-
-                          {shouldCarryUmbrella && (
-                            <div
-                              style={{
-                                marginTop: 7,
-                                padding: "6px 8px",
-                                borderRadius: 12,
-                                background: "rgba(251,146,60,0.14)",
-                                color: "#c2410c",
-                                fontSize: 11,
-                                fontWeight: 900,
-                              }}
-                            >
-                              우산을 챙기는 것이 좋습니다.
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </section>
-
-              <section style={{ ...S.card, padding: 16 }}>
-                <div style={{ ...S.small, fontWeight: 900, color: "var(--accent)" }}>오늘 할 일</div>
-                <h3 style={{ margin: "4px 0 10px", fontSize: 18 }}>선택한 D-DAY</h3>
-                {selectedDday ? (
-                  <div style={{ background: "var(--app-bg)", borderRadius: 16, padding: 12 }}>
-                    <b>{selectedDday.title}</b>
-                    <div style={{ ...S.small, marginTop: 4 }}>
-                      {formatDday(selectedDday.date)} · {selectedDday.category} · 중요도 {selectedDday.priority}
+                          + {RIGHT_PANEL_LABELS[cardId]}
+                        </button>
+                      ))}
                     </div>
-                  </div>
-                ) : (
-                  <p style={S.small}>D-DAY를 설정해두면 여기에서 바로 확인할 수 있습니다.</p>
-                )}
-              </section>
+                  )}
+                </section>
+              )}
 
-              {renderGroupRankCard()}
+              {rightPanelOrder.map((cardId) => renderRightPanelCard(cardId))}
 
             </aside>
           </div>
@@ -3244,7 +3740,7 @@ export default function App() {
               bottom: 10,
               zIndex: 70,
               display: "grid",
-              gridTemplateColumns: "repeat(5, 1fr)",
+              gridTemplateColumns: "repeat(3, 1fr)",
               gap: 6,
               padding: 8,
               borderRadius: 24,
@@ -3255,58 +3751,38 @@ export default function App() {
             }}
           >
             {[
-              { label: "내 정보", icon: ICONS.profile, action: openProfile },
-              { label: "방", icon: ICONS.room, action: () => setRoomMenuOpen(true) },
-              { label: "플래너", icon: ICONS.planner, action: () => setPlannerOpen(true) },
-              { label: "채팅", icon: ICONS.chat, action: () => setChatOpen(true) },
-              { label: "D-DAY", icon: ICONS.home, action: openNewDday },
-            ].map((item) => (
-              <button
-                key={item.label}
-                type="button"
-                onClick={item.action}
-                style={{
-                  border: "none",
-                  background: "transparent",
-                  padding: "7px 4px",
-                  borderRadius: 18,
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 3,
-                  color: "var(--text-sub)",
-                  fontSize: 10,
-                  fontWeight: 850,
-                  cursor: "pointer",
-                  position: "relative",
-                }}
-              >
-                <IconImage src={item.icon} alt={item.label} size={24} />
-                <span>{item.label}</span>
-                {item.label === "채팅" && unread > 0 && chatNotice && (
-                  <span
-                    style={{
-                      position: "absolute",
-                      top: 2,
-                      right: 12,
-                      minWidth: 18,
-                      height: 18,
-                      padding: "0 4px",
-                      borderRadius: 999,
-                      background: "#f59e0b",
-                      color: "white",
-                      fontSize: 10,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {unread}
-                  </span>
-                )}
-              </button>
-            ))}
+              { id: "home", label: "홈", icon: ICONS.home },
+              { id: "group", label: "그룹", icon: ICONS.room },
+              { id: "settings", label: "설정", icon: ICONS.profile },
+            ].map((item) => {
+              const active = mobileTab === item.id;
+
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setMobileTab(item.id)}
+                  style={{
+                    border: "none",
+                    background: active ? "var(--accent-soft)" : "transparent",
+                    padding: "8px 4px",
+                    borderRadius: 18,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 4,
+                    color: active ? "var(--accent-text)" : "var(--text-sub)",
+                    fontSize: 11,
+                    fontWeight: 900,
+                    cursor: "pointer",
+                  }}
+                >
+                  <IconImage src={item.icon} alt={item.label} size={25} />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
           </nav>
         )}
 
