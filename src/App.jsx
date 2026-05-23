@@ -37,20 +37,27 @@ const db = getFirestore(app);
 
 const S = {
   page: {
-    minHeight: "100vh",
-    background: "#f4f4f5",
-    color: "#18181b",
-    fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-    padding: 20,
-  },
-  wrap: { maxWidth: 1180, margin: "0 auto" },
-  card: {
-    background: "white",
-    border: "1px solid #e4e4e7",
-    borderRadius: 24,
-    padding: 22,
-    boxShadow: "0 8px 24px rgba(0,0,0,0.04)",
-  },
+  minHeight: "100vh",
+  width: "100%",
+  background: "#f4f4f5",
+  color: "#18181b",
+  fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+  padding: 0,
+  margin: 0,
+  boxSizing: "border-box",
+  overflowX: "hidden",
+},
+wrap: {
+  width: "100%",
+  maxWidth: "none",
+  minHeight: "100vh",
+  margin: 0,
+  background: "#f4f4f5",
+  borderRadius: 0,
+  padding: "clamp(12px, 3vw, 24px)",
+  boxSizing: "border-box",
+  overflowX: "hidden",
+},
   input: {
     width: "100%",
     boxSizing: "border-box",
@@ -1380,7 +1387,7 @@ export default function App() {
           )}
         </section>
 
-        <main style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 18 }}>
+        <main className="app-main">
           <section style={S.card}>
             <h2>공부 설정</h2>
             <div style={S.grid2}>
