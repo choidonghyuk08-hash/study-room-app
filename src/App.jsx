@@ -1984,6 +1984,151 @@ export default function App() {
     </div>
   );
 
+  const renderChatNoticeSettingsCard = () => (
+    <section style={{ ...S.card, padding: 16 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
+        <div>
+          <div style={{ ...S.small, fontWeight: 900, color: "var(--accent)" }}>공부 중 채팅 알림</div>
+          <h3 style={{ margin: "4px 0 0", fontSize: 18 }}>
+            현재 {chatNotice ? "켜짐" : "꺼짐"}
+          </h3>
+        </div>
+        <button
+          style={{
+            ...S.lightButton,
+            background: chatNotice ? "var(--text-main)" : "var(--input-bg)",
+            color: chatNotice ? "white" : "var(--text-main)",
+          }}
+          onClick={() => setChatNotice((v) => !v)}
+        >
+          {chatNotice ? "알림 끄기" : "알림 켜기"}
+        </button>
+      </div>
+      <p style={{ ...S.small, margin: "8px 0 0", lineHeight: 1.4 }}>
+        알림만 표시됩니다. 순공 중에는 설정을 켜도 꺼도 채팅 내용은 볼 수 없습니다.
+      </p>
+    </section>
+  );
+
+  const renderMobileChatSection = () => (
+    <main style={{ minWidth: 0, display: isCompactScreen && mobileTab === "chat" ? "grid" : "none", gap: 12 }}>
+      <section style={{ ...S.card, padding: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 12 }}>
+          <div>
+            <div style={{ ...S.small, fontWeight: 900, color: "var(--accent)" }}>채팅</div>
+            <h2 style={{ margin: "4px 0 0", fontSize: 22 }}>
+              {currentGroup?.name || "입장한 방 없음"}
+            </h2>
+          </div>
+          {chatNotice && unread > 0 && (
+            <div
+              style={{
+                minWidth: 24,
+                height: 24,
+                padding: "0 8px",
+                borderRadius: 999,
+                background: "#f59e0b",
+                color: "white",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 12,
+                fontWeight: 900,
+              }}
+            >
+              {unread}
+            </div>
+          )}
+        </div>
+
+        {studying && (
+          <div
+            style={{
+              background: "#fef3c7",
+              color: "#92400e",
+              padding: 12,
+              borderRadius: 16,
+              marginBottom: 12,
+              fontSize: 13,
+              fontWeight: 800,
+            }}
+          >
+            순공 측정 중에는 채팅 내용을 볼 수 없습니다.
+            {chatNotice && unread > 0 && <div>새 메시지 {unread}개 도착</div>}
+          </div>
+        )}
+
+        {!enteredGroupId && (
+          <div
+            style={{
+              background: "var(--soft-bg)",
+              border: "1px solid var(--border-soft)",
+              borderRadius: 16,
+              padding: 12,
+              marginBottom: 12,
+              ...S.small,
+            }}
+          >
+            채팅을 사용하려면 먼저 그룹에 입장해 주세요.
+          </div>
+        )}
+
+        <div
+          style={{
+            height: "55vh",
+            minHeight: 320,
+            overflowY: "auto",
+            border: "1px solid var(--border)",
+            borderRadius: 18,
+            padding: 12,
+            background: "var(--soft-bg)",
+          }}
+        >
+          {!studying &&
+            messages.map((m) => (
+              <div
+                key={m.id}
+                style={{
+                  display: "flex",
+                  justifyContent: m.senderUid === uid ? "flex-end" : "flex-start",
+                  marginBottom: 10,
+                }}
+              >
+                <div
+                  style={{
+                    maxWidth: "78%",
+                    background: m.senderUid === uid ? "var(--text-main)" : "var(--input-bg)",
+                    color: m.senderUid === uid ? "white" : "var(--text-main)",
+                    padding: 12,
+                    borderRadius: 18,
+                    fontSize: 14,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  <div style={{ fontSize: 11, opacity: 0.7 }}>{m.senderName}</div>
+                  {m.text}
+                </div>
+              </div>
+            ))}
+        </div>
+
+        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+          <input
+            style={S.input}
+            value={chatText}
+            disabled={studying || !enteredGroupId}
+            onChange={(e) => setChatText(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+            placeholder={studying ? "순공 중에는 채팅할 수 없습니다" : "메시지를 입력해 주세요"}
+          />
+          <button style={S.button} disabled={studying || !enteredGroupId} onClick={sendMessage}>
+            전송
+          </button>
+        </div>
+      </section>
+    </main>
+  );
+
   const renderRightPanelCard = (cardId) => {
     if (hiddenRightCards.includes(cardId)) return null;
 
@@ -2185,6 +2330,8 @@ export default function App() {
     }
 
     if (cardId === "rank") {
+      if (isCompactScreen) return null;
+
       return (
         <RightPanelItem key={cardId} cardId={cardId}>
           {renderGroupRankCard()}
@@ -2962,7 +3109,9 @@ export default function App() {
                   ["현재 과목", subject, formatTimer(currentSessionSeconds), "#00a661"],
                   ["과목 오늘 누적", formatStudy(currentSubjectTodayTotal), subject, "#8b5cf6"],
                   ["그룹 오늘 합계", formatTimer(groupTodayTotal), currentGroup?.name || "방 없음", "#f97316"],
-                ].map(([title, value, desc, color]) => (
+                ]
+                  .filter(([title]) => !(isCompactScreen && title === "그룹 오늘 합계"))
+                  .map(([title, value, desc, color]) => (
                   <div
                     key={title}
                     style={{
@@ -3295,39 +3444,6 @@ export default function App() {
                     <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border-soft)" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
                         <div>
-                          <div style={{ ...S.small, fontWeight: 900 }}>공부 중 채팅 알림</div>
-                          <div
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: 6,
-                              marginTop: 4,
-                              padding: "4px 8px",
-                              borderRadius: 999,
-                              fontSize: 11,
-                              fontWeight: 900,
-                              background: chatNotice ? "#e8f7ee" : "#f2f4f6",
-                              color: chatNotice ? "#008c54" : "#6b7684",
-                            }}
-                          >
-                            현재 {chatNotice ? "켜짐" : "꺼짐"}
-                          </div>
-                        </div>
-                        <button
-                          style={{ ...S.lightButton, background: chatNotice ? "#191f28" : "white", color: chatNotice ? "white" : "#191f28" }}
-                          onClick={() => setChatNotice((v) => !v)}
-                        >
-                          {chatNotice ? "알림 끄기" : "알림 켜기"}
-                        </button>
-                      </div>
-                      <p style={{ ...S.small, margin: "7px 0 0", lineHeight: 1.35 }}>
-                        알림만 표시됩니다. 순공 중에는 설정을 켜도 꺼도 채팅 내용은 볼 수 없습니다.
-                      </p>
-                    </div>
-
-                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border-soft)" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
-                        <div>
                           <div style={{ ...S.small, fontWeight: 900 }}>백색소음</div>
                           <div
                             style={{
@@ -3653,6 +3769,14 @@ export default function App() {
               </main>
             )}
 
+            {isCompactScreen && mobileTab === "planner" && (
+              <main style={{ minWidth: 0, display: "grid", gap: 12 }}>
+                {renderTodayPlannerCompact(todayRecords, todayTotal, today)}
+              </main>
+            )}
+
+            {renderMobileChatSection()}
+
             <aside style={{ display: isCompactScreen && mobileTab !== "settings" ? "none" : "grid", gap: 12 }}>
               <section style={{ ...S.card, padding: 16 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
@@ -3682,6 +3806,8 @@ export default function App() {
                   </div>
                 </div>
               </section>
+
+              {renderChatNoticeSettingsCard()}
 
               {!isCompactScreen && rightPanelEditOpen && (
                 <section style={{ ...S.card, padding: 12, border: "1px solid var(--accent-soft-3)" }}>
@@ -3740,7 +3866,7 @@ export default function App() {
               bottom: 10,
               zIndex: 70,
               display: "grid",
-              gridTemplateColumns: "repeat(3, 1fr)",
+              gridTemplateColumns: "repeat(5, 1fr)",
               gap: 6,
               padding: 8,
               borderRadius: 24,
@@ -3753,6 +3879,8 @@ export default function App() {
             {[
               { id: "home", label: "홈", icon: ICONS.home },
               { id: "group", label: "그룹", icon: ICONS.room },
+              { id: "planner", label: "플래너", icon: ICONS.planner },
+              { id: "chat", label: "채팅", icon: ICONS.chat },
               { id: "settings", label: "설정", icon: ICONS.profile },
             ].map((item) => {
               const active = mobileTab === item.id;
@@ -3776,10 +3904,32 @@ export default function App() {
                     fontSize: 11,
                     fontWeight: 900,
                     cursor: "pointer",
+                    position: "relative",
                   }}
                 >
                   <IconImage src={item.icon} alt={item.label} size={25} />
                   <span>{item.label}</span>
+                  {item.id === "chat" && unread > 0 && chatNotice && (
+                    <span
+                      style={{
+                        position: "absolute",
+                        top: 2,
+                        right: 10,
+                        minWidth: 18,
+                        height: 18,
+                        padding: "0 4px",
+                        borderRadius: 999,
+                        background: "#f59e0b",
+                        color: "white",
+                        fontSize: 10,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {unread}
+                    </span>
+                  )}
                 </button>
               );
             })}
