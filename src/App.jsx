@@ -291,6 +291,46 @@ const SOUND_OPTIONS = [
   { id: "airplane", label: "비행기 소리", src: "/sounds/airplane.mp3", notice: "초반에 안내방송이 들어 있습니다. 집중 전 미리 확인해 주세요." },
 ];
 
+const WEATHER_CODE_LABELS = {
+  0: "맑음",
+  1: "대체로 맑음",
+  2: "구름 조금",
+  3: "흐림",
+  45: "안개",
+  48: "서리 안개",
+  51: "약한 이슬비",
+  53: "이슬비",
+  55: "강한 이슬비",
+  56: "어는 이슬비",
+  57: "강한 어는 이슬비",
+  61: "약한 비",
+  63: "비",
+  65: "강한 비",
+  66: "어는 비",
+  67: "강한 어는 비",
+  71: "약한 눈",
+  73: "눈",
+  75: "강한 눈",
+  77: "싸락눈",
+  80: "약한 소나기",
+  81: "소나기",
+  82: "강한 소나기",
+  85: "약한 눈 소나기",
+  86: "강한 눈 소나기",
+  95: "천둥번개",
+  96: "우박 동반 천둥번개",
+  99: "강한 우박 동반 천둥번개",
+};
+
+const weatherLabel = (code) => WEATHER_CODE_LABELS[code] || "날씨 정보";
+
+const weatherDayLabel = (date, index) => {
+  if (index === 0) return "오늘";
+  if (index === 1) return "내일";
+  if (index === 2) return "모레";
+  return date;
+};
+
 function Modal({ title, onClose, children }) {
   return (
     <div style={S.modalBg}>
@@ -460,6 +500,11 @@ export default function App() {
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [memos, setMemos] = useState({});
 
+  const [weatherDays, setWeatherDays] = useState([]);
+  const [weatherLoading, setWeatherLoading] = useState(false);
+  const [weatherMsg, setWeatherMsg] = useState("위치 권한을 허용하면 주간 날씨를 볼 수 있습니다.");
+  const [weatherToast, setWeatherToast] = useState("");
+
   const uid = user?.uid || "";
   const userId = profile?.userId || "";
   const displayName = profile?.displayName || userId || "나";
@@ -470,6 +515,16 @@ export default function App() {
     (a, b) => (b.bannedAtMs || 0) - (a.bannedAtMs || 0)
   );
   const currentSound = SOUND_OPTIONS.find((item) => item.id === soundType) || SOUND_OPTIONS[0];
+
+  useEffect(() => {
+    if (!weatherToast) return;
+
+    const timer = setTimeout(() => {
+      setWeatherToast("");
+    }, 5500);
+
+    return () => clearTimeout(timer);
+  }, [weatherToast]);
 
   useEffect(() => {
     setShowRoomPassword(false);
@@ -1512,6 +1567,90 @@ export default function App() {
     );
   };
 
+  const loadWeather = () => {
+    const geo = typeof window !== "undefined" && window.navigator && window.navigator.geolocation;
+
+    if (!geo) {
+      setWeatherMsg("이 브라우저에서는 위치 기반 날씨를 지원하지 않습니다.");
+      return;
+    }
+
+    setWeatherLoading(true);
+    setWeatherMsg("현재 위치를 확인하고 있습니다.");
+
+    geo.getCurrentPosition(
+      async (position) => {
+        try {
+          const latitude = position.coords.latitude;
+          const longitude = position.coords.longitude;
+          const url =
+            "https://api.open-meteo.com/v1/forecast?latitude=" +
+            latitude +
+            "&longitude=" +
+            longitude +
+            "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,wind_speed_10m_max" +
+            "&forecast_days=7&timezone=auto";
+
+          const response = await fetch(url);
+          if (!response.ok) throw new Error("weather-fetch-failed");
+
+          const data = await response.json();
+          const daily = data.daily || {};
+          const times = Array.isArray(daily.time) ? daily.time : [];
+
+          const nextDays = times.slice(0, 7).map((date, index) => {
+            const codeList = daily.weather_code || [];
+            const maxList = daily.temperature_2m_max || [];
+            const minList = daily.temperature_2m_min || [];
+            const rainList = daily.precipitation_probability_max || [];
+            const rainAmountList = daily.precipitation_sum || [];
+            const windList = daily.wind_speed_10m_max || [];
+
+            return {
+              date,
+              label: weatherDayLabel(date, index),
+              code: codeList[index],
+              weather: weatherLabel(codeList[index]),
+              max: Math.round(Number(maxList[index] ?? 0)),
+              min: Math.round(Number(minList[index] ?? 0)),
+              rain: rainList[index] ?? "-",
+              rainAmount: Number(rainAmountList[index] ?? 0),
+              wind: Math.round(Number(windList[index] ?? 0)),
+            };
+          });
+
+          const rainyDays = nextDays.filter((day) => {
+            const rainPercent = Number(day.rain);
+            return rainPercent >= 50 || (rainPercent >= 30 && day.rainAmount >= 3);
+          });
+
+          setWeatherDays(nextDays);
+
+          if (rainyDays.length) {
+            const umbrellaText = rainyDays
+              .map((day) => `${day.label}(${day.rain}%·${day.rainAmount.toFixed(1)}mm)`)
+              .join(", ");
+            setWeatherMsg("현재 위치 기준 7일 예보입니다. 비 가능성이 있는 날은 아래에서 강조됩니다.");
+            setWeatherToast(`우산 추천: ${umbrellaText}에 비 가능성이 있습니다.`);
+          } else {
+            setWeatherMsg("현재 위치 기준 7일 예보입니다. 일주일 안에는 우산이 꼭 필요할 정도의 비 가능성이 낮습니다.");
+            setWeatherToast("이번 주는 우산이 꼭 필요할 정도의 비 가능성이 낮습니다.");
+          }
+        } catch (error) {
+          console.error(error);
+          setWeatherMsg("날씨를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+        } finally {
+          setWeatherLoading(false);
+        }
+      },
+      () => {
+        setWeatherLoading(false);
+        setWeatherMsg("위치 권한을 허용해야 날씨를 볼 수 있습니다.");
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 1000 * 60 * 20 }
+    );
+  };
+
   const openNewDday = () => {
     setEditingDdayId("");
     setDdayForm({
@@ -2252,6 +2391,29 @@ export default function App() {
   return (
     <div style={{ ...S.page, ...themeVars }}>
       <audio ref={soundRef} src={currentSound.src} loop preload="auto" />
+
+      {weatherToast && (
+        <div
+          style={{
+            position: "fixed",
+            top: 18,
+            right: 18,
+            zIndex: 80,
+            maxWidth: 360,
+            padding: "12px 14px",
+            borderRadius: 18,
+            background: "rgba(25,31,40,0.94)",
+            color: "white",
+            boxShadow: "0 18px 42px rgba(0,0,0,0.22)",
+            fontSize: 13,
+            fontWeight: 850,
+            lineHeight: 1.45,
+          }}
+        >
+          {weatherToast}
+        </div>
+      )}
+
       <div
         style={{
           display: "grid",
@@ -2263,7 +2425,7 @@ export default function App() {
         {!isCompactScreen && (
           <aside
             style={{
-              borderRight: "1px solid #eef1f4",
+              borderRight: "1px solid var(--border-soft)",
               background: "var(--card-bg-solid)",
               display: "flex",
               flexDirection: "column",
@@ -2272,7 +2434,10 @@ export default function App() {
               padding: "14px 0",
               position: "sticky",
               top: 0,
+              alignSelf: "start",
               height: "100vh",
+              zIndex: 40,
+              boxSizing: "border-box",
             }}
           >
             <button
@@ -2934,6 +3099,115 @@ export default function App() {
                 <div style={{ fontSize: 12, opacity: 0.78, marginTop: 8 }}>
                   {studying ? "현재 진행 중인 순공시간 포함" : "오늘 저장된 기록 기준"}
                 </div>
+              </section>
+
+              <section style={{ ...S.card, padding: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                  <div>
+                    <div style={{ ...S.small, fontWeight: 900, color: "var(--accent)" }}>주간 날씨</div>
+                    <h3 style={{ margin: "4px 0 0", fontSize: 18 }}>오늘부터 7일 예보</h3>
+                  </div>
+                  <button
+                    type="button"
+                    style={{ ...S.lightButton, padding: "8px 10px", fontSize: 12 }}
+                    onClick={loadWeather}
+                    disabled={weatherLoading}
+                  >
+                    {weatherLoading ? "불러오는 중" : weatherDays.length ? "새로고침" : "불러오기"}
+                  </button>
+                </div>
+
+                <div
+                  style={{
+                    margin: "10px 0",
+                    padding: "10px 12px",
+                    borderRadius: 16,
+                    background: "var(--accent-soft)",
+                    border: "1px solid var(--accent-soft-2)",
+                    color: "var(--accent-text)",
+                    fontSize: 12,
+                    fontWeight: 800,
+                    lineHeight: 1.45,
+                  }}
+                >
+                  {weatherMsg}
+                </div>
+
+                {weatherDays.length > 0 && (
+                  <div style={{ display: "grid", gap: 8, maxHeight: 350, overflowY: "auto", paddingRight: 2 }}>
+                    {weatherDays.map((day) => {
+                      const shouldCarryUmbrella =
+                        Number(day.rain) >= 50 ||
+                        (Number(day.rain) >= 30 && Number(day.rainAmount) >= 3);
+
+                      return (
+                        <div
+                          key={day.date}
+                          style={{
+                            padding: "10px 11px",
+                            borderRadius: 16,
+                            background: shouldCarryUmbrella ? "#fff7ed" : "var(--soft-bg)",
+                            border: shouldCarryUmbrella ? "1px solid #fed7aa" : "1px solid var(--border-soft)",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "52px 1fr auto",
+                              alignItems: "center",
+                              gap: 8,
+                            }}
+                          >
+                            <b style={{ color: shouldCarryUmbrella ? "#c2410c" : "var(--accent-text)", fontSize: 13 }}>
+                              {day.label}
+                            </b>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontSize: 13, fontWeight: 900, color: "var(--text-main)" }}>
+                                {day.weather}
+                              </div>
+                              <div style={{ ...S.small, fontSize: 11 }}>
+                                {day.date}
+                              </div>
+                            </div>
+                            <div style={{ textAlign: "right", fontWeight: 950, color: "var(--text-main)" }}>
+                              {day.max}° / {day.min}°
+                            </div>
+                          </div>
+
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "1fr 1fr 1fr",
+                              gap: 6,
+                              marginTop: 8,
+                              fontSize: 11,
+                            }}
+                          >
+                            <div style={{ color: "var(--text-sub)" }}>강수 {day.rain}%</div>
+                            <div style={{ color: "var(--text-sub)" }}>강수량 {Number(day.rainAmount).toFixed(1)}mm</div>
+                            <div style={{ color: "var(--text-sub)" }}>바람 {day.wind}km/h</div>
+                          </div>
+
+                          {shouldCarryUmbrella && (
+                            <div
+                              style={{
+                                marginTop: 7,
+                                padding: "6px 8px",
+                                borderRadius: 12,
+                                background: "rgba(251,146,60,0.14)",
+                                color: "#c2410c",
+                                fontSize: 11,
+                                fontWeight: 900,
+                              }}
+                            >
+                              우산을 챙기는 것이 좋습니다.
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </section>
 
               <section style={{ ...S.card, padding: 16 }}>
