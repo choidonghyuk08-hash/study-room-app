@@ -394,6 +394,21 @@ export default function App() {
   const [authMode, setAuthMode] = useState("login");
   const [authMsg, setAuthMsg] = useState("");
   const [mobileTab, setMobileTab] = useState("home");
+  const [desktopEasyMode, setDesktopEasyMode] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("studyRoomDesktopEasyMode") === "true";
+  });
+  const easyLayout = easyLayout || desktopEasyMode;
+  const toggleDesktopMode = () => {
+    setDesktopEasyMode((prev) => {
+      const next = !prev;
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("studyRoomDesktopEasyMode", String(next));
+      }
+      setMobileTab("home");
+      return next;
+    });
+  };
   const [themeKey, setThemeKey] = useState(() => {
     if (typeof window === "undefined") return "blue";
     return window.localStorage.getItem("studyRoomTheme") || "blue";
@@ -1803,7 +1818,7 @@ export default function App() {
               공부 기준일은 06:00부터 다음 날 06:00까지입니다.
             </p>
           </div>
-          <div style={{ textAlign: isCompactScreen ? "left" : "right", width: isCompactScreen ? "100%" : "auto" }}>
+          <div style={{ textAlign: easyLayout ? "left" : "right", width: easyLayout ? "100%" : "auto" }}>
             <b style={{ color: "var(--text-main)", display: "block" }}>{formatTimer(groupTodayTotal)}</b>
             <div style={{ ...S.small, fontSize: 10 }}>
               <span style={{ color: "#22c55e", fontWeight: 900 }}>●</span> 접속 중
@@ -1979,7 +1994,7 @@ export default function App() {
 
   const RightPanelItem = ({ cardId, children }) => (
     <div>
-      {!isCompactScreen && rightPanelEditOpen && <RightPanelControlBar cardId={cardId} />}
+      {!easyLayout && rightPanelEditOpen && <RightPanelControlBar cardId={cardId} />}
       {children}
     </div>
   );
@@ -2011,7 +2026,7 @@ export default function App() {
   );
 
   const renderMobileChatSection = () => (
-    <main style={{ minWidth: 0, display: isCompactScreen && mobileTab === "chat" ? "grid" : "none", gap: 12 }}>
+    <main style={{ minWidth: 0, display: easyLayout && mobileTab === "chat" ? "grid" : "none", gap: 12 }}>
       <section style={{ ...S.card, padding: 16 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 12 }}>
           <div>
@@ -2330,7 +2345,7 @@ export default function App() {
     }
 
     if (cardId === "rank") {
-      if (isCompactScreen) return null;
+      if (easyLayout) return null;
 
       return (
         <RightPanelItem key={cardId} cardId={cardId}>
@@ -2386,7 +2401,7 @@ export default function App() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: isCompactScreen ? "1fr" : "minmax(0, 1.15fr) minmax(190px, 0.85fr)",
+            gridTemplateColumns: easyLayout ? "1fr" : "minmax(0, 1.15fr) minmax(190px, 0.85fr)",
             gap: 10,
             flex: 1,
             minHeight: 0,
@@ -2915,11 +2930,11 @@ export default function App() {
         <div
           style={{
             position: "fixed",
-            top: isCompactScreen ? 12 : 18,
-            right: isCompactScreen ? 10 : 18,
-            left: isCompactScreen ? 10 : "auto",
+            top: easyLayout ? 12 : 18,
+            right: easyLayout ? 10 : 18,
+            left: easyLayout ? 10 : "auto",
             zIndex: 80,
-            maxWidth: isCompactScreen ? "none" : 360,
+            maxWidth: easyLayout ? "none" : 360,
             padding: "12px 14px",
             borderRadius: 18,
             background: "rgba(25,31,40,0.94)",
@@ -2937,12 +2952,12 @@ export default function App() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: isCompactScreen ? "1fr" : "58px minmax(0, 1fr)",
+          gridTemplateColumns: easyLayout ? "1fr" : "58px minmax(0, 1fr)",
           minHeight: "100vh",
           background: "var(--app-bg)",
         }}
       >
-        {!isCompactScreen && (
+        {!easyLayout && (
           <aside
             style={{
               borderRight: "1px solid var(--border-soft)",
@@ -3013,15 +3028,15 @@ export default function App() {
           </aside>
         )}
 
-        <div style={{ ...S.wrap, padding: isCompactScreen ? "10px 10px 92px" : "10px 18px 18px" }}>
+        <div style={{ ...S.wrap, padding: easyLayout ? "10px 10px 92px" : "10px 18px 18px" }}>
           <div
             style={{
               minHeight: 44,
-              height: isCompactScreen ? "auto" : 44,
+              height: easyLayout ? "auto" : 44,
               display: "flex",
-              alignItems: isCompactScreen ? "flex-start" : "center",
+              alignItems: easyLayout ? "flex-start" : "center",
               justifyContent: "space-between",
-              gap: isCompactScreen ? 8 : 12,
+              gap: easyLayout ? 8 : 12,
               marginBottom: 12,
               flexWrap: "wrap",
             }}
@@ -3063,9 +3078,25 @@ export default function App() {
               </div>
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: 8, width: isCompactScreen ? "100%" : "auto" }}>
+            <div style={{ display: easyLayout && mobileTab !== "home" ? "none" : "flex", alignItems: "center", gap: 8, width: easyLayout ? "100%" : "auto" }}>
+              {!isCompactScreen && (
+                <button
+                  type="button"
+                  style={{
+                    ...S.lightButton,
+                    height: 38,
+                    padding: "7px 10px",
+                    flex: "0 0 auto",
+                    background: desktopEasyMode ? "var(--accent)" : "var(--input-bg)",
+                    color: desktopEasyMode ? "white" : "var(--text-main)",
+                  }}
+                  onClick={toggleDesktopMode}
+                >
+                  {desktopEasyMode ? "고급 화면" : "쉬운 화면"}
+                </button>
+              )}
               <select
-                style={{ ...S.input, flex: isCompactScreen ? 1 : "0 0 auto", width: isCompactScreen ? "auto" : 190, height: 38, padding: "7px 10px" }}
+                style={{ ...S.input, flex: easyLayout ? 1 : "0 0 auto", width: easyLayout ? "auto" : 190, height: 38, padding: "7px 10px" }}
                 value={selectedDdayId}
                 onChange={(e) => {
                   setSelectedDdayId(e.target.value);
@@ -3088,16 +3119,16 @@ export default function App() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: isCompactScreen ? "1fr" : "minmax(0, 1fr) 320px",
-              gap: isCompactScreen ? 10 : 14,
+              gridTemplateColumns: easyLayout ? "1fr" : "minmax(0, 1fr) 320px",
+              gap: easyLayout ? 10 : 14,
               alignItems: "start",
             }}
           >
-            <main style={{ minWidth: 0, display: isCompactScreen && mobileTab !== "home" ? "none" : "block" }}>
+            <main style={{ minWidth: 0, display: easyLayout && mobileTab !== "home" ? "none" : "block" }}>
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: isCompactScreen
+                  gridTemplateColumns: easyLayout
                     ? "repeat(2, minmax(0, 1fr))"
                     : "repeat(4, minmax(150px, 1fr))",
                   gap: 10,
@@ -3110,21 +3141,21 @@ export default function App() {
                   ["과목 오늘 누적", formatStudy(currentSubjectTodayTotal), subject, "#8b5cf6"],
                   ["그룹 오늘 합계", formatTimer(groupTodayTotal), currentGroup?.name || "방 없음", "#f97316"],
                 ]
-                  .filter(([title]) => !(isCompactScreen && title === "그룹 오늘 합계"))
+                  .filter(([title]) => !(easyLayout && title === "그룹 오늘 합계"))
                   .map(([title, value, desc, color]) => (
                   <div
                     key={title}
                     style={{
                       ...S.card,
-                      padding: isCompactScreen ? "11px 11px" : "13px 14px",
-                      minHeight: isCompactScreen ? 82 : 92,
+                      padding: easyLayout ? "11px 11px" : "13px 14px",
+                      minHeight: easyLayout ? 82 : 92,
                       border: "1px solid var(--border-soft)",
                     }}
                   >
                     <div style={{ ...S.small, fontWeight: 900 }}>{title}</div>
                     <div
                       style={{
-                        fontSize: isCompactScreen ? (title === "현재 과목" ? 18 : 20) : (title === "현재 과목" ? 24 : 26),
+                        fontSize: easyLayout ? (title === "현재 과목" ? 18 : 20) : (title === "현재 과목" ? 24 : 26),
                         fontWeight: 950,
                         letterSpacing: -1,
                         marginTop: 8,
@@ -3158,10 +3189,10 @@ export default function App() {
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
-                    alignItems: isCompactScreen ? "flex-start" : "center",
+                    alignItems: easyLayout ? "flex-start" : "center",
                     gap: 12,
                     marginBottom: 12,
-                    flexDirection: isCompactScreen ? "column" : "row",
+                    flexDirection: easyLayout ? "column" : "row",
                   }}
                 >
                   <div>
@@ -3171,7 +3202,7 @@ export default function App() {
                     </h2>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: isCompactScreen ? 38 : 42, fontWeight: 950, letterSpacing: -1.4, lineHeight: 1 }}>
+                    <div style={{ fontSize: easyLayout ? 38 : 42, fontWeight: 950, letterSpacing: -1.4, lineHeight: 1 }}>
                       {formatTimer(currentSessionSeconds)}
                     </div>
                     <div style={{ ...S.small, marginTop: 4 }}>
@@ -3183,7 +3214,7 @@ export default function App() {
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: isCompactScreen ? "1fr" : "minmax(0, 0.88fr) minmax(0, 1.12fr)",
+                    gridTemplateColumns: easyLayout ? "1fr" : "minmax(0, 0.88fr) minmax(0, 1.12fr)",
                     gap: 12,
                     alignItems: "stretch",
                   }}
@@ -3228,7 +3259,7 @@ export default function App() {
 
                     <Field label="자세한 공부 내용">
                       <textarea
-                        style={{ ...S.textarea, minHeight: isCompactScreen ? 56 : 70 }}
+                        style={{ ...S.textarea, minHeight: easyLayout ? 56 : 70 }}
                         value={detail}
                         disabled={studying}
                         onChange={(e) => setDetail(e.target.value)}
@@ -3513,23 +3544,23 @@ export default function App() {
                 </div>
               </section>
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr",
-                  gap: 12,
-                  alignItems: "stretch",
-                }}
-              >
-                <section style={{ minWidth: 0, display: "flex" }}>
-                  {renderTodayPlannerCompact(todayRecords, todayTotal, today)}
-                </section>
-
-                
-              </div>
+              {!easyLayout && (
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr",
+                    gap: 12,
+                    alignItems: "stretch",
+                  }}
+                >
+                  <section style={{ minWidth: 0, display: "flex" }}>
+                    {renderTodayPlannerCompact(todayRecords, todayTotal, today)}
+                  </section>
+                </div>
+              )}
             </main>
 
-            {isCompactScreen && mobileTab === "group" && (
+            {easyLayout && mobileTab === "group" && (
               <main style={{ minWidth: 0, display: "grid", gap: 12 }}>
                 <section style={{ ...S.card, padding: 16 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
@@ -3769,7 +3800,7 @@ export default function App() {
               </main>
             )}
 
-            {isCompactScreen && mobileTab === "planner" && (
+            {easyLayout && mobileTab === "planner" && (
               <main style={{ minWidth: 0, display: "grid", gap: 12 }}>
                 {renderTodayPlannerCompact(todayRecords, todayTotal, today)}
               </main>
@@ -3777,7 +3808,7 @@ export default function App() {
 
             {renderMobileChatSection()}
 
-            <aside style={{ display: isCompactScreen && mobileTab !== "settings" ? "none" : "grid", gap: 12 }}>
+            <aside style={{ display: easyLayout && mobileTab !== "settings" ? "none" : "grid", gap: 12 }}>
               <section style={{ ...S.card, padding: 16 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                   <div>
@@ -3786,7 +3817,7 @@ export default function App() {
                     <p style={{ ...S.small, margin: 0 }}>@{userId}</p>
                   </div>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
-                    {!isCompactScreen && (
+                    {!easyLayout && (
                       <button
                         type="button"
                         style={{
@@ -3809,7 +3840,7 @@ export default function App() {
 
               {renderChatNoticeSettingsCard()}
 
-              {!isCompactScreen && rightPanelEditOpen && (
+              {!easyLayout && rightPanelEditOpen && (
                 <section style={{ ...S.card, padding: 12, border: "1px solid var(--accent-soft-3)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                     <div>
@@ -3857,13 +3888,16 @@ export default function App() {
           </div>
         </div>
 
-        {isCompactScreen && (
+        {easyLayout && (
           <nav
             style={{
               position: "fixed",
-              left: 10,
-              right: 10,
+              left: easyLayout && !isCompactScreen ? "50%" : 10,
+              right: easyLayout && !isCompactScreen ? "auto" : 10,
               bottom: 10,
+              transform: easyLayout && !isCompactScreen ? "translateX(-50%)" : "none",
+              width: easyLayout && !isCompactScreen ? 520 : "auto",
+              maxWidth: "calc(100vw - 20px)",
               zIndex: 70,
               display: "grid",
               gridTemplateColumns: "repeat(5, 1fr)",
@@ -3934,6 +3968,29 @@ export default function App() {
               );
             })}
           </nav>
+        )}
+
+        {desktopEasyMode && !isCompactScreen && (
+          <button
+            type="button"
+            onClick={toggleDesktopMode}
+            style={{
+              position: "fixed",
+              right: 18,
+              bottom: 92,
+              zIndex: 75,
+              border: "none",
+              borderRadius: 18,
+              padding: "10px 14px",
+              fontWeight: 900,
+              cursor: "pointer",
+              background: "var(--text-main)",
+              color: "white",
+              boxShadow: "0 14px 32px rgba(25,31,40,0.18)",
+            }}
+          >
+            고급 화면
+          </button>
         )}
 
         {profileOpen && (
