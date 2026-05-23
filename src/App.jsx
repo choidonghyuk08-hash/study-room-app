@@ -398,7 +398,7 @@ export default function App() {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem("studyRoomDesktopEasyMode") === "true";
   });
-  const easyLayout = easyLayout || desktopEasyMode;
+  const easyLayout = isCompactScreen || desktopEasyMode;
   const toggleDesktopMode = () => {
     setDesktopEasyMode((prev) => {
       const next = !prev;
