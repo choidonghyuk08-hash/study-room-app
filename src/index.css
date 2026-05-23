@@ -2,9 +2,7 @@
   box-sizing: border-box;
 }
 
-html,
-body,
-#root {
+html, body, #root {
   width: 100%;
   min-height: 100%;
   margin: 0;
@@ -13,49 +11,34 @@ body,
 
 body {
   overflow-x: hidden;
-  background: #f4f4f5;
+  background: #f7f8fa;
+  color: #191f28;
+  -webkit-font-smoothing: antialiased;
 }
 
-button,
-input,
-textarea,
-select {
+button, input, textarea, select {
   font-family: inherit;
 }
 
 button {
   touch-action: manipulation;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
 }
 
-input,
-textarea,
-select {
-  color: #18181b;
-  -webkit-text-fill-color: #18181b;
-  caret-color: #18181b;
-  background-color: white;
+button:active {
+  transform: scale(0.98);
 }
 
-input::placeholder,
-textarea::placeholder {
-  color: #a1a1aa;
-  -webkit-text-fill-color: #a1a1aa;
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
-@media (max-width: 768px) {
-  body {
-    font-size: 14px;
-  }
+input:focus, textarea:focus, select:focus {
+  border-color: #3182f6 !important;
+  box-shadow: 0 0 0 3px rgba(49,130,246,0.12);
+}
 
-  h1 {
-    font-size: 30px !important;
-  }
-
-  h2 {
-    font-size: 20px !important;
-  }
-
-  button {
-    min-height: 38px;
-  }
+@media (max-width: 900px) {
+  body { font-size: 14px; }
 }
