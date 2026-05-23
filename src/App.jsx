@@ -1720,7 +1720,7 @@ export default function App() {
               공부 기준일은 06:00부터 다음 날 06:00까지입니다.
             </p>
           </div>
-          <div style={{ textAlign: "right" }}>
+          <div style={{ textAlign: isCompactScreen ? "left" : "right", width: isCompactScreen ? "100%" : "auto" }}>
             <b style={{ color: "var(--text-main)", display: "block" }}>{formatTimer(groupTodayTotal)}</b>
             <div style={{ ...S.small, fontSize: 10 }}>
               <span style={{ color: "#22c55e", fontWeight: 900 }}>●</span> 접속 중
@@ -2396,10 +2396,11 @@ export default function App() {
         <div
           style={{
             position: "fixed",
-            top: 18,
-            right: 18,
+            top: isCompactScreen ? 12 : 18,
+            right: isCompactScreen ? 10 : 18,
+            left: isCompactScreen ? 10 : "auto",
             zIndex: 80,
-            maxWidth: 360,
+            maxWidth: isCompactScreen ? "none" : 360,
             padding: "12px 14px",
             borderRadius: 18,
             background: "rgba(25,31,40,0.94)",
@@ -2493,15 +2494,17 @@ export default function App() {
           </aside>
         )}
 
-        <div style={{ ...S.wrap, padding: isCompactScreen ? 12 : "10px 18px 18px" }}>
+        <div style={{ ...S.wrap, padding: isCompactScreen ? "10px 10px 92px" : "10px 18px 18px" }}>
           <div
             style={{
-              height: 44,
+              minHeight: 44,
+              height: isCompactScreen ? "auto" : 44,
               display: "flex",
-              alignItems: "center",
+              alignItems: isCompactScreen ? "flex-start" : "center",
               justifyContent: "space-between",
-              gap: 12,
+              gap: isCompactScreen ? 8 : 12,
               marginBottom: 12,
+              flexWrap: "wrap",
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
@@ -2541,9 +2544,9 @@ export default function App() {
               </div>
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, width: isCompactScreen ? "100%" : "auto" }}>
               <select
-                style={{ ...S.input, width: isCompactScreen ? 140 : 190, height: 34, padding: "6px 10px" }}
+                style={{ ...S.input, flex: isCompactScreen ? 1 : "0 0 auto", width: isCompactScreen ? "auto" : 190, height: 38, padding: "7px 10px" }}
                 value={selectedDdayId}
                 onChange={(e) => {
                   setSelectedDdayId(e.target.value);
@@ -2557,7 +2560,7 @@ export default function App() {
                   </option>
                 ))}
               </select>
-              <button style={{ ...S.lightButton, height: 34, padding: "6px 10px" }} onClick={openNewDday}>
+              <button style={{ ...S.lightButton, height: 38, padding: "7px 10px", flex: "0 0 auto" }} onClick={openNewDday}>
                 D-DAY
               </button>
             </div>
@@ -2567,7 +2570,7 @@ export default function App() {
             style={{
               display: "grid",
               gridTemplateColumns: isCompactScreen ? "1fr" : "minmax(0, 1fr) 320px",
-              gap: 14,
+              gap: isCompactScreen ? 10 : 14,
               alignItems: "start",
             }}
           >
@@ -2576,7 +2579,7 @@ export default function App() {
                 style={{
                   display: "grid",
                   gridTemplateColumns: isCompactScreen
-                    ? "1fr"
+                    ? "repeat(2, minmax(0, 1fr))"
                     : "repeat(4, minmax(150px, 1fr))",
                   gap: 10,
                   marginBottom: 12,
@@ -2592,15 +2595,15 @@ export default function App() {
                     key={title}
                     style={{
                       ...S.card,
-                      padding: "13px 14px",
-                      minHeight: 92,
+                      padding: isCompactScreen ? "11px 11px" : "13px 14px",
+                      minHeight: isCompactScreen ? 82 : 92,
                       border: "1px solid var(--border-soft)",
                     }}
                   >
                     <div style={{ ...S.small, fontWeight: 900 }}>{title}</div>
                     <div
                       style={{
-                        fontSize: title === "현재 과목" ? 24 : 26,
+                        fontSize: isCompactScreen ? (title === "현재 과목" ? 18 : 20) : (title === "현재 과목" ? 24 : 26),
                         fontWeight: 950,
                         letterSpacing: -1,
                         marginTop: 8,
@@ -2634,9 +2637,10 @@ export default function App() {
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
-                    alignItems: "center",
+                    alignItems: isCompactScreen ? "flex-start" : "center",
                     gap: 12,
                     marginBottom: 12,
+                    flexDirection: isCompactScreen ? "column" : "row",
                   }}
                 >
                   <div>
@@ -2646,7 +2650,7 @@ export default function App() {
                     </h2>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 42, fontWeight: 950, letterSpacing: -1.4, lineHeight: 1 }}>
+                    <div style={{ fontSize: isCompactScreen ? 38 : 42, fontWeight: 950, letterSpacing: -1.4, lineHeight: 1 }}>
                       {formatTimer(currentSessionSeconds)}
                     </div>
                     <div style={{ ...S.small, marginTop: 4 }}>
@@ -2703,7 +2707,7 @@ export default function App() {
 
                     <Field label="자세한 공부 내용">
                       <textarea
-                        style={{ ...S.textarea, minHeight: 70 }}
+                        style={{ ...S.textarea, minHeight: isCompactScreen ? 56 : 70 }}
                         value={detail}
                         disabled={studying}
                         onChange={(e) => setDetail(e.target.value)}
@@ -3230,6 +3234,81 @@ export default function App() {
             </aside>
           </div>
         </div>
+
+        {isCompactScreen && (
+          <nav
+            style={{
+              position: "fixed",
+              left: 10,
+              right: 10,
+              bottom: 10,
+              zIndex: 70,
+              display: "grid",
+              gridTemplateColumns: "repeat(5, 1fr)",
+              gap: 6,
+              padding: 8,
+              borderRadius: 24,
+              background: "rgba(255,255,255,0.96)",
+              border: "1px solid var(--border-soft)",
+              boxShadow: "0 18px 42px rgba(25,31,40,0.16)",
+              backdropFilter: "blur(14px)",
+            }}
+          >
+            {[
+              { label: "내 정보", icon: ICONS.profile, action: openProfile },
+              { label: "방", icon: ICONS.room, action: () => setRoomMenuOpen(true) },
+              { label: "플래너", icon: ICONS.planner, action: () => setPlannerOpen(true) },
+              { label: "채팅", icon: ICONS.chat, action: () => setChatOpen(true) },
+              { label: "D-DAY", icon: ICONS.home, action: openNewDday },
+            ].map((item) => (
+              <button
+                key={item.label}
+                type="button"
+                onClick={item.action}
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  padding: "7px 4px",
+                  borderRadius: 18,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 3,
+                  color: "var(--text-sub)",
+                  fontSize: 10,
+                  fontWeight: 850,
+                  cursor: "pointer",
+                  position: "relative",
+                }}
+              >
+                <IconImage src={item.icon} alt={item.label} size={24} />
+                <span>{item.label}</span>
+                {item.label === "채팅" && unread > 0 && chatNotice && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: 2,
+                      right: 12,
+                      minWidth: 18,
+                      height: 18,
+                      padding: "0 4px",
+                      borderRadius: 999,
+                      background: "#f59e0b",
+                      color: "white",
+                      fontSize: 10,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {unread}
+                  </span>
+                )}
+              </button>
+            ))}
+          </nav>
+        )}
 
         {profileOpen && (
           <Modal title="나의 정보" onClose={() => setProfileOpen(false)}>
