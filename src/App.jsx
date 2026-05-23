@@ -17,6 +17,7 @@ import {
   getDocs,
   getFirestore,
   onSnapshot,
+  runTransaction,
   serverTimestamp,
   setDoc,
   updateDoc,
@@ -304,6 +305,7 @@ export default function App() {
   const [totalSec, setTotalSec] = useState(0);
   const [sessionSec, setSessionSec] = useState(0);
   const [startedAt, setStartedAt] = useState(null);
+  const [liveStudy, setLiveStudy] = useState(null);
 
   const [records, setRecords] = useState([]);
   const [groupRecords, setGroupRecords] = useState([]);
@@ -353,6 +355,47 @@ export default function App() {
     const unsub = onSnapshot(doc(db, "users", uid), (snap) => {
       if (snap.exists()) setProfile({ uid, ...snap.data() });
     });
+    return () => unsub();
+  }, [uid]);
+
+  useEffect(() => {
+    if (!uid) {
+      setLiveStudy(null);
+      setStudying(false);
+      setTotalSec(0);
+      setSessionSec(0);
+      setStartedAt(null);
+      return;
+    }
+
+    const liveStudyRef = doc(db, "users", uid, "liveStudy", "current");
+
+    const unsub = onSnapshot(liveStudyRef, (snap) => {
+      if (!snap.exists()) {
+        setLiveStudy(null);
+        setStudying(false);
+        setTotalSec(0);
+        setSessionSec(0);
+        setStartedAt(null);
+        return;
+      }
+
+      const data = snap.data();
+      setLiveStudy(data);
+
+      if (data.studying) {
+        setStudying(true);
+        setStartedAt(data.startedAtLabel || null);
+        if (data.subject) setSubject(data.subject);
+        if (data.detail) setDetail(data.detail);
+      } else {
+        setStudying(false);
+        setTotalSec(0);
+        setSessionSec(0);
+        setStartedAt(null);
+      }
+    });
+
     return () => unsub();
   }, [uid]);
 
@@ -446,13 +489,21 @@ export default function App() {
   }, [enteredGroupId]);
 
   useEffect(() => {
-    if (!studying) return;
-    const timer = setInterval(() => {
-      setTotalSec((v) => v + 1);
-      setSessionSec((v) => v + 1);
-    }, 1000);
+    if (!liveStudy?.studying || !liveStudy.startedAtMs) return;
+
+    const updateTimer = () => {
+      const baseSeconds = liveStudy.baseSeconds || 0;
+      const elapsed = Math.floor((Date.now() - liveStudy.startedAtMs) / 1000);
+      const nextSeconds = Math.max(0, baseSeconds + elapsed);
+
+      setTotalSec(nextSeconds);
+      setSessionSec(nextSeconds);
+    };
+
+    updateTimer();
+    const timer = setInterval(updateTimer, 1000);
     return () => clearInterval(timer);
-  }, [studying]);
+  }, [liveStudy]);
 
   useEffect(() => {
     if (!studying) return;
@@ -846,9 +897,35 @@ export default function App() {
       return;
     }
 
+    if (!uid) {
+      alert("로그인 정보가 확인되지 않았어. 다시 로그인해줘.");
+      return;
+    }
+
+    const startMs = Date.now();
+    const startLabel = nowTime();
+    const sessionId = `${uid}-${startMs}`;
+    const liveStudyRef = doc(db, "users", uid, "liveStudy", "current");
+
+    await setDoc(
+      liveStudyRef,
+      {
+        studying: true,
+        sessionId,
+        subject,
+        detail,
+        startedAtMs: startMs,
+        startedAtLabel: startLabel,
+        baseSeconds: 0,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+
     setStudying(true);
-    setStartedAt(nowTime());
+    setStartedAt(startLabel);
     setSessionSec(0);
+    setTotalSec(0);
     setUnread(0);
 
     if (enteredGroupId) {
@@ -863,6 +940,8 @@ export default function App() {
             subject,
             detail,
             studying: true,
+            liveStartedAtMs: startMs,
+            liveSeconds: 0,
             updatedAt: serverTimestamp(),
           },
           { merge: true }
@@ -874,22 +953,83 @@ export default function App() {
   };
 
   const stopStudy = async () => {
-    const end = nowTime();
+    if (!uid) return;
 
-    if (sessionSec > 0) {
-      await addDoc(collection(db, "studyRecords"), {
-        ownerUid: uid,
-        ownerUserId: userId,
-        ownerName: displayName,
-        date: today,
-        subject,
-        detail,
-        seconds: sessionSec,
-        start: startedAt || "시작 시간 없음",
-        end,
-        sharedToGroups: groups.map((g) => g.id),
-        createdAt: serverTimestamp(),
+    const end = nowTime();
+    const liveStudyRef = doc(db, "users", uid, "liveStudy", "current");
+    const recordRef = doc(collection(db, "studyRecords"));
+
+    let result = null;
+
+    try {
+      result = await runTransaction(db, async (transaction) => {
+        const liveSnap = await transaction.get(liveStudyRef);
+
+        if (!liveSnap.exists()) {
+          return { saved: false, reason: "no-live-study" };
+        }
+
+        const data = liveSnap.data();
+
+        if (!data.studying) {
+          return { saved: false, reason: "already-stopped" };
+        }
+
+        const liveSubject = data.subject || subject;
+        const liveDetail = data.detail || detail;
+        const liveStartedAt = data.startedAtLabel || startedAt || "시작 시간 없음";
+        const finalSeconds = data.startedAtMs
+          ? Math.max(
+              0,
+              (data.baseSeconds || 0) +
+                Math.floor((Date.now() - data.startedAtMs) / 1000)
+            )
+          : sessionSec;
+
+        if (finalSeconds > 0) {
+          transaction.set(recordRef, {
+            ownerUid: uid,
+            ownerUserId: userId,
+            ownerName: displayName,
+            date: today,
+            subject: liveSubject,
+            detail: liveDetail,
+            seconds: finalSeconds,
+            start: liveStartedAt,
+            end,
+            sharedToGroups: groups.map((g) => g.id),
+            liveStudySessionId: data.sessionId || null,
+            createdAt: serverTimestamp(),
+          });
+        }
+
+        transaction.set(
+          liveStudyRef,
+          {
+            studying: false,
+            subject: liveSubject,
+            detail: liveDetail,
+            baseSeconds: 0,
+            startedAtMs: null,
+            startedAtLabel: null,
+            stoppedAtLabel: end,
+            lastSessionSeconds: finalSeconds,
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true }
+        );
+
+        return {
+          saved: finalSeconds > 0,
+          finalSeconds,
+          subject: liveSubject,
+          detail: liveDetail,
+        };
       });
+    } catch (error) {
+      console.error("순공 종료 저장 실패:", error);
+      alert("순공 기록 저장 중 문제가 생겼어. 잠시 후 다시 시도해줘.");
+      return;
     }
 
     if (enteredGroupId) {
@@ -898,6 +1038,7 @@ export default function App() {
         {
           studying: false,
           liveSeconds: 0,
+          liveStartedAtMs: null,
           updatedAt: serverTimestamp(),
         },
         { merge: true }
@@ -907,8 +1048,13 @@ export default function App() {
     setStudying(false);
     setStartedAt(null);
     setSessionSec(0);
+    setTotalSec(0);
     setUnread(0);
     setPlannerDate(today);
+
+    if (result?.reason === "already-stopped") {
+      setGroupMsg("이미 다른 기기에서 순공이 종료됐어.");
+    }
   };
 
   const sendMessage = async () => {
