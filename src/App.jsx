@@ -347,6 +347,16 @@ const RIGHT_PANEL_LABELS = {
   rank: "그룹원 현황 및 랭킹",
 };
 
+const MOBILE_HOME_DEFAULT_ORDER = ["stats", "study", "sound", "weather", "dday"];
+
+const MOBILE_HOME_LABELS = {
+  stats: "오늘 현황",
+  study: "순공 측정",
+  sound: "백색소음",
+  weather: "주간 날씨",
+  dday: "오늘 할 일",
+};
+
 function Modal({ title, onClose, children }) {
   return (
     <div style={S.modalBg}>
@@ -564,6 +574,20 @@ export default function App() {
     }
   });
   const [rightPanelEditOpen, setRightPanelEditOpen] = useState(false);
+  const [mobileHomeOrder, setMobileHomeOrder] = useState(() => {
+    if (typeof window === "undefined") return MOBILE_HOME_DEFAULT_ORDER;
+    try {
+      const saved = JSON.parse(window.localStorage.getItem("studyRoomMobileHomeOrder") || "null");
+      if (Array.isArray(saved)) {
+        const valid = saved.filter((item) => MOBILE_HOME_DEFAULT_ORDER.includes(item));
+        const missing = MOBILE_HOME_DEFAULT_ORDER.filter((item) => !valid.includes(item));
+        return [...valid, ...missing];
+      }
+    } catch (error) {
+      console.error("모바일 홈 순서 불러오기 실패:", error);
+    }
+    return MOBILE_HOME_DEFAULT_ORDER;
+  });
 
   const uid = user?.uid || "";
   const userId = profile?.userId || "";
@@ -618,6 +642,30 @@ export default function App() {
     setRightPanelOrder(nextOrder);
     setHiddenRightCards(nextHidden);
     saveRightPanelSettings(nextOrder, nextHidden);
+  };
+
+  const saveMobileHomeOrder = (nextOrder) => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("studyRoomMobileHomeOrder", JSON.stringify(nextOrder));
+  };
+
+  const moveMobileHomeCard = (cardId, direction) => {
+    setMobileHomeOrder((prev) => {
+      const next = [...prev];
+      const index = next.indexOf(cardId);
+      const nextIndex = index + direction;
+
+      if (index < 0 || nextIndex < 0 || nextIndex >= next.length) return prev;
+
+      [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+      saveMobileHomeOrder(next);
+      return next;
+    });
+  };
+
+  const resetMobileHomeOrder = () => {
+    setMobileHomeOrder(MOBILE_HOME_DEFAULT_ORDER);
+    saveMobileHomeOrder(MOBILE_HOME_DEFAULT_ORDER);
   };
 
   useEffect(() => {
@@ -2031,6 +2079,426 @@ export default function App() {
     </section>
   );
 
+  const MobileHomeControlBar = ({ cardId }) => {
+    const index = mobileHomeOrder.indexOf(cardId);
+
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 8,
+          marginBottom: 6,
+        }}
+      >
+        <span style={{ ...S.small, fontWeight: 900 }}>{MOBILE_HOME_LABELS[cardId]}</span>
+        <div style={{ display: "flex", gap: 4 }}>
+          <button
+            type="button"
+            onClick={() => moveMobileHomeCard(cardId, -1)}
+            disabled={index <= 0}
+            style={{ ...S.lightButton, padding: "4px 7px", fontSize: 11, opacity: index <= 0 ? 0.35 : 1 }}
+          >
+            ↑
+          </button>
+          <button
+            type="button"
+            onClick={() => moveMobileHomeCard(cardId, 1)}
+            disabled={index === -1 || index >= mobileHomeOrder.length - 1}
+            style={{ ...S.lightButton, padding: "4px 7px", fontSize: 11, opacity: index === -1 || index >= mobileHomeOrder.length - 1 ? 0.35 : 1 }}
+          >
+            ↓
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const MobileHomeItem = ({ cardId, children }) => (
+    <div>
+      <MobileHomeControlBar cardId={cardId} />
+      {children}
+    </div>
+  );
+
+  const renderMobileHomeCard = (cardId) => {
+    if (cardId === "stats") {
+      const mobileStats = [
+        ["오늘 총 공부", formatTimer(todayTotalWithLive), studying ? "진행 중 포함" : "저장된 기록 기준", "var(--accent)"],
+        ["현재 과목", subject, formatTimer(currentSessionSeconds), "#00a661"],
+        ["과목 오늘 누적", formatStudy(currentSubjectTodayTotal), subject, "#8b5cf6"],
+      ];
+
+      return (
+        <MobileHomeItem key={cardId} cardId={cardId}>
+          <section
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+              gap: 10,
+            }}
+          >
+            {mobileStats.map(([title, value, desc, color]) => (
+              <div
+                key={title}
+                style={{
+                  ...S.card,
+                  padding: "11px 11px",
+                  minHeight: 82,
+                  border: "1px solid var(--border-soft)",
+                }}
+              >
+                <div style={{ ...S.small, fontWeight: 900 }}>{title}</div>
+                <div
+                  style={{
+                    fontSize: title === "현재 과목" ? 18 : 20,
+                    fontWeight: 950,
+                    letterSpacing: -1,
+                    marginTop: 8,
+                    color: "var(--text-main)",
+                    lineHeight: 1.05,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {value}
+                </div>
+                <div style={{ ...S.small, marginTop: 6, display: "flex", alignItems: "center", gap: 5 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: 999, background: color, display: "inline-block" }} />
+                  {desc}
+                </div>
+              </div>
+            ))}
+          </section>
+        </MobileHomeItem>
+      );
+    }
+
+    if (cardId === "study") {
+      return (
+        <MobileHomeItem key={cardId} cardId={cardId}>
+          <section style={{ ...S.card, padding: 14, border: "1px solid var(--border-soft)" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                gap: 12,
+                marginBottom: 12,
+                flexDirection: "column",
+              }}
+            >
+              <div>
+                <div style={{ ...S.small, fontWeight: 900, color: "var(--accent)" }}>실시간 순공 측정</div>
+                <h2 style={{ margin: "2px 0 0", fontSize: 24, letterSpacing: -0.8 }}>
+                  {studying ? `${subject} 공부 중` : "오늘 시작하기"}
+                </h2>
+              </div>
+              <div style={{ textAlign: "left", width: "100%" }}>
+                <div style={{ fontSize: 38, fontWeight: 950, letterSpacing: -1.4, lineHeight: 1 }}>
+                  {formatTimer(currentSessionSeconds)}
+                </div>
+                <div style={{ ...S.small, marginTop: 4 }}>
+                  {studying ? `${startedAt}부터 측정 중` : "대기 중"}
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                background: "var(--app-bg)",
+                border: "1px solid var(--border-soft)",
+                borderRadius: 18,
+                padding: 12,
+              }}
+            >
+              <div style={S.grid2}>
+                <Field label="과목 선택">
+                  <select
+                    style={S.input}
+                    value={subject}
+                    disabled={studying}
+                    onChange={(e) => setSubject(e.target.value)}
+                  >
+                    {subjects.map((s) => (
+                      <option key={s}>{s}</option>
+                    ))}
+                  </select>
+                </Field>
+
+                <Field label="과목 추가">
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <input
+                      style={S.input}
+                      value={newSubject}
+                      disabled={studying}
+                      onChange={(e) => setNewSubject(e.target.value)}
+                      placeholder="예 : 미적분"
+                    />
+                    <button style={{ ...S.lightButton, minWidth: 40 }} onClick={addSubject}>
+                      +
+                    </button>
+                  </div>
+                </Field>
+              </div>
+
+              <Field label="자세한 공부 내용">
+                <textarea
+                  style={{ ...S.textarea, minHeight: 56 }}
+                  value={detail}
+                  disabled={studying}
+                  onChange={(e) => setDetail(e.target.value)}
+                  placeholder="예 : 영어 단어 Day 12 암기 + 예문 복습"
+                />
+              </Field>
+
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                {studying ? (
+                  <button style={{ ...S.button, minWidth: 110 }} onClick={stopStudy}>
+                    공부 종료
+                  </button>
+                ) : (
+                  <button
+                    style={{ ...S.button, minWidth: 110 }}
+                    disabled={!subject || !detail.trim()}
+                    onClick={startStudy}
+                  >
+                    순공 시작
+                  </button>
+                )}
+                <div style={{ ...S.small, lineHeight: 1.4 }}>
+                  친구에게 표시: <b style={{ color: "var(--text-main)" }}>{subject}</b> · {detail}
+                </div>
+              </div>
+            </div>
+          </section>
+        </MobileHomeItem>
+      );
+    }
+
+    if (cardId === "sound") {
+      return (
+        <MobileHomeItem key={cardId} cardId={cardId}>
+          <section style={{ ...S.card, padding: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
+              <div>
+                <div style={{ ...S.small, fontWeight: 900, color: "var(--accent)" }}>백색소음</div>
+                <h3 style={{ margin: "4px 0 0", fontSize: 18 }}>
+                  현재 {soundPlaying ? "재생 중" : "정지"}
+                </h3>
+              </div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                {soundPlaying ? (
+                  <button style={S.lightButton} onClick={stopSound}>
+                    정지
+                  </button>
+                ) : (
+                  <button style={S.button} onClick={playSound}>
+                    재생
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 120px", gap: 8, marginTop: 10, alignItems: "center" }}>
+              <select
+                style={S.input}
+                value={soundType}
+                onChange={(e) => setSoundType(e.target.value)}
+              >
+                {SOUND_OPTIONS.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+
+              <div>
+                <div style={{ ...S.small, fontSize: 10, marginBottom: 3 }}>소리 {soundVolume}%</div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={soundVolume}
+                  onChange={(e) => setSoundVolume(Number(e.target.value))}
+                  style={{ width: "100%" }}
+                />
+              </div>
+            </div>
+
+            <p style={{ ...S.small, margin: "7px 0 0", lineHeight: 1.35 }}>
+              음원이 끝나면 자동으로 반복 재생됩니다.
+            </p>
+          </section>
+        </MobileHomeItem>
+      );
+    }
+
+    if (cardId === "weather") {
+      return (
+        <MobileHomeItem key={cardId} cardId={cardId}>
+          <section style={{ ...S.card, padding: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+              <div>
+                <div style={{ ...S.small, fontWeight: 900, color: "var(--accent)" }}>주간 날씨</div>
+                <h3 style={{ margin: "4px 0 0", fontSize: 18 }}>오늘부터 7일 예보</h3>
+              </div>
+              <button
+                type="button"
+                style={{ ...S.lightButton, padding: "8px 10px", fontSize: 12 }}
+                onClick={loadWeather}
+                disabled={weatherLoading}
+              >
+                {weatherLoading ? "불러오는 중" : weatherDays.length ? "새로고침" : "불러오기"}
+              </button>
+            </div>
+
+            <div
+              style={{
+                margin: "10px 0",
+                padding: "10px 12px",
+                borderRadius: 16,
+                background: "var(--accent-soft)",
+                border: "1px solid var(--accent-soft-2)",
+                color: "var(--accent-text)",
+                fontSize: 12,
+                fontWeight: 800,
+                lineHeight: 1.45,
+              }}
+            >
+              {weatherMsg}
+            </div>
+
+            {weatherDays.length > 0 && (
+              <div style={{ display: "grid", gap: 8 }}>
+                {weatherDays.map((day) => {
+                  const shouldCarryUmbrella =
+                    Number(day.rain) >= 50 ||
+                    (Number(day.rain) >= 30 && Number(day.rainAmount) >= 3);
+
+                  return (
+                    <div
+                      key={day.date}
+                      style={{
+                        padding: "10px 11px",
+                        borderRadius: 16,
+                        background: shouldCarryUmbrella ? "#fff7ed" : "var(--soft-bg)",
+                        border: shouldCarryUmbrella ? "1px solid #fed7aa" : "1px solid var(--border-soft)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "52px 1fr auto",
+                          alignItems: "center",
+                          gap: 8,
+                        }}
+                      >
+                        <b style={{ color: shouldCarryUmbrella ? "#c2410c" : "var(--accent-text)", fontSize: 13 }}>
+                          {day.label}
+                        </b>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 900, color: "var(--text-main)" }}>
+                            {day.weather}
+                          </div>
+                          <div style={{ ...S.small, fontSize: 11 }}>
+                            {day.date}
+                          </div>
+                        </div>
+                        <div style={{ textAlign: "right", fontWeight: 950, color: "var(--text-main)" }}>
+                          {day.max}° / {day.min}°
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr 1fr",
+                          gap: 6,
+                          marginTop: 8,
+                          fontSize: 11,
+                        }}
+                      >
+                        <div style={{ color: "var(--text-sub)" }}>강수 {day.rain}%</div>
+                        <div style={{ color: "var(--text-sub)" }}>강수량 {Number(day.rainAmount).toFixed(1)}mm</div>
+                        <div style={{ color: "var(--text-sub)" }}>바람 {day.wind}km/h</div>
+                      </div>
+
+                      {shouldCarryUmbrella && (
+                        <div
+                          style={{
+                            marginTop: 7,
+                            padding: "6px 8px",
+                            borderRadius: 12,
+                            background: "rgba(251,146,60,0.14)",
+                            color: "#c2410c",
+                            fontSize: 11,
+                            fontWeight: 900,
+                          }}
+                        >
+                          우산을 챙기는 것이 좋습니다.
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        </MobileHomeItem>
+      );
+    }
+
+    if (cardId === "dday") {
+      return (
+        <MobileHomeItem key={cardId} cardId={cardId}>
+          <section style={{ ...S.card, padding: 16 }}>
+            <div style={{ ...S.small, fontWeight: 900, color: "var(--accent)" }}>오늘 할 일</div>
+            <h3 style={{ margin: "4px 0 10px", fontSize: 18 }}>선택한 D-DAY</h3>
+            {selectedDday ? (
+              <div style={{ background: "var(--app-bg)", borderRadius: 16, padding: 12 }}>
+                <b>{selectedDday.title}</b>
+                <div style={{ ...S.small, marginTop: 4 }}>
+                  {formatDday(selectedDday.date)} · {selectedDday.category} · 중요도 {selectedDday.priority}
+                </div>
+              </div>
+            ) : (
+              <p style={S.small}>D-DAY를 설정해두면 여기에서 바로 확인할 수 있습니다.</p>
+            )}
+          </section>
+        </MobileHomeItem>
+      );
+    }
+
+    return null;
+  };
+
+  const renderMobileHomeSection = () => (
+    <main style={{ minWidth: 0, display: isCompactScreen && mobileTab === "home" ? "grid" : "none", gap: 12 }}>
+      <section style={{ ...S.card, padding: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+          <div>
+            <div style={{ ...S.small, fontWeight: 900, color: "var(--accent)" }}>홈 화면 편집</div>
+            <div style={{ ...S.small, fontSize: 11, marginTop: 2 }}>
+              ↑↓ 버튼으로 홈 섹션 순서를 바꿀 수 있습니다.
+            </div>
+          </div>
+          <button
+            type="button"
+            style={{ ...S.lightButton, padding: "7px 9px", fontSize: 11 }}
+            onClick={resetMobileHomeOrder}
+          >
+            초기화
+          </button>
+        </div>
+      </section>
+
+      {mobileHomeOrder.map((cardId) => renderMobileHomeCard(cardId))}
+    </main>
+  );
+
   const renderMobileChatSection = () => (
     <main style={{ minWidth: 0, display: easyLayout && mobileTab === "chat" ? "grid" : "none", gap: 12 }}>
       <section style={{ ...S.card, padding: 16 }}>
@@ -2215,6 +2683,8 @@ export default function App() {
     }
 
     if (cardId === "weather") {
+      if (isCompactScreen) return null;
+
       return (
         <RightPanelItem key={cardId} cardId={cardId}>
           <section style={{ ...S.card, padding: 16 }}>
@@ -2330,6 +2800,8 @@ export default function App() {
     }
 
     if (cardId === "dday") {
+      if (isCompactScreen) return null;
+
       return (
         <RightPanelItem key={cardId} cardId={cardId}>
           <section style={{ ...S.card, padding: 16 }}>
@@ -3130,7 +3602,7 @@ export default function App() {
               alignItems: "start",
             }}
           >
-            <main style={{ minWidth: 0, display: easyLayout && mobileTab !== "home" ? "none" : "block" }}>
+            <main style={{ minWidth: 0, display: isCompactScreen ? "none" : easyLayout && mobileTab !== "home" ? "none" : "block" }}>
               <div
                 style={{
                   display: "grid",
@@ -3565,6 +4037,8 @@ export default function App() {
                 </div>
               )}
             </main>
+
+            {renderMobileHomeSection()}
 
             {easyLayout && mobileTab === "group" && (
               <main style={{ minWidth: 0, display: "grid", gap: 12 }}>
