@@ -358,12 +358,39 @@ const MOBILE_HOME_LABELS = {
 };
 
 function Modal({ title, onClose, children }) {
+  const [closing, setClosing] = useState(false);
+
+  const handleClose = () => {
+    if (closing) return;
+
+    setClosing(true);
+    window.setTimeout(() => {
+      onClose();
+    }, 320);
+  };
+
   return (
-    <div style={S.modalBg}>
-      <div style={S.modal}>
+    <div
+      style={{
+        ...S.modalBg,
+        animation: closing
+          ? "srOverlayFadeOut 320ms cubic-bezier(0.16, 1, 0.3, 1) forwards"
+          : "srOverlayFade 360ms cubic-bezier(0.16, 1, 0.3, 1)",
+      }}
+      onClick={handleClose}
+    >
+      <div
+        style={{
+          ...S.modal,
+          animation: closing
+            ? "srModalPopOut 320ms cubic-bezier(0.16, 1, 0.3, 1) forwards"
+            : "srModalPop 460ms cubic-bezier(0.16, 1, 0.3, 1)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
           <h2 style={{ marginTop: 0 }}>{title}</h2>
-          <button style={S.lightButton} onClick={onClose}>
+          <button style={S.lightButton} onClick={handleClose}>
             닫기
           </button>
         </div>
@@ -410,11 +437,19 @@ export default function App() {
   const [authMode, setAuthMode] = useState("login");
   const [authMsg, setAuthMsg] = useState("");
   const [mobileTab, setMobileTab] = useState("home");
+  const [sectionTransitionKey, setSectionTransitionKey] = useState(0);
   const [desktopEasyMode, setDesktopEasyMode] = useState(() => {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem("studyRoomDesktopEasyMode") === "true";
   });
   const easyLayout = isCompactScreen || desktopEasyMode;
+  const switchEasyTab = (nextTab) => {
+    setMobileTab((prev) => {
+      if (prev === nextTab) return prev;
+      setSectionTransitionKey((key) => key + 1);
+      return nextTab;
+    });
+  };
   const toggleDesktopMode = () => {
     setDesktopEasyMode((prev) => {
       const next = !prev;
@@ -422,6 +457,7 @@ export default function App() {
         window.localStorage.setItem("studyRoomDesktopEasyMode", String(next));
       }
       setMobileTab("home");
+      setSectionTransitionKey((key) => key + 1);
       return next;
     });
   };
@@ -588,6 +624,7 @@ export default function App() {
     }
     return MOBILE_HOME_DEFAULT_ORDER;
   });
+  const [mobileHomeEditOpen, setMobileHomeEditOpen] = useState(false);
 
   const uid = user?.uid || "";
   const userId = profile?.userId || "";
@@ -2116,8 +2153,12 @@ export default function App() {
   };
 
   const MobileHomeItem = ({ cardId, children }) => (
-    <div>
-      <MobileHomeControlBar cardId={cardId} />
+    <div
+      style={{
+        transition: "transform 360ms cubic-bezier(0.16, 1, 0.3, 1), opacity 320ms cubic-bezier(0.16, 1, 0.3, 1)",
+      }}
+    >
+      {mobileHomeEditOpen && <MobileHomeControlBar cardId={cardId} />}
       {children}
     </div>
   );
@@ -2476,22 +2517,51 @@ export default function App() {
   };
 
   const renderMobileHomeSection = () => (
-    <main style={{ minWidth: 0, display: isCompactScreen && mobileTab === "home" ? "grid" : "none", gap: 12 }}>
+    <main
+      key={`easy-home-${sectionTransitionKey}`}
+      style={{
+        minWidth: 0,
+        display: easyLayout && mobileTab === "home" ? "grid" : "none",
+        gap: 12,
+        animation: easyLayout && mobileTab === "home" ? "srFadeSlideIn 520ms cubic-bezier(0.16, 1, 0.3, 1)" : "none",
+      }}
+    >
       <section style={{ ...S.card, padding: 12 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
           <div>
-            <div style={{ ...S.small, fontWeight: 900, color: "var(--accent)" }}>홈 화면 편집</div>
+            <div style={{ ...S.small, fontWeight: 900, color: "var(--accent)" }}>
+              홈 화면 {mobileHomeEditOpen ? "편집 중" : "편집"}
+            </div>
             <div style={{ ...S.small, fontSize: 11, marginTop: 2 }}>
-              ↑↓ 버튼으로 홈 섹션 순서를 바꿀 수 있습니다.
+              {mobileHomeEditOpen
+                ? "각 섹션 위의 ↑↓ 버튼으로 순서를 바꿀 수 있습니다."
+                : "편집을 누르면 홈 섹션 순서를 바꿀 수 있습니다."}
             </div>
           </div>
-          <button
-            type="button"
-            style={{ ...S.lightButton, padding: "7px 9px", fontSize: 11 }}
-            onClick={resetMobileHomeOrder}
-          >
-            초기화
-          </button>
+          <div style={{ display: "flex", gap: 6 }}>
+            {mobileHomeEditOpen && (
+              <button
+                type="button"
+                style={{ ...S.lightButton, padding: "7px 9px", fontSize: 11 }}
+                onClick={resetMobileHomeOrder}
+              >
+                초기화
+              </button>
+            )}
+            <button
+              type="button"
+              style={{
+                ...S.lightButton,
+                padding: "7px 9px",
+                fontSize: 11,
+                background: mobileHomeEditOpen ? "var(--accent)" : "var(--input-bg)",
+                color: mobileHomeEditOpen ? "white" : "var(--text-main)",
+              }}
+              onClick={() => setMobileHomeEditOpen((v) => !v)}
+            >
+              {mobileHomeEditOpen ? "완료" : "편집"}
+            </button>
+          </div>
         </div>
       </section>
 
@@ -2500,7 +2570,15 @@ export default function App() {
   );
 
   const renderMobileChatSection = () => (
-    <main style={{ minWidth: 0, display: easyLayout && mobileTab === "chat" ? "grid" : "none", gap: 12 }}>
+    <main
+      key={`easy-chat-${sectionTransitionKey}`}
+      style={{
+        minWidth: 0,
+        display: easyLayout && mobileTab === "chat" ? "grid" : "none",
+        gap: 12,
+        animation: "srFadeSlideIn 520ms cubic-bezier(0.16, 1, 0.3, 1)",
+      }}
+    >
       <section style={{ ...S.card, padding: 16 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 12 }}>
           <div>
@@ -3403,6 +3481,88 @@ export default function App() {
   return (
     <div style={{ ...S.page, ...themeVars }}>
       <audio ref={soundRef} src={currentSound.src} loop preload="auto" />
+      <style>
+        {`
+          @keyframes srFadeSlideIn {
+            0% {
+              opacity: 0;
+              transform: translateY(24px) scale(0.968);
+              filter: blur(4px);
+            }
+            55% {
+              opacity: 1;
+              transform: translateY(-3px) scale(1.004);
+              filter: blur(0);
+            }
+            100% {
+              opacity: 1;
+              transform: translateY(0) scale(1);
+              filter: blur(0);
+            }
+          }
+
+          @keyframes srOverlayFade {
+            from {
+              opacity: 0;
+            }
+            to {
+              opacity: 1;
+            }
+          }
+
+          @keyframes srOverlayFadeOut {
+            from {
+              opacity: 1;
+            }
+            to {
+              opacity: 0;
+            }
+          }
+
+          @keyframes srModalPop {
+            0% {
+              opacity: 0;
+              transform: translateY(18px) scale(0.97);
+              filter: blur(3px);
+            }
+            100% {
+              opacity: 1;
+              transform: translateY(0) scale(1);
+              filter: blur(0);
+            }
+          }
+
+          @keyframes srModalPopOut {
+            0% {
+              opacity: 1;
+              transform: translateY(0) scale(1);
+              filter: blur(0);
+            }
+            100% {
+              opacity: 0;
+              transform: translateY(14px) scale(0.97);
+              filter: blur(3px);
+            }
+          }
+
+          button,
+          select,
+          input,
+          textarea {
+            transition:
+              background-color 280ms cubic-bezier(0.16, 1, 0.3, 1),
+              color 280ms cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 280ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 320ms cubic-bezier(0.16, 1, 0.3, 1),
+              transform 240ms cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 280ms cubic-bezier(0.16, 1, 0.3, 1);
+          }
+
+          button:active {
+            transform: scale(0.965);
+          }
+        `}
+      </style>
 
       {weatherToast && (
         <div
@@ -3602,7 +3762,7 @@ export default function App() {
               alignItems: "start",
             }}
           >
-            <main style={{ minWidth: 0, display: isCompactScreen ? "none" : easyLayout && mobileTab !== "home" ? "none" : "block" }}>
+            <main style={{ minWidth: 0, display: easyLayout ? "none" : "block", animation: !easyLayout ? "srFadeSlideIn 520ms cubic-bezier(0.16, 1, 0.3, 1)" : "none" }}>
               <div
                 style={{
                   display: "grid",
@@ -4041,7 +4201,15 @@ export default function App() {
             {renderMobileHomeSection()}
 
             {easyLayout && mobileTab === "group" && (
-              <main style={{ minWidth: 0, display: "grid", gap: 12 }}>
+              <main
+                key={`easy-group-${sectionTransitionKey}`}
+                style={{
+                  minWidth: 0,
+                  display: "grid",
+                  gap: 12,
+                  animation: "srFadeSlideIn 520ms cubic-bezier(0.16, 1, 0.3, 1)",
+                }}
+              >
                 <section style={{ ...S.card, padding: 16 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
                     <div>
@@ -4281,14 +4449,22 @@ export default function App() {
             )}
 
             {easyLayout && mobileTab === "planner" && (
-              <main style={{ minWidth: 0, display: "grid", gap: 12 }}>
+              <main
+                key={`easy-planner-${sectionTransitionKey}`}
+                style={{
+                  minWidth: 0,
+                  display: "grid",
+                  gap: 12,
+                  animation: "srFadeSlideIn 520ms cubic-bezier(0.16, 1, 0.3, 1)",
+                }}
+              >
                 {renderTodayPlannerCompact(todayRecords, todayTotal, today)}
               </main>
             )}
 
             {renderMobileChatSection()}
 
-            <aside style={{ display: easyLayout && mobileTab !== "settings" ? "none" : "grid", gap: 12 }}>
+            <aside key={`easy-settings-${sectionTransitionKey}`} style={{ display: easyLayout && mobileTab !== "settings" ? "none" : "grid", gap: 12, animation: easyLayout && mobileTab === "settings" ? "srFadeSlideIn 520ms cubic-bezier(0.16, 1, 0.3, 1)" : !easyLayout ? "srFadeSlideIn 520ms cubic-bezier(0.16, 1, 0.3, 1)" : "none" }}>
               <section style={{ ...S.card, padding: 16 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                   <div>
@@ -4403,10 +4579,12 @@ export default function App() {
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => setMobileTab(item.id)}
+                  onClick={() => switchEasyTab(item.id)}
                   style={{
                     border: "none",
                     background: active ? "var(--accent-soft)" : "transparent",
+                    boxShadow: active ? "0 8px 20px var(--accent-shadow)" : "none",
+                    transform: active ? "translateY(-2px)" : "translateY(0)",
                     padding: "8px 4px",
                     borderRadius: 18,
                     display: "flex",
@@ -4419,6 +4597,7 @@ export default function App() {
                     fontWeight: 900,
                     cursor: "pointer",
                     position: "relative",
+                    transition: "background 340ms cubic-bezier(0.16, 1, 0.3, 1), color 340ms cubic-bezier(0.16, 1, 0.3, 1), transform 260ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 340ms cubic-bezier(0.16, 1, 0.3, 1)",
                   }}
                 >
                   <IconImage src={item.icon} alt={item.label} size={25} />
