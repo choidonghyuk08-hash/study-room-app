@@ -33,6 +33,62 @@ const firebaseConfig = {
   measurementId: "G-9X1G2EBMES"
 };
 
+
+
+
+const THEME_COLORS = {
+  blue: {
+    label: "파랑",
+    accent: "#3182f6",
+    accentDark: "#1b64da",
+    accentSoft: "#eff6ff",
+    accentSoft2: "#dbeafe",
+    accentSoft3: "#bfdbfe",
+    accentText: "#1d4ed8",
+    accentShadow: "rgba(49,130,246,0.24)",
+  },
+  red: {
+    label: "빨강",
+    accent: "#e5484d",
+    accentDark: "#c92a2f",
+    accentSoft: "#fff1f2",
+    accentSoft2: "#ffe4e6",
+    accentSoft3: "#fecdd3",
+    accentText: "#be123c",
+    accentShadow: "rgba(229,72,77,0.24)",
+  },
+  green: {
+    label: "초록",
+    accent: "#00a661",
+    accentDark: "#008c54",
+    accentSoft: "#ecfdf3",
+    accentSoft2: "#dcfce7",
+    accentSoft3: "#bbf7d0",
+    accentText: "#047857",
+    accentShadow: "rgba(0,166,97,0.24)",
+  },
+  purple: {
+    label: "보라",
+    accent: "#8b5cf6",
+    accentDark: "#6d28d9",
+    accentSoft: "#f5f3ff",
+    accentSoft2: "#ede9fe",
+    accentSoft3: "#ddd6fe",
+    accentText: "#6d28d9",
+    accentShadow: "rgba(139,92,246,0.24)",
+  },
+  black: {
+    label: "검정",
+    accent: "#191f28",
+    accentDark: "#000000",
+    accentSoft: "#f2f4f6",
+    accentSoft2: "#e5e8eb",
+    accentSoft3: "#d1d6db",
+    accentText: "#191f28",
+    accentShadow: "rgba(25,31,40,0.22)",
+  },
+};
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -66,8 +122,8 @@ const S = {
   page: {
     minHeight: "100vh",
     width: "100%",
-    background: "#f7f8fa",
-    color: "#191f28",
+    background: "var(--app-bg)",
+    color: "var(--text-main)",
     fontFamily: "Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
     padding: 0,
     margin: 0,
@@ -79,15 +135,15 @@ const S = {
     maxWidth: "none",
     minHeight: "100vh",
     margin: 0,
-    background: "#f7f8fa",
+    background: "var(--app-bg)",
     borderRadius: 0,
     padding: "14px 18px",
     boxSizing: "border-box",
     overflowX: "hidden",
   },
   card: {
-    background: "rgba(255,255,255,0.96)",
-    border: "1px solid rgba(229,232,235,0.85)",
+    background: "var(--card-bg)",
+    border: "1px solid var(--border)",
     borderRadius: 24,
     padding: 16,
     boxShadow: "0 12px 34px rgba(25,31,40,0.06)",
@@ -100,10 +156,10 @@ const S = {
   padding: "10px 12px",
   fontSize: 13,
   outline: "none",
-  background: "#f2f4f6",
-  color: "#191f28",
-  WebkitTextFillColor: "#191f28",
-  caretColor: "#3182f6",
+  background: "var(--input-bg)",
+  color: "var(--text-main)",
+  WebkitTextFillColor: "var(--text-main)",
+  caretColor: "var(--accent)",
 },
   textarea: {
   width: "100%",
@@ -115,10 +171,10 @@ const S = {
   outline: "none",
   minHeight: 58,
   resize: "vertical",
-  background: "#f2f4f6",
-  color: "#191f28",
-  WebkitTextFillColor: "#191f28",
-  caretColor: "#3182f6",
+  background: "var(--input-bg)",
+  color: "var(--text-main)",
+  WebkitTextFillColor: "var(--text-main)",
+  caretColor: "var(--accent)",
 },
   button: {
     border: "none",
@@ -126,9 +182,9 @@ const S = {
     padding: "10px 14px",
     fontWeight: 850,
     cursor: "pointer",
-    background: "#3182f6",
+    background: "var(--accent)",
     color: "white",
-    boxShadow: "0 8px 18px rgba(49,130,246,0.22)",
+    boxShadow: "0 8px 18px var(--accent-shadow)",
   },
   lightButton: {
     border: "1px solid transparent",
@@ -136,15 +192,15 @@ const S = {
     padding: "10px 14px",
     fontWeight: 850,
     cursor: "pointer",
-    background: "#f2f4f6",
-    color: "#191f28",
+    background: "var(--input-bg)",
+    color: "var(--text-main)",
   },
-  small: { color: "#8b95a1", fontSize: 12 },
+  small: { color: "var(--text-sub)", fontSize: 12 },
   label: {
     display: "block",
     fontSize: 12,
     fontWeight: 800,
-    color: "#4e5968",
+    color: "var(--text-mid)",
     marginBottom: 4,
   },
   grid2: {
@@ -172,7 +228,7 @@ const S = {
     maxWidth: 850,
     maxHeight: "90vh",
     overflow: "auto",
-    background: "white",
+    background: "var(--card-bg-solid)",
     borderRadius: 28,
     padding: 18,
   },
@@ -287,6 +343,37 @@ export default function App() {
 
   const [authMode, setAuthMode] = useState("login");
   const [authMsg, setAuthMsg] = useState("");
+  const [themeKey, setThemeKey] = useState(() => {
+    if (typeof window === "undefined") return "blue";
+    return window.localStorage.getItem("studyRoomTheme") || "blue";
+  });
+  const currentTheme = THEME_COLORS[themeKey] || THEME_COLORS.blue;
+  const themeVars = {
+    "--accent": currentTheme.accent,
+    "--accent-dark": currentTheme.accentDark,
+    "--accent-soft": currentTheme.accentSoft,
+    "--accent-soft-2": currentTheme.accentSoft2,
+    "--accent-soft-3": currentTheme.accentSoft3,
+    "--accent-text": currentTheme.accentText,
+    "--accent-shadow": currentTheme.accentShadow,
+    "--app-bg": "#f7f8fa",
+    "--card-bg": "rgba(255,255,255,0.96)",
+    "--card-bg-solid": "white",
+    "--text-main": "#191f28",
+    "--text-sub": "#8b95a1",
+    "--text-mid": "#4e5968",
+    "--input-bg": "#f2f4f6",
+    "--soft-bg": "#f7f8fa",
+    "--soft-bg-2": "#f2f4f6",
+    "--border": "rgba(229,232,235,0.85)",
+    "--border-soft": "#eef1f4",
+  };
+  const changeTheme = (nextTheme) => {
+    setThemeKey(nextTheme);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("studyRoomTheme", nextTheme);
+    }
+  };
   const [signup, setSignup] = useState({ id: "", pw: "", pw2: "" });
   const [login, setLogin] = useState({ id: "", pw: "" });
   const [idCheck, setIdCheck] = useState({ id: "", ok: false, msg: "" });
@@ -379,6 +466,9 @@ export default function App() {
 
   const currentGroup = groups.find((g) => g.id === enteredGroupId) || null;
   const selectedGroup = groups.find((g) => g.id === selectedGroupId) || null;
+  const selectedGroupBannedMembers = Object.values(selectedGroup?.bannedMembers || {}).sort(
+    (a, b) => (b.bannedAtMs || 0) - (a.bannedAtMs || 0)
+  );
   const currentSound = SOUND_OPTIONS.find((item) => item.id === soundType) || SOUND_OPTIONS[0];
 
   useEffect(() => {
@@ -1049,6 +1139,12 @@ export default function App() {
       const group = { id: groupId, ...groupSnap.data() };
       if (group.password !== password) throw new Error("방 ID 또는 비밀번호가 틀렸습니다.");
 
+      const bannedUids = group.bannedUids || [];
+      const bannedMembers = group.bannedMembers || {};
+      if (bannedUids.includes(uid) || bannedMembers[uid]) {
+        throw new Error("방장에 의해 추방된 계정입니다. 방장이 재입장을 허용해야 다시 입장할 수 있습니다.");
+      }
+
       const nextMembers = Array.from(new Set([...(group.memberUids || []), uid]));
 
       await updateDoc(doc(db, "groups", groupId), {
@@ -1139,25 +1235,74 @@ export default function App() {
 
     const memberName = member.displayName || member.userId || "선택한 멤버";
     const ok = window.confirm(
-      `정말 "${memberName}"님을 이 방에서 추방하시겠습니까?\n\n추방하면 해당 멤버는 방 목록에서 제거되며, 다시 입장하려면 방 ID와 비밀번호가 필요합니다.`
+      `정말 "${memberName}"님을 이 방에서 추방하시겠습니까?\n\n추방된 멤버는 방장이 재입장을 허용하기 전까지 방 ID와 비밀번호를 입력해도 다시 입장할 수 없습니다.`
     );
 
     if (!ok) return;
 
     try {
       const nextMembers = (group.memberUids || []).filter((memberUid) => memberUid !== member.uid);
+      const nextBannedUids = Array.from(new Set([...(group.bannedUids || []), member.uid]));
+      const nextBannedMembers = {
+        ...(group.bannedMembers || {}),
+        [member.uid]: {
+          uid: member.uid,
+          userId: member.userId || "",
+          displayName: memberName,
+          role: member.role || "참여자",
+          bannedAtMs: Date.now(),
+          bannedAtLabel: nowTime(),
+          bannedByUid: uid,
+          bannedByName: displayName,
+        },
+      };
 
       await updateDoc(doc(db, "groups", group.id), {
         memberUids: nextMembers,
+        bannedUids: nextBannedUids,
+        bannedMembers: nextBannedMembers,
         updatedAt: serverTimestamp(),
       });
 
       await deleteDoc(doc(db, "groups", group.id, "members", member.uid));
 
-      setGroupMsg(`"${memberName}"님을 방에서 추방했습니다.`);
+      setGroupMsg(`"${memberName}"님을 방에서 추방했습니다. 방장이 재입장을 허용해야 다시 입장할 수 있습니다.`);
     } catch (error) {
       console.error(error);
       setGroupMsg("멤버 추방 중 오류가 발생했습니다.");
+    }
+  };
+
+  const allowMemberReentry = async (group, bannedMember) => {
+    if (!group || !bannedMember) return;
+
+    if (group.ownerUid !== uid) {
+      alert("방장만 재입장을 허용할 수 있습니다.");
+      return;
+    }
+
+    const memberName = bannedMember.displayName || bannedMember.userId || "선택한 멤버";
+    const ok = window.confirm(
+      `"${memberName}"님의 재입장을 허용하시겠습니까?\n\n허용 후에는 해당 멤버가 방 ID와 비밀번호를 입력하면 다시 입장할 수 있습니다.`
+    );
+
+    if (!ok) return;
+
+    try {
+      const nextBannedUids = (group.bannedUids || []).filter((memberUid) => memberUid !== bannedMember.uid);
+      const nextBannedMembers = { ...(group.bannedMembers || {}) };
+      delete nextBannedMembers[bannedMember.uid];
+
+      await updateDoc(doc(db, "groups", group.id), {
+        bannedUids: nextBannedUids,
+        bannedMembers: nextBannedMembers,
+        updatedAt: serverTimestamp(),
+      });
+
+      setGroupMsg(`"${memberName}"님의 재입장을 허용했습니다. 이제 방 ID와 비밀번호로 다시 입장할 수 있습니다.`);
+    } catch (error) {
+      console.error(error);
+      setGroupMsg("재입장 허용 중 오류가 발생했습니다.");
     }
   };
 
@@ -1430,14 +1575,14 @@ export default function App() {
       <section style={{ ...S.card, padding: 14, minWidth: 0 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
           <div>
-            <div style={{ ...S.small, fontWeight: 900, color: "#3182f6" }}>그룹원 현황 및 랭킹</div>
+            <div style={{ ...S.small, fontWeight: 900, color: "var(--accent)" }}>그룹원 현황 및 랭킹</div>
             <h2 style={{ margin: "2px 0 0", fontSize: 20 }}>그룹 오늘 합계</h2>
             <p style={{ ...S.small, margin: "4px 0 0" }}>
               공부 기준일은 06:00부터 다음 날 06:00까지입니다.
             </p>
           </div>
           <div style={{ textAlign: "right" }}>
-            <b style={{ color: "#191f28", display: "block" }}>{formatTimer(groupTodayTotal)}</b>
+            <b style={{ color: "var(--text-main)", display: "block" }}>{formatTimer(groupTodayTotal)}</b>
             <div style={{ ...S.small, fontSize: 10 }}>
               <span style={{ color: "#22c55e", fontWeight: 900 }}>●</span> 접속 중
               <span style={{ color: "#cbd5e1", fontWeight: 900, marginLeft: 8 }}>●</span> 미접속
@@ -1555,8 +1700,8 @@ export default function App() {
       >
         <div
           style={{
-            background: "linear-gradient(135deg, #eaf4ff 0%, #dbeafe 45%, #bfdbfe 100%)",
-            color: "#1d4ed8",
+            background: "linear-gradient(135deg, var(--accent-soft) 0%, var(--accent-soft-2) 45%, var(--accent-soft-3) 100%)",
+            color: "var(--accent-text)",
             padding: "8px 10px",
             borderRadius: 12,
             marginBottom: 8,
@@ -1565,7 +1710,7 @@ export default function App() {
             justifyContent: "space-between",
             alignItems: "center",
             gap: 8,
-            border: "1px solid #dbeafe",
+            border: "1px solid var(--accent-soft-2)",
           }}
         >
           <div>
@@ -1615,8 +1760,8 @@ export default function App() {
             {plannerDday && (
               <div
                 style={{
-                  background: "#f2f4f6",
-                  border: "1px solid #e5e8eb",
+                  background: "var(--input-bg)",
+                  border: "1px solid var(--border)",
                   borderRadius: 10,
                   padding: 6,
                   marginTop: 6,
@@ -1630,8 +1775,8 @@ export default function App() {
             <SectionTitle>CONTENTS</SectionTitle>
             <div
               style={{
-                background: "#f2f4f6",
-                border: "1px solid #e5e8eb",
+                background: "var(--input-bg)",
+                border: "1px solid var(--border)",
                 borderRadius: 10,
                 padding: 7,
                 minHeight: 54,
@@ -1658,7 +1803,7 @@ export default function App() {
             <SectionTitle>TASK</SectionTitle>
             <div
               style={{
-                borderTop: "1px solid #e4e4e7",
+                borderTop: "1px solid var(--border)",
                 flex: 1,
                 minHeight: 118,
                 overflowY: "auto",
@@ -1673,7 +1818,7 @@ export default function App() {
                       gridTemplateColumns: "74px 1fr 58px",
                       gap: 6,
                       padding: "5px 0",
-                      borderBottom: "1px solid #e4e4e7",
+                      borderBottom: "1px solid var(--border)",
                       fontSize: 11,
                     }}
                   >
@@ -1704,7 +1849,7 @@ export default function App() {
             <div
               style={{
                 marginTop: 6,
-                borderTop: "1px solid #e4e4e7",
+                borderTop: "1px solid var(--border)",
                 flex: 1,
                 minHeight: 0,
                 overflowY: "auto",
@@ -1719,7 +1864,7 @@ export default function App() {
                       display: "grid",
                       gridTemplateColumns: "42px 1fr",
                       minHeight: 24,
-                      borderBottom: "1px solid #e4e4e7",
+                      borderBottom: "1px solid var(--border)",
                     }}
                   >
                     <div style={{ paddingTop: 5, fontSize: 9, color: "#71717a" }}>{hour}</div>
@@ -1728,10 +1873,10 @@ export default function App() {
                         <div
                           key={r.id}
                           style={{
-                            background: "linear-gradient(135deg, #e8f3ff 0%, #dff6ff 100%)",
-                            border: "1px solid #c9e2ff",
-                            color: "#1b64da",
-                            boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.55)",
+                            background: "linear-gradient(135deg, var(--accent-soft) 0%, var(--accent-soft-2) 100%)",
+                            border: "1px solid var(--accent-soft-3)",
+                            color: "var(--accent-text)",
+                            boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.45)",
                             borderRadius: 7,
                             padding: 4,
                             fontSize: 9,
@@ -1757,12 +1902,12 @@ export default function App() {
       <div style={S.card}>
         <div
           style={{
-            background: "linear-gradient(135deg, #eaf4ff 0%, #dbeafe 45%, #bfdbfe 100%)",
-            color: "#1d4ed8",
+            background: "linear-gradient(135deg, var(--accent-soft) 0%, var(--accent-soft-2) 45%, var(--accent-soft-3) 100%)",
+            color: "var(--accent-text)",
             padding: 16,
             borderRadius: 18,
             marginBottom: 18,
-            border: "1px solid #dbeafe",
+            border: "1px solid var(--accent-soft-2)",
           }}
         >
           <div style={{ fontSize: 12, letterSpacing: 2, opacity: 0.8 }}>
@@ -1810,8 +1955,8 @@ export default function App() {
             <SectionTitle>CONTENTS</SectionTitle>
             <div
               style={{
-                background: "#f2f4f6",
-                border: "1px solid #e5e8eb",
+                background: "var(--input-bg)",
+                border: "1px solid var(--border)",
                 borderRadius: 16,
                 padding: 12,
                 minHeight: 60,
@@ -1834,7 +1979,7 @@ export default function App() {
             </div>
 
             <SectionTitle>TASK</SectionTitle>
-            <div style={{ borderTop: "1px solid #e4e4e7" }}>
+            <div style={{ borderTop: "1px solid var(--border)" }}>
               {list.length ? (
                 list.map((r) => (
                   <div
@@ -1844,7 +1989,7 @@ export default function App() {
                       gridTemplateColumns: "90px 1fr 80px",
                       gap: 8,
                       padding: "10px 0",
-                      borderBottom: "1px solid #e4e4e7",
+                      borderBottom: "1px solid var(--border)",
                       fontSize: 13,
                     }}
                   >
@@ -1881,7 +2026,7 @@ export default function App() {
             <SectionTitle>TIME TABLE</SectionTitle>
             <div style={S.small}>06:00부터 다음날 05:00까지 하루 흐름으로 표시됩니다.</div>
 
-            <div style={{ marginTop: 10, borderTop: "1px solid #e4e4e7" }}>
+            <div style={{ marginTop: 10, borderTop: "1px solid var(--border)" }}>
               {timeTableHours.map((hour) => {
                 const hourRecords = recordsByHour(hour, list);
                 return (
@@ -1891,7 +2036,7 @@ export default function App() {
                       display: "grid",
                       gridTemplateColumns: "60px 1fr",
                       minHeight: 38,
-                      borderBottom: "1px solid #e4e4e7",
+                      borderBottom: "1px solid var(--border)",
                     }}
                   >
                     <div style={{ paddingTop: 9, fontSize: 12, color: "#71717a" }}>
@@ -1902,10 +2047,10 @@ export default function App() {
                         <div
                           key={r.id}
                           style={{
-                            background: "linear-gradient(135deg, #e8f3ff 0%, #dff6ff 100%)",
-                            border: "1px solid #c9e2ff",
-                            color: "#1b64da",
-                            boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.55)",
+                            background: "linear-gradient(135deg, var(--accent-soft) 0%, var(--accent-soft-2) 100%)",
+                            border: "1px solid var(--accent-soft-3)",
+                            color: "var(--accent-text)",
+                            boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.45)",
                             borderRadius: 10,
                             padding: 7,
                             fontSize: 12,
@@ -1929,12 +2074,12 @@ export default function App() {
   };
 
   if (loadingAuth) {
-    return <div style={S.page}>앱을 불러오는 중입니다...</div>;
+    return <div style={{ ...S.page, ...themeVars }}>앱을 불러오는 중입니다...</div>;
   }
 
   if (!user) {
     return (
-      <div style={S.page}>
+      <div style={{ ...S.page, ...themeVars }}>
         <div style={{ maxWidth: 900, margin: "40px auto" }}>
           <div style={{ ...S.card, padding: 0, overflow: "hidden" }}>
             <div style={S.grid2}>
@@ -2105,21 +2250,21 @@ export default function App() {
   }
 
   return (
-    <div style={S.page}>
+    <div style={{ ...S.page, ...themeVars }}>
       <audio ref={soundRef} src={currentSound.src} loop preload="auto" />
       <div
         style={{
           display: "grid",
           gridTemplateColumns: isCompactScreen ? "1fr" : "58px minmax(0, 1fr)",
           minHeight: "100vh",
-          background: "#f7f8fa",
+          background: "var(--app-bg)",
         }}
       >
         {!isCompactScreen && (
           <aside
             style={{
               borderRight: "1px solid #eef1f4",
-              background: "white",
+              background: "var(--card-bg-solid)",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
@@ -2202,7 +2347,7 @@ export default function App() {
                     margin: 0,
                     fontSize: 18,
                     letterSpacing: -0.4,
-                    color: "#191f28",
+                    color: "var(--text-main)",
                     whiteSpace: "nowrap",
                   }}
                 >
@@ -2214,17 +2359,17 @@ export default function App() {
                   height: 28,
                   padding: "0 10px",
                   borderRadius: 999,
-                  background: "white",
-                  border: "1px solid #eef1f4",
+                  background: "var(--card-bg-solid)",
+                  border: "1px solid var(--border-soft)",
                   display: "flex",
                   alignItems: "center",
                   gap: 6,
-                  color: "#6b7684",
+                  color: "var(--text-sub)",
                   fontSize: 12,
                   minWidth: 0,
                 }}
               >
-                <span style={{ color: "#3182f6", fontWeight: 900 }}>●</span>
+                <span style={{ color: "var(--accent)", fontWeight: 900 }}>●</span>
                 <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {currentGroup?.name || "입장한 방 없음"}
                 </span>
@@ -2273,7 +2418,7 @@ export default function App() {
                 }}
               >
                 {[
-                  ["오늘 총 공부", formatTimer(todayTotalWithLive), studying ? "진행 중 포함" : "저장된 기록 기준", "#3182f6"],
+                  ["오늘 총 공부", formatTimer(todayTotalWithLive), studying ? "진행 중 포함" : "저장된 기록 기준", "var(--accent)"],
                   ["현재 과목", subject, formatTimer(currentSessionSeconds), "#00a661"],
                   ["과목 오늘 누적", formatStudy(currentSubjectTodayTotal), subject, "#8b5cf6"],
                   ["그룹 오늘 합계", formatTimer(groupTodayTotal), currentGroup?.name || "방 없음", "#f97316"],
@@ -2284,7 +2429,7 @@ export default function App() {
                       ...S.card,
                       padding: "13px 14px",
                       minHeight: 92,
-                      border: "1px solid #eef1f4",
+                      border: "1px solid var(--border-soft)",
                     }}
                   >
                     <div style={{ ...S.small, fontWeight: 900 }}>{title}</div>
@@ -2294,7 +2439,7 @@ export default function App() {
                         fontWeight: 950,
                         letterSpacing: -1,
                         marginTop: 8,
-                        color: "#191f28",
+                        color: "var(--text-main)",
                         lineHeight: 1.05,
                         overflow: "hidden",
                         textOverflow: "ellipsis",
@@ -2317,7 +2462,7 @@ export default function App() {
                   padding: 14,
                   marginBottom: 12,
                   background: "linear-gradient(180deg, #ffffff 0%, #fbfcfd 100%)",
-                  border: "1px solid #eef1f4",
+                  border: "1px solid var(--border-soft)",
                 }}
               >
                 <div
@@ -2330,7 +2475,7 @@ export default function App() {
                   }}
                 >
                   <div>
-                    <div style={{ ...S.small, fontWeight: 900, color: "#3182f6" }}>실시간 순공 측정</div>
+                    <div style={{ ...S.small, fontWeight: 900, color: "var(--accent)" }}>실시간 순공 측정</div>
                     <h2 style={{ margin: "2px 0 0", fontSize: 24, letterSpacing: -0.8 }}>
                       {studying ? `${subject} 공부 중` : "오늘 시작하기"}
                     </h2>
@@ -2355,8 +2500,8 @@ export default function App() {
                 >
                   <div
                     style={{
-                      background: "#f7f8fa",
-                      border: "1px solid #eef1f4",
+                      background: "var(--app-bg)",
+                      border: "1px solid var(--border-soft)",
                       borderRadius: 18,
                       padding: 12,
                     }}
@@ -2416,15 +2561,15 @@ export default function App() {
                         </button>
                       )}
                       <div style={{ ...S.small, lineHeight: 1.4 }}>
-                        친구에게 표시: <b style={{ color: "#191f28" }}>{subject}</b> · {detail}
+                        친구에게 표시: <b style={{ color: "var(--text-main)" }}>{subject}</b> · {detail}
                       </div>
                     </div>
                   </div>
 
                   <div
                     style={{
-                      background: "white",
-                      border: "1px solid #eef1f4",
+                      background: "var(--card-bg-solid)",
+                      border: "1px solid var(--border-soft)",
                       borderRadius: 18,
                       padding: 12,
                     }}
@@ -2512,9 +2657,9 @@ export default function App() {
                               ...S.lightButton,
                               padding: "6px 9px",
                               fontSize: 12,
-                              color: "#2563eb",
-                              borderColor: "#bfdbfe",
-                              background: "#eff6ff",
+                              color: "var(--accent)",
+                              borderColor: "var(--accent-soft-3)",
+                              background: "var(--accent-soft)",
                             }}
                             onClick={() => setShowRoomPassword((v) => !v)}
                           >
@@ -2536,7 +2681,77 @@ export default function App() {
                       </div>
                     )}
 
-                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #eef1f4" }}>
+                    {selectedGroup?.ownerUid === uid && (
+                      <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border-soft)" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
+                          <div>
+                            <div style={{ ...S.small, fontWeight: 900 }}>추방 멤버 관리</div>
+                            <div style={{ ...S.small, fontSize: 11, marginTop: 3 }}>
+                              추방된 멤버는 재입장 허용 전까지 방 ID와 비밀번호를 입력해도 들어올 수 없습니다.
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
+                          {selectedGroupBannedMembers.length ? (
+                            selectedGroupBannedMembers.map((member) => (
+                              <div
+                                key={member.uid}
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                  gap: 8,
+                                  padding: "8px 10px",
+                                  borderRadius: 12,
+                                  background: "#fff7ed",
+                                  border: "1px solid #fed7aa",
+                                }}
+                              >
+                                <div style={{ minWidth: 0 }}>
+                                  <b style={{ display: "block", fontSize: 12, color: "#9a3412" }}>
+                                    {member.displayName || member.userId || "이름 없음"}
+                                  </b>
+                                  <span style={{ ...S.small, fontSize: 10 }}>
+                                    추방 시간 {member.bannedAtLabel || "정보 없음"}
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => allowMemberReentry(selectedGroup, member)}
+                                  style={{
+                                    ...S.lightButton,
+                                    flex: "0 0 auto",
+                                    padding: "6px 9px",
+                                    fontSize: 11,
+                                    color: "var(--accent)",
+                                    borderColor: "var(--accent-soft-3)",
+                                    background: "var(--accent-soft)",
+                                  }}
+                                >
+                                  재입장 허용
+                                </button>
+                              </div>
+                            ))
+                          ) : (
+                            <div
+                              style={{
+                                padding: "8px 10px",
+                                borderRadius: 12,
+                                background: "#f8fafc",
+                                border: "1px solid #e2e8f0",
+                                ...S.small,
+                                fontSize: 11,
+                              }}
+                            >
+                              추방된 멤버가 없습니다.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border-soft)" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
                         <div>
                           <div style={{ ...S.small, fontWeight: 900 }}>공부 중 채팅 알림</div>
@@ -2569,7 +2784,7 @@ export default function App() {
                       </p>
                     </div>
 
-                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #eef1f4" }}>
+                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border-soft)" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
                         <div>
                           <div style={{ ...S.small, fontWeight: 900 }}>백색소음</div>
@@ -2671,13 +2886,45 @@ export default function App() {
                 </div>
               </section>
 
+              <section style={{ ...S.card, padding: 16 }}>
+                <div style={{ ...S.small, fontWeight: 900, color: "var(--accent)" }}>테마 색상</div>
+                <h3 style={{ margin: "4px 0 10px", fontSize: 18 }}>
+                  {currentTheme.label}
+                </h3>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
+                  {Object.entries(THEME_COLORS).map(([key, theme]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      title={theme.label}
+                      onClick={() => changeTheme(key)}
+                      style={{
+                        position: "relative",
+                        height: 34,
+                        borderRadius: 14,
+                        border: themeKey === key ? `2px solid ${theme.accent}` : "1px solid #e5e8eb",
+                        background: theme.accent,
+                        cursor: "pointer",
+                        boxShadow: themeKey === key ? `0 0 0 4px ${theme.accentShadow}` : "none",
+                      }}
+                    >
+                      <span style={{ position: "absolute", opacity: 0 }}>{theme.label}</span>
+                    </button>
+                  ))}
+                </div>
+                <p style={{ ...S.small, margin: "8px 0 0" }}>
+                  빨강, 초록, 파랑, 보라, 검정 중 원하는 색으로 앱의 주요 색상을 바꿀 수 있습니다.
+                </p>
+
+                </section>
+
               <section
                 style={{
-                  background: "linear-gradient(135deg, #3182f6 0%, #1b64da 100%)",
+                  background: "linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%)",
                   color: "white",
                   borderRadius: 28,
                   padding: "20px 18px",
-                  boxShadow: "0 18px 42px rgba(49,130,246,0.28)",
+                  boxShadow: "0 18px 42px var(--accent-shadow)",
                 }}
               >
                 <div style={{ fontSize: 12, opacity: 0.78, fontWeight: 900 }}>오늘 총 공부시간</div>
@@ -2690,10 +2937,10 @@ export default function App() {
               </section>
 
               <section style={{ ...S.card, padding: 16 }}>
-                <div style={{ ...S.small, fontWeight: 900, color: "#3182f6" }}>오늘 할 일</div>
+                <div style={{ ...S.small, fontWeight: 900, color: "var(--accent)" }}>오늘 할 일</div>
                 <h3 style={{ margin: "4px 0 10px", fontSize: 18 }}>선택한 D-DAY</h3>
                 {selectedDday ? (
-                  <div style={{ background: "#f7f8fa", borderRadius: 16, padding: 12 }}>
+                  <div style={{ background: "var(--app-bg)", borderRadius: 16, padding: 12 }}>
                     <b>{selectedDday.title}</b>
                     <div style={{ ...S.small, marginTop: 4 }}>
                       {formatDday(selectedDday.date)} · {selectedDday.category} · 중요도 {selectedDday.priority}
@@ -2947,7 +3194,7 @@ export default function App() {
                     <div
                       key={d.id}
                       style={{
-                        border: "1px solid #e5e8eb",
+                        border: "1px solid var(--border)",
                         borderRadius: 16,
                         padding: 12,
                         marginBottom: 10,
@@ -3105,7 +3352,7 @@ export default function App() {
                         onClick={() => date && setPlannerDate(date)}
                         style={{
                           minHeight: 60,
-                          border: "1px solid #e5e8eb",
+                          border: "1px solid var(--border)",
                           borderRadius: 14,
                           background: selected ? "#18181b" : "white",
                           color: selected ? "white" : "#18181b",
@@ -3151,7 +3398,7 @@ export default function App() {
               style={{
                 height: 360,
                 overflowY: "auto",
-                border: "1px solid #e5e8eb",
+                border: "1px solid var(--border)",
                 borderRadius: 18,
                 padding: 14,
                 background: "#f9fafb",
