@@ -232,7 +232,7 @@ const SOUND_OPTIONS = [
   { id: "rain", label: "빗소리", src: "/sounds/rain.mp3" },
   { id: "fireplace", label: "장작소리", src: "/sounds/fireplace.mp3" },
   { id: "whale", label: "고래소리", src: "/sounds/whale.mp3" },
-  { id: "airplane", label: "비행기 소리", src: "/sounds/airplane.mp3", notice: "초반에 안내방송이 들어 있어 집중 전 미리 확인해줘." },
+  { id: "airplane", label: "비행기 소리", src: "/sounds/airplane.mp3", notice: "초반에 안내방송이 들어 있습니다. 집중 전 미리 확인해 주세요." },
 ];
 
 function Modal({ title, onClose, children }) {
@@ -402,7 +402,7 @@ export default function App() {
         .play()
         .catch(() => {
           setSoundPlaying(false);
-          alert("브라우저가 자동 재생을 막았어. 재생 버튼을 다시 눌러줘.");
+          alert("브라우저가 자동 재생을 차단했습니다. 재생 버튼을 다시 눌러 주세요.");
         });
     }
   }, [soundType]);
@@ -425,7 +425,7 @@ export default function App() {
       setSoundPlaying(true);
     } catch (error) {
       console.error("백색소음 재생 실패:", error);
-      alert("소리를 재생할 수 없어. 파일 위치가 public/sounds 안에 있는지 확인해줘.");
+      alert("소리를 재생할 수 없습니다. 파일 위치가 public/sounds 안에 있는지 확인해 주세요.");
     }
   };
 
@@ -503,6 +503,17 @@ export default function App() {
       const mine = all.filter((g) => (g.memberUids || []).includes(uid));
       mine.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
       setGroups(mine);
+
+      const stillInEnteredGroup = enteredGroupId
+        ? mine.some((g) => g.id === enteredGroupId)
+        : true;
+
+      if (enteredGroupId && !stillInEnteredGroup) {
+        setEnteredGroupId("");
+        setSelectedGroupId(mine[0]?.id || "");
+        setGroupMsg("현재 방에서 나갔거나 추방되었습니다.");
+        return;
+      }
 
       if (!enteredGroupId && mine[0]) {
         setEnteredGroupId(mine[0].id);
@@ -824,15 +835,15 @@ export default function App() {
   const checkId = async () => {
     const id = normalizeId(signup.id);
     if (!id) {
-      setIdCheck({ id: "", ok: false, msg: "아이디를 입력해줘." });
+      setIdCheck({ id: "", ok: false, msg: "아이디를 입력해 주세요." });
       return;
     }
 
     const snap = await getDoc(doc(db, "userIds", id));
     if (snap.exists()) {
-      setIdCheck({ id, ok: false, msg: `${id}는 이미 사용 중이야.` });
+      setIdCheck({ id, ok: false, msg: `${id}는 이미 사용 중입니다.` });
     } else {
-      setIdCheck({ id, ok: true, msg: `${id}는 사용할 수 있어.` });
+      setIdCheck({ id, ok: true, msg: `${id}는 사용할 수 있습니다.` });
     }
   };
 
@@ -842,11 +853,11 @@ export default function App() {
       const pw = normalizePw(signup.pw);
       const pw2 = normalizePw(signup.pw2);
 
-      if (!id) throw new Error("아이디를 입력해줘.");
-      if (idCheck.id !== id || !idCheck.ok) throw new Error("아이디 중복 확인을 해줘.");
-      if (!pw || !pw2) throw new Error("비밀번호를 두 번 입력해줘.");
-      if (pw.length < 6) throw new Error("비밀번호는 최소 6글자 이상이어야 해.");
-      if (pw !== pw2) throw new Error("비밀번호가 서로 달라.");
+      if (!id) throw new Error("아이디를 입력해 주세요.");
+      if (idCheck.id !== id || !idCheck.ok) throw new Error("아이디 중복 확인을 해 주세요.");
+      if (!pw || !pw2) throw new Error("비밀번호를 두 번 입력해 주세요.");
+      if (pw.length < 6) throw new Error("비밀번호는 최소 6글자 이상이어야 합니다.");
+      if (pw !== pw2) throw new Error("비밀번호가 서로 다릅니다.");
 
       const cred = await createUserWithEmailAndPassword(auth, loginEmail(id), pw);
 
@@ -866,7 +877,7 @@ export default function App() {
 
       setAuthMsg("");
     } catch (e) {
-      setAuthMsg(e.message || "회원가입 중 오류가 생겼어.");
+      setAuthMsg(e.message || "회원가입 중 오류가 발생했습니다.");
     }
   };
 
@@ -879,7 +890,7 @@ export default function App() {
       );
       setAuthMsg("");
     } catch {
-      setAuthMsg("아이디 또는 비밀번호가 맞지 않아.");
+      setAuthMsg("아이디 또는 비밀번호가 맞지 않습니다.");
     }
   };
 
@@ -901,10 +912,10 @@ export default function App() {
       const newPw2 = normalizePw(profileForm.newPw2);
 
       if ((newPw || newPw2) && newPw !== newPw2) {
-        throw new Error("새 비밀번호가 서로 달라.");
+        throw new Error("새 비밀번호가 서로 다릅니다.");
       }
       if (newPw) {
-        if (newPw.length < 6) throw new Error("비밀번호는 최소 6글자 이상이어야 해.");
+        if (newPw.length < 6) throw new Error("비밀번호는 최소 6글자 이상이어야 합니다.");
         await updatePassword(user, newPw);
       }
 
@@ -915,9 +926,9 @@ export default function App() {
         updatedAt: serverTimestamp(),
       });
 
-      setProfileMsg("저장됐어.");
+      setProfileMsg("저장되었습니다.");
     } catch (e) {
-      setProfileMsg(e.message || "저장 중 오류가 생겼어.");
+      setProfileMsg(e.message || "저장 중 오류가 발생했습니다.");
     }
   };
 
@@ -948,7 +959,7 @@ export default function App() {
     setPendingCode(code);
     setCodeMsg(
       `중복 확인 완료: ${code}는 사용 가능해. ${
-        count > 1 ? `${count}번 확인했어.` : "한 번에 생성됐어."
+        count > 1 ? `${count}번 확인했습니다.` : "한 번에 생성되었습니다."
       }`
     );
     return code;
@@ -958,15 +969,15 @@ export default function App() {
     try {
       const name = createRoom.name.trim();
       const description = createRoom.description.trim() || "새로 만든 스터디 그룹";
-      const goal = createRoom.goal.trim() || "오늘 목표를 정해보자";
+      const goal = createRoom.goal.trim() || "오늘 목표를 정해 보세요";
       const password = normalizeRoomPw(createRoom.password);
 
-      if (!name) throw new Error("방 이름을 입력해줘.");
-      if (!/^[0-9]{8}$/.test(password)) throw new Error("비밀번호는 숫자 8개여야 해.");
+      if (!name) throw new Error("방 이름을 입력해 주세요.");
+      if (!/^[0-9]{8}$/.test(password)) throw new Error("비밀번호는 숫자 8개여야 합니다.");
 
       const code = pendingCode || (await generateRoomCode());
       const codeSnap = await getDoc(doc(db, "roomCodes", code));
-      if (codeSnap.exists()) throw new Error("방 ID가 이미 있어. 다시 생성해줘.");
+      if (codeSnap.exists()) throw new Error("방 ID가 이미 있습니다. 다시 생성해 주세요.");
 
       const groupRef = await addDoc(collection(db, "groups"), {
         name,
@@ -1004,7 +1015,7 @@ export default function App() {
       await addDoc(collection(db, "groups", groupRef.id, "messages"), {
         senderUid: uid,
         senderName: displayName,
-        text: "스터디 그룹을 만들었어.",
+        text: "스터디 그룹을 만들었습니다.",
         createdAt: serverTimestamp(),
       });
 
@@ -1014,9 +1025,9 @@ export default function App() {
       setPendingCode("");
       setCodeMsg("");
       setCreateRoom({ name: "", description: "", goal: "", password: "" });
-      setGroupMsg(`방이 생성됐어. 방 ID는 ${code}야.`);
+      setGroupMsg(`방이 생성되었습니다. 방 ID는 ${code}입니다.`);
     } catch (e) {
-      setGroupMsg(e.message || "방 생성 중 오류가 생겼어.");
+      setGroupMsg(e.message || "방 생성 중 오류가 발생했습니다.");
     }
   };
 
@@ -1025,18 +1036,18 @@ export default function App() {
       const code = normalizeRoomCode(joinRoom.code);
       const password = normalizeRoomPw(joinRoom.password);
 
-      if (!/^[A-Z]{8}$/.test(code)) throw new Error("방 ID는 영어 대문자 8자야.");
-      if (!/^[0-9]{8}$/.test(password)) throw new Error("비밀번호는 숫자 8개야.");
+      if (!/^[A-Z]{8}$/.test(code)) throw new Error("방 ID는 영어 대문자 8자입니다.");
+      if (!/^[0-9]{8}$/.test(password)) throw new Error("비밀번호는 숫자 8개입니다.");
 
       const codeSnap = await getDoc(doc(db, "roomCodes", code));
-      if (!codeSnap.exists()) throw new Error("해당 방 ID를 찾을 수 없어.");
+      if (!codeSnap.exists()) throw new Error("해당 방 ID를 찾을 수 없습니다.");
 
       const groupId = codeSnap.data().groupId;
       const groupSnap = await getDoc(doc(db, "groups", groupId));
-      if (!groupSnap.exists()) throw new Error("방 정보를 찾을 수 없어.");
+      if (!groupSnap.exists()) throw new Error("방 정보를 찾을 수 없습니다.");
 
       const group = { id: groupId, ...groupSnap.data() };
-      if (group.password !== password) throw new Error("방 ID 또는 비밀번호가 틀렸어.");
+      if (group.password !== password) throw new Error("방 ID 또는 비밀번호가 틀렸습니다.");
 
       const nextMembers = Array.from(new Set([...(group.memberUids || []), uid]));
 
@@ -1066,9 +1077,9 @@ export default function App() {
       setSelectedGroupId(groupId);
       setEnteredGroupId(groupId);
       setJoinRoom({ code: "", password: "" });
-      setGroupMsg(`${group.name}에 입장했어.`);
+      setGroupMsg(`${group.name}에 입장했습니다.`);
     } catch (e) {
-      setGroupMsg(e.message || "방 입장 중 오류가 생겼어.");
+      setGroupMsg(e.message || "방 입장 중 오류가 발생했습니다.");
     }
   };
 
@@ -1076,12 +1087,12 @@ export default function App() {
   if (!group) return;
 
   if (group.ownerUid !== uid) {
-    alert("방장만 방을 없앨 수 있어.");
+    alert("방장만 방을 삭제할 수 있습니다.");
     return;
   }
 
   const ok = window.confirm(
-    `정말 "${group.name}" 방을 없애시겠습니까?\n\n삭제하면 방 정보, 그룹원 정보, 채팅 기록이 삭제되며 되돌릴 수 없습니다.`
+    `정말 "${group.name}" 방을 삭제하시겠습니까?\n\n삭제하면 방 정보, 그룹원 정보, 채팅 기록이 삭제되며 되돌릴 수 없습니다.`
   );
 
   if (!ok) return;
@@ -1107,12 +1118,49 @@ export default function App() {
       setSelectedGroupId("");
     }
 
-    setGroupMsg(`"${group.name}" 방을 삭제했어.`);
+    setGroupMsg(`"${group.name}" 방을 삭제했습니다.`);
   } catch (error) {
     console.error(error);
-    setGroupMsg("방 삭제 중 오류가 생겼어.");
+    setGroupMsg("방 삭제 중 오류가 발생했습니다.");
   }
 };
+  const kickMember = async (group, member) => {
+    if (!group || !member) return;
+
+    if (group.ownerUid !== uid) {
+      alert("방장만 멤버를 추방할 수 있습니다.");
+      return;
+    }
+
+    if (member.uid === uid) {
+      alert("방장은 자기 자신을 추방할 수 없습니다.");
+      return;
+    }
+
+    const memberName = member.displayName || member.userId || "선택한 멤버";
+    const ok = window.confirm(
+      `정말 "${memberName}"님을 이 방에서 추방하시겠습니까?\n\n추방하면 해당 멤버는 방 목록에서 제거되며, 다시 입장하려면 방 ID와 비밀번호가 필요합니다.`
+    );
+
+    if (!ok) return;
+
+    try {
+      const nextMembers = (group.memberUids || []).filter((memberUid) => memberUid !== member.uid);
+
+      await updateDoc(doc(db, "groups", group.id), {
+        memberUids: nextMembers,
+        updatedAt: serverTimestamp(),
+      });
+
+      await deleteDoc(doc(db, "groups", group.id, "members", member.uid));
+
+      setGroupMsg(`"${memberName}"님을 방에서 추방했습니다.`);
+    } catch (error) {
+      console.error(error);
+      setGroupMsg("멤버 추방 중 오류가 발생했습니다.");
+    }
+  };
+
   const addSubject = () => {
     const value = newSubject.trim();
     if (!value || studying) return;
@@ -1123,12 +1171,12 @@ export default function App() {
 
   const startStudy = async () => {
     if (!subject || !detail.trim()) {
-      alert("과목과 자세한 공부 내용을 입력해줘.");
+      alert("과목과 자세한 공부 내용을 입력해 주세요.");
       return;
     }
 
     if (!uid) {
-      alert("로그인 정보가 확인되지 않았어. 다시 로그인해줘.");
+      alert("로그인 정보가 확인되지 않았습니다. 다시 로그인해 주세요.");
       return;
     }
 
@@ -1267,7 +1315,7 @@ export default function App() {
       });
     } catch (error) {
       console.error("순공 종료 저장 실패:", error);
-      alert("순공 기록 저장 중 문제가 생겼어. 잠시 후 다시 시도해줘.");
+      alert("순공 기록 저장 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.");
       return;
     }
 
@@ -1293,7 +1341,7 @@ export default function App() {
     setPlannerDate(today);
 
     if (result?.reason === "already-stopped") {
-      setGroupMsg("이미 다른 기기에서 순공이 종료됐어.");
+      setGroupMsg("이미 다른 기기에서 순공이 종료되었습니다.");
     }
   };
 
@@ -1385,7 +1433,7 @@ export default function App() {
             <div style={{ ...S.small, fontWeight: 900, color: "#3182f6" }}>그룹원 현황 및 랭킹</div>
             <h2 style={{ margin: "2px 0 0", fontSize: 20 }}>그룹 오늘 합계</h2>
             <p style={{ ...S.small, margin: "4px 0 0" }}>
-              공부 기준일은 06:00부터 다음날 06:00까지야.
+              공부 기준일은 06:00부터 다음 날 06:00까지입니다.
             </p>
           </div>
           <div style={{ textAlign: "right" }}>
@@ -1460,12 +1508,31 @@ export default function App() {
                     <div style={{ ...S.small, fontSize: 10 }}>
                       저장 {formatStudy(savedSeconds)}{liveSeconds > 0 ? ` · 진행 ${formatStudy(liveSeconds)}` : ""}
                     </div>
+                    {currentGroup?.ownerUid === uid && m.uid !== uid && (
+                      <button
+                        type="button"
+                        onClick={() => kickMember(currentGroup, m)}
+                        style={{
+                          marginTop: 6,
+                          border: "1px solid #fecaca",
+                          background: "#fff1f2",
+                          color: "#dc2626",
+                          borderRadius: 10,
+                          padding: "5px 8px",
+                          fontSize: 11,
+                          fontWeight: 900,
+                          cursor: "pointer",
+                        }}
+                      >
+                        추방
+                      </button>
+                    )}
                   </div>
                 </div>
               );
             })
           ) : (
-            <p style={S.small}>아직 그룹원이 없어.</p>
+            <p style={S.small}>아직 그룹원이 없습니다.</p>
           )}
         </div>
       </section>
@@ -1584,7 +1651,7 @@ export default function App() {
                   </div>
                 ))
               ) : (
-                <span style={{ ...S.small, fontSize: 11 }}>아직 오늘 기록된 공부가 없어.</span>
+                <span style={{ ...S.small, fontSize: 11 }}>아직 오늘 기록된 공부가 없습니다.</span>
               )}
             </div>
 
@@ -1627,7 +1694,7 @@ export default function App() {
               style={{ ...S.textarea, minHeight: 64, padding: "7px 8px", fontSize: 11 }}
               value={memos[date] || ""}
               onChange={(e) => saveMemo(date, e.target.value)}
-              placeholder="오늘 메모. 이 메모는 다른 사람에게 공유되지 않아."
+              placeholder="오늘 메모. 이 메모는 다른 사람에게 공유되지 않습니다."
             />
           </div>
 
@@ -1762,7 +1829,7 @@ export default function App() {
                   </div>
                 ))
               ) : (
-                <span style={S.small}>기록된 공부 내용이 없어.</span>
+                <span style={S.small}>기록된 공부 내용이 없습니다.</span>
               )}
             </div>
 
@@ -1802,9 +1869,9 @@ export default function App() {
               style={{ ...S.textarea, minHeight: 120 }}
               value={memos[date] || ""}
               onChange={(e) => saveMemo(date, e.target.value)}
-              placeholder="오늘 느낀 점, 내일 할 일, 오답 메모 등을 적어줘. 이 메모는 다른 사람에게 공유되지 않아."
+              placeholder="오늘 느낀 점, 내일 할 일, 오답 메모 등을 적어줘. 이 메모는 다른 사람에게 공유되지 않습니다."
             />
-            <div style={S.small}>MEMO는 나만 보는 비공개 메모야.</div>
+            <div style={S.small}>MEMO는 본인만 볼 수 있는 비공개 메모입니다.</div>
           </div>
 
           <div>
@@ -1812,7 +1879,7 @@ export default function App() {
             <h1>{formatStudy(total)}</h1>
 
             <SectionTitle>TIME TABLE</SectionTitle>
-            <div style={S.small}>06:00부터 다음날 05:00까지 하루 흐름으로 표시돼.</div>
+            <div style={S.small}>06:00부터 다음날 05:00까지 하루 흐름으로 표시됩니다.</div>
 
             <div style={{ marginTop: 10, borderTop: "1px solid #e4e4e7" }}>
               {timeTableHours.map((hour) => {
@@ -1862,7 +1929,7 @@ export default function App() {
   };
 
   if (loadingAuth) {
-    return <div style={S.page}>앱을 불러오는 중...</div>;
+    return <div style={S.page}>앱을 불러오는 중입니다...</div>;
   }
 
   if (!user) {
@@ -1889,7 +1956,7 @@ export default function App() {
                   <p style={{ color: "#a1a1aa", margin: 0, fontWeight: 900 }}>Study Room</p>
                 </div>
                 <h1 style={{ fontSize: 40, lineHeight: 1.1 }}>
-                  친구와 공부하기 전, 먼저 로그인해줘.
+                  친구와 공부하기 전, 먼저 로그인해 주세요.
                 </h1>
                 <p style={{ color: "#d4d4d8" }}>
                   회원가입, 방, 채팅, 공부 기록이 Firebase에 저장돼.
@@ -1906,7 +1973,7 @@ export default function App() {
                   <b>회원가입 규칙</b>
                   <p>· 아이디: 영어와 숫자만, 최대 12글자</p>
                   <p>· 비밀번호: 영어, 숫자, *, -만, 최대 20글자</p>
-                  <p>· Firebase 때문에 비밀번호는 최소 6글자</p>
+                  <p>· Firebase 기준에 따라 비밀번호는 최소 6글자</p>
                 </div>
               </div>
 
@@ -2005,8 +2072,8 @@ export default function App() {
                     {signup.pw2 && (
                       <p style={{ color: signup.pw === signup.pw2 ? "#15803d" : "#dc2626" }}>
                         {signup.pw === signup.pw2
-                          ? "비밀번호가 일치해."
-                          : "비밀번호가 일치하지 않아."}
+                          ? "비밀번호가 일치합니다."
+                          : "비밀번호가 일치하지 않습니다."}
                       </p>
                     )}
 
@@ -2373,7 +2440,7 @@ export default function App() {
                             ? `현재 입장 중 · 방 ID ${currentGroup.roomCode}`
                             : selectedGroup
                             ? `선택됨 · 방 ID ${selectedGroup.roomCode}`
-                            : "우측 하단 방 버튼으로 방을 만들거나 입장할 수 있어."}
+                            : "왼쪽 메뉴의 방 버튼으로 방을 만들거나 입장할 수 있습니다."}
                         </p>
                       </div>
                       <button style={S.lightButton} onClick={() => setRoomMenuOpen(true)}>
@@ -2436,7 +2503,7 @@ export default function App() {
                               방 비밀번호
                             </div>
                             <div style={{ ...S.small, fontSize: 11 }}>
-                              방장에게만 보이는 정보야.
+                              방장에게만 보이는 정보입니다.
                             </div>
                           </div>
                           <button
@@ -2498,7 +2565,7 @@ export default function App() {
                         </button>
                       </div>
                       <p style={{ ...S.small, margin: "7px 0 0", lineHeight: 1.35 }}>
-                        알림만 표시돼. 순공 중에는 켜도 꺼도 채팅 내용은 볼 수 없어.
+                        알림만 표시됩니다. 순공 중에는 설정을 켜도 꺼도 채팅 내용은 볼 수 없습니다.
                       </p>
                     </div>
 
@@ -2563,7 +2630,7 @@ export default function App() {
                       </div>
 
                       <p style={{ ...S.small, margin: "7px 0 0", lineHeight: 1.35 }}>
-                        음원이 끝나면 자동으로 반복 재생돼.
+                        음원이 끝나면 자동으로 반복 재생됩니다.
                         {soundType === "airplane" && (
                           <span style={{ display: "block", marginTop: 3, color: "#f97316", fontWeight: 800 }}>
                           </span>
@@ -2633,7 +2700,7 @@ export default function App() {
                     </div>
                   </div>
                 ) : (
-                  <p style={S.small}>D-DAY를 설정해두면 여기서 바로 확인할 수 있어.</p>
+                  <p style={S.small}>D-DAY를 설정해두면 여기에서 바로 확인할 수 있습니다.</p>
                 )}
               </section>
 
@@ -2649,7 +2716,7 @@ export default function App() {
               <div style={{ ...S.card, boxShadow: "none" }}>
                 <p style={S.small}>아이디</p>
                 <h3>{userId}</h3>
-                <p style={S.small}>아이디는 수정하지 않게 했어.</p>
+                <p style={S.small}>아이디는 수정할 수 없도록 설정했습니다.</p>
               </div>
               <div style={{ ...S.card, boxShadow: "none" }}>
                 <p style={S.small}>표시 이름</p>
@@ -2695,7 +2762,7 @@ export default function App() {
 
             <div style={{ ...S.card, boxShadow: "none" }}>
               <h3>비밀번호 변경</h3>
-              <p style={S.small}>바꾸지 않으려면 비워둬.</p>
+              <p style={S.small}>변경하지 않으려면 비워두세요.</p>
               <input
                 style={{ ...S.input, marginBottom: 8 }}
                 type="password"
@@ -2734,7 +2801,7 @@ export default function App() {
             <div style={S.grid2}>
               <div style={{ ...S.card, boxShadow: "none" }}>
                 <h3 style={{ marginTop: 0 }}>새 방 만들기</h3>
-                <p style={S.small}>새 스터디 방을 만들고 친구에게 방 ID와 비밀번호를 알려줄 수 있어.</p>
+                <p style={S.small}>새 스터디 방을 만들고 친구에게 방 ID와 비밀번호를 알려줄 수 있습니다.</p>
                 <button
                   style={{ ...S.button, width: "100%", marginTop: 8 }}
                   onClick={() => {
@@ -2748,7 +2815,7 @@ export default function App() {
 
               <div style={{ ...S.card, boxShadow: "none" }}>
                 <h3 style={{ marginTop: 0 }}>방 ID로 입장</h3>
-                <p style={S.small}>친구가 알려준 영어 8자 방 ID와 숫자 8개 비밀번호를 입력해.</p>
+                <p style={S.small}>친구가 알려준 영어 8자 방 ID와 숫자 8개 비밀번호를 입력해 주세요.</p>
 
                 <Field label="방 ID">
                   <input
@@ -2809,7 +2876,7 @@ export default function App() {
 
         {createOpen && (
           <Modal title="새 스터디 그룹 만들기" onClose={() => setCreateOpen(false)}>
-            <p style={S.small}>모든 방은 비공개방으로 생성돼.</p>
+            <p style={S.small}>모든 방은 비공개방으로 생성됩니다.</p>
 
             <Field label="방 이름">
               <input
@@ -2849,7 +2916,7 @@ export default function App() {
               <button style={S.lightButton} onClick={generateRoomCode}>
                 ID 생성 / 중복 확인
               </button>
-              <p style={S.small}>{codeMsg || "영어 8자 방 ID를 생성해줘."}</p>
+              <p style={S.small}>{codeMsg || "영어 8자 방 ID를 생성해 주세요."}</p>
 
               <input
                 style={S.input}
@@ -2911,7 +2978,7 @@ export default function App() {
                     </div>
                   ))
                 ) : (
-                  <p style={S.small}>아직 D-DAY가 없어.</p>
+                  <p style={S.small}>아직 D-DAY가 없습니다.</p>
                 )}
               </div>
 
@@ -3075,7 +3142,7 @@ export default function App() {
                   marginBottom: 12,
                 }}
               >
-                순공 측정 중에는 채팅 내용을 볼 수 없어.
+                순공 측정 중에는 채팅 내용을 볼 수 없습니다.
                 {chatNotice && unread > 0 && <div>새 메시지 {unread}개 도착</div>}
               </div>
             )}
@@ -3124,7 +3191,7 @@ export default function App() {
                 disabled={studying || !enteredGroupId}
                 onChange={(e) => setChatText(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-                placeholder={studying ? "순공 중에는 채팅할 수 없어" : "메시지를 입력해줘"}
+                placeholder={studying ? "순공 중에는 채팅할 수 없습니다" : "메시지를 입력해 주세요"}
               />
               <button style={S.button} disabled={studying} onClick={sendMessage}>
                 전송
