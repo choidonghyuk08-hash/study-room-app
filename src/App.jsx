@@ -366,7 +366,7 @@ function Modal({ title, onClose, children }) {
     setClosing(true);
     window.setTimeout(() => {
       onClose();
-    }, 320);
+    }, 520);
   };
 
   return (
@@ -374,7 +374,7 @@ function Modal({ title, onClose, children }) {
       style={{
         ...S.modalBg,
         animation: closing
-          ? "srOverlayFadeOut 320ms cubic-bezier(0.16, 1, 0.3, 1) forwards"
+          ? "srOverlayFadeOut 520ms cubic-bezier(0.16, 1, 0.3, 1) forwards"
           : "srOverlayFade 360ms cubic-bezier(0.16, 1, 0.3, 1)",
       }}
       onClick={handleClose}
@@ -383,7 +383,7 @@ function Modal({ title, onClose, children }) {
         style={{
           ...S.modal,
           animation: closing
-            ? "srModalPopOut 320ms cubic-bezier(0.16, 1, 0.3, 1) forwards"
+            ? "srModalPopOut 520ms cubic-bezier(0.16, 1, 0.3, 1) forwards"
             : "srModalPop 460ms cubic-bezier(0.16, 1, 0.3, 1)",
         }}
         onClick={(e) => e.stopPropagation()}
@@ -536,6 +536,7 @@ export default function App() {
     "한국사",
   ]);
   const [subject, setSubject] = useState("영어");
+  const [subjectPickerOpen, setSubjectPickerOpen] = useState(false);
   const [newSubject, setNewSubject] = useState("");
   const [detail, setDetail] = useState("");
 
@@ -2257,16 +2258,72 @@ export default function App() {
             >
               <div style={S.grid2}>
                 <Field label="과목 선택">
-                  <select
-                    style={S.input}
-                    value={subject}
-                    disabled={studying}
-                    onChange={(e) => setSubject(e.target.value)}
-                  >
-                    {subjects.map((s) => (
-                      <option key={s}>{s}</option>
-                    ))}
-                  </select>
+                  <div style={{ position: "relative" }}>
+                    <button
+                      type="button"
+                      disabled={studying}
+                      onClick={() => setSubjectPickerOpen((v) => !v)}
+                      style={{
+                        ...S.input,
+                        width: "100%",
+                        textAlign: "left",
+                        cursor: studying ? "not-allowed" : "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 8,
+                      }}
+                    >
+                      <span>{subject}</span>
+                      <span style={{ color: "var(--text-sub)", fontWeight: 900 }}>
+                        {subjectPickerOpen ? "⌃" : "⌄"}
+                      </span>
+                    </button>
+
+                    {subjectPickerOpen && !studying && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          left: 0,
+                          right: 0,
+                          top: "calc(100% + 6px)",
+                          zIndex: 45,
+                          display: "grid",
+                          gap: 4,
+                          maxHeight: 230,
+                          overflowY: "auto",
+                          padding: 6,
+                          borderRadius: 16,
+                          background: "var(--card-bg-solid)",
+                          border: "1px solid var(--border-soft)",
+                          boxShadow: "0 18px 42px rgba(25,31,40,0.16)",
+                        }}
+                      >
+                        {subjects.map((s) => (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => {
+                              setSubject(s);
+                              setSubjectPickerOpen(false);
+                            }}
+                            style={{
+                              border: "none",
+                              borderRadius: 12,
+                              padding: "9px 10px",
+                              textAlign: "left",
+                              cursor: "pointer",
+                              fontWeight: 850,
+                              background: subject === s ? "var(--accent-soft)" : "transparent",
+                              color: subject === s ? "var(--accent-text)" : "var(--text-main)",
+                            }}
+                          >
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </Field>
 
                 <Field label="과목 추가">
@@ -3540,8 +3597,8 @@ export default function App() {
             }
             100% {
               opacity: 0;
-              transform: translateY(14px) scale(0.97);
-              filter: blur(3px);
+              transform: translateY(24px) scale(0.94);
+              filter: blur(5px);
             }
           }
 
@@ -3867,16 +3924,72 @@ export default function App() {
                   >
                     <div style={S.grid2}>
                       <Field label="과목 선택">
-                        <select
-                          style={S.input}
-                          value={subject}
-                          disabled={studying}
-                          onChange={(e) => setSubject(e.target.value)}
-                        >
-                          {subjects.map((s) => (
-                            <option key={s}>{s}</option>
-                          ))}
-                        </select>
+                        <div style={{ position: "relative" }}>
+                          <button
+                            type="button"
+                            disabled={studying}
+                            onClick={() => setSubjectPickerOpen((v) => !v)}
+                            style={{
+                              ...S.input,
+                              width: "100%",
+                              textAlign: "left",
+                              cursor: studying ? "not-allowed" : "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              gap: 8,
+                            }}
+                          >
+                            <span>{subject}</span>
+                            <span style={{ color: "var(--text-sub)", fontWeight: 900 }}>
+                              {subjectPickerOpen ? "⌃" : "⌄"}
+                            </span>
+                          </button>
+
+                          {subjectPickerOpen && !studying && (
+                            <div
+                              style={{
+                                position: "absolute",
+                                left: 0,
+                                right: 0,
+                                top: "calc(100% + 6px)",
+                                zIndex: 45,
+                                display: "grid",
+                                gap: 4,
+                                maxHeight: 230,
+                                overflowY: "auto",
+                                padding: 6,
+                                borderRadius: 16,
+                                background: "var(--card-bg-solid)",
+                                border: "1px solid var(--border-soft)",
+                                boxShadow: "0 18px 42px rgba(25,31,40,0.16)",
+                              }}
+                            >
+                              {subjects.map((s) => (
+                                <button
+                                  key={s}
+                                  type="button"
+                                  onClick={() => {
+                                    setSubject(s);
+                                    setSubjectPickerOpen(false);
+                                  }}
+                                  style={{
+                                    border: "none",
+                                    borderRadius: 12,
+                                    padding: "9px 10px",
+                                    textAlign: "left",
+                                    cursor: "pointer",
+                                    fontWeight: 850,
+                                    background: subject === s ? "var(--accent-soft)" : "transparent",
+                                    color: subject === s ? "var(--accent-text)" : "var(--text-main)",
+                                  }}
+                                >
+                                  {s}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </Field>
 
                       <Field label="과목 추가">
