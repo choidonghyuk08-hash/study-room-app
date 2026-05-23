@@ -319,6 +319,7 @@ export default function App() {
   const [pendingCode, setPendingCode] = useState("");
   const [codeMsg, setCodeMsg] = useState("");
   const [joinRoom, setJoinRoom] = useState({ code: "", password: "" });
+  const [showRoomPassword, setShowRoomPassword] = useState(false);
 
   const [subjects, setSubjects] = useState([
     "국어",
@@ -379,6 +380,10 @@ export default function App() {
   const currentGroup = groups.find((g) => g.id === enteredGroupId) || null;
   const selectedGroup = groups.find((g) => g.id === selectedGroupId) || null;
   const currentSound = SOUND_OPTIONS.find((item) => item.id === soundType) || SOUND_OPTIONS[0];
+
+  useEffect(() => {
+    setShowRoomPassword(false);
+  }, [selectedGroupId]);
 
   useEffect(() => {
     if (!soundRef.current) return;
@@ -2407,6 +2412,62 @@ export default function App() {
                         </button>
                       )}
                     </div>
+
+                    {selectedGroup?.ownerUid === uid && (
+                      <div
+                        style={{
+                          marginTop: 10,
+                          padding: "10px 12px",
+                          borderRadius: 14,
+                          background: "#f8fafc",
+                          border: "1px solid #e2e8f0",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            gap: 8,
+                          }}
+                        >
+                          <div>
+                            <div style={{ fontSize: 12, fontWeight: 900, color: "#334155" }}>
+                              방 비밀번호
+                            </div>
+                            <div style={{ ...S.small, fontSize: 11 }}>
+                              방장에게만 보이는 정보야.
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            style={{
+                              ...S.lightButton,
+                              padding: "6px 9px",
+                              fontSize: 12,
+                              color: "#2563eb",
+                              borderColor: "#bfdbfe",
+                              background: "#eff6ff",
+                            }}
+                            onClick={() => setShowRoomPassword((v) => !v)}
+                          >
+                            {showRoomPassword ? "숨기기" : "확인"}
+                          </button>
+                        </div>
+                        <div
+                          style={{
+                            marginTop: 8,
+                            fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                            fontSize: 18,
+                            fontWeight: 900,
+                            letterSpacing: 2,
+                            color: "#0f172a",
+                          }}
+                        >
+                          {showRoomPassword ? selectedGroup.password || "저장된 비밀번호 없음" : "••••••••"}
+                        </div>
+                      </div>
+                    )}
 
                     <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #eef1f4" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
