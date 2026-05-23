@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { initializeApp } from "firebase/app";
 import {
   createUserWithEmailAndPassword,
@@ -227,6 +227,14 @@ const timeTableHours = [
   ...Array.from({ length: 6 }, (_, i) => `${String(i).padStart(2, "0")}:00`),
 ];
 
+const SOUND_OPTIONS = [
+  { id: "white", label: "백색소음", src: "/sounds/white.mp3" },
+  { id: "rain", label: "빗소리", src: "/sounds/rain.mp3" },
+  { id: "fireplace", label: "장작소리", src: "/sounds/fireplace.mp3" },
+  { id: "whale", label: "고래소리", src: "/sounds/whale.mp3" },
+  { id: "airplane", label: "비행기 소리", src: "/sounds/airplane.mp3", notice: "초반에 안내방송이 들어 있어 집중 전 미리 확인해줘." },
+];
+
 function Modal({ title, onClose, children }) {
   return (
     <div style={S.modalBg}>
@@ -341,6 +349,11 @@ export default function App() {
   const [messages, setMessages] = useState([]);
   const [chatText, setChatText] = useState("");
 
+  const soundRef = useRef(null);
+  const [soundType, setSoundType] = useState("white");
+  const [soundVolume, setSoundVolume] = useState(45);
+  const [soundPlaying, setSoundPlaying] = useState(false);
+
   const [ddays, setDdays] = useState([]);
   const [ddayOpen, setDdayOpen] = useState(false);
   const [selectedDdayId, setSelectedDdayId] = useState("");
@@ -365,6 +378,57 @@ export default function App() {
 
   const currentGroup = groups.find((g) => g.id === enteredGroupId) || null;
   const selectedGroup = groups.find((g) => g.id === selectedGroupId) || null;
+  const currentSound = SOUND_OPTIONS.find((item) => item.id === soundType) || SOUND_OPTIONS[0];
+
+  useEffect(() => {
+    if (!soundRef.current) return;
+    soundRef.current.volume = soundVolume / 100;
+  }, [soundVolume]);
+
+  useEffect(() => {
+    if (!soundRef.current) return;
+
+    soundRef.current.pause();
+    soundRef.current.currentTime = 0;
+    soundRef.current.load();
+
+    if (soundPlaying) {
+      soundRef.current
+        .play()
+        .catch(() => {
+          setSoundPlaying(false);
+          alert("브라우저가 자동 재생을 막았어. 재생 버튼을 다시 눌러줘.");
+        });
+    }
+  }, [soundType]);
+
+  useEffect(() => {
+    return () => {
+      if (soundRef.current) {
+        soundRef.current.pause();
+      }
+    };
+  }, []);
+
+  const playSound = async () => {
+    if (!soundRef.current) return;
+
+    try {
+      soundRef.current.loop = true;
+      soundRef.current.volume = soundVolume / 100;
+      await soundRef.current.play();
+      setSoundPlaying(true);
+    } catch (error) {
+      console.error("백색소음 재생 실패:", error);
+      alert("소리를 재생할 수 없어. 파일 위치가 public/sounds 안에 있는지 확인해줘.");
+    }
+  };
+
+  const stopSound = () => {
+    if (!soundRef.current) return;
+    soundRef.current.pause();
+    setSoundPlaying(false);
+  };
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
@@ -1970,6 +2034,7 @@ export default function App() {
 
   return (
     <div style={S.page}>
+      <audio ref={soundRef} src={currentSound.src} loop preload="auto" />
       <div
         style={{
           display: "grid",
@@ -2373,6 +2438,75 @@ export default function App() {
                       </div>
                       <p style={{ ...S.small, margin: "7px 0 0", lineHeight: 1.35 }}>
                         알림만 표시돼. 순공 중에는 켜도 꺼도 채팅 내용은 볼 수 없어.
+                      </p>
+                    </div>
+
+                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #eef1f4" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
+                        <div>
+                          <div style={{ ...S.small, fontWeight: 900 }}>백색소음</div>
+                          <div
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 6,
+                              marginTop: 4,
+                              padding: "4px 8px",
+                              borderRadius: 999,
+                              fontSize: 11,
+                              fontWeight: 900,
+                              background: soundPlaying ? "#e8f3ff" : "#f2f4f6",
+                              color: soundPlaying ? "#1b64da" : "#6b7684",
+                            }}
+                          >
+                            현재 {soundPlaying ? "재생 중" : "정지"}
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                          {soundPlaying ? (
+                            <button style={S.lightButton} onClick={stopSound}>
+                              정지
+                            </button>
+                          ) : (
+                            <button style={S.button} onClick={playSound}>
+                              재생
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 120px", gap: 8, marginTop: 10, alignItems: "center" }}>
+                        <select
+                          style={S.input}
+                          value={soundType}
+                          onChange={(e) => setSoundType(e.target.value)}
+                        >
+                          {SOUND_OPTIONS.map((item) => (
+                            <option key={item.id} value={item.id}>
+                              {item.label}
+                            </option>
+                          ))}
+                        </select>
+
+                        <div>
+                          <div style={{ ...S.small, fontSize: 10, marginBottom: 3 }}>소리 {soundVolume}%</div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            value={soundVolume}
+                            onChange={(e) => setSoundVolume(Number(e.target.value))}
+                            style={{ width: "100%" }}
+                          />
+                        </div>
+                      </div>
+
+                      <p style={{ ...S.small, margin: "7px 0 0", lineHeight: 1.35 }}>
+                        음원이 끝나면 자동으로 반복 재생돼.
+                        {soundType === "airplane" && (
+                          <span style={{ display: "block", marginTop: 3, color: "#f97316", fontWeight: 800 }}>
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>
