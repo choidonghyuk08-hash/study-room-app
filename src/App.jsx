@@ -2706,6 +2706,60 @@ export default function App() {
     );
   };
 
+  const renderEasyFlightControls = () => {
+    if (!flightFeatureOpen) return null;
+
+    const from = FLIGHT_COUNTRIES.find((c) => c.code === flightFromCode) || FLIGHT_COUNTRIES[0];
+    const to = FLIGHT_COUNTRIES.find((c) => c.code === flightToCode) || FLIGHT_COUNTRIES[1];
+    const minutes = activeFlight?.minutes || routeFlightMinutes(from, to);
+    const distance = routeDistanceKm(from, to);
+    const flightProgress = studying && activeFlight
+      ? Math.min(100, Math.round((currentSessionSeconds / Math.max(1, minutes * 60)) * 100))
+      : 0;
+
+    return (
+      <section className="easy-flight-controls">
+        <div className="easy-flight-ticket">
+          <div>
+            <div className="flight-kicker">BOARDING PASS</div>
+            <h3>{from.code} → {to.code}</h3>
+            <p>{from.name} {from.city} 출발 · {to.name} {to.city} 도착</p>
+          </div>
+          <div>
+            <span>{distance.toLocaleString()}km</span>
+            <b>{formatFlightTime(minutes)}</b>
+          </div>
+        </div>
+
+        <div className="easy-flight-progress">
+          <div>
+            <b>IN-FLIGHT STATUS</b>
+            <span>{flightProgress}% 진행</span>
+          </div>
+          <div className="flight-progress">
+            <i style={{ width: `${flightProgress}%` }} />
+          </div>
+        </div>
+
+        <div className="easy-flight-actions">
+          <div>
+            <span>현재 선택된 공부</span>
+            <b>{subject || "과목 없음"}</b>
+            <small>{detail.trim() || "고급/쉬운 모드의 공부 과목과 내용을 기준으로 비행 공부가 시작됩니다."}</small>
+          </div>
+
+          {studying ? (
+            <button type="button" className="flight-stop" onClick={stopStudy}>착륙하기 · 공부 종료</button>
+          ) : (
+            <button type="button" onClick={startFlightStudy} disabled={flightTicketCutting || from.code === to.code}>
+              {flightTicketCutting ? "티켓 우측 절취 중..." : "탑승 시작"}
+            </button>
+          )}
+        </div>
+      </section>
+    );
+  };
+
   const RightPanelControlBar = ({ cardId }) => {
     const index = rightPanelOrder.indexOf(cardId);
 
@@ -2863,6 +2917,7 @@ export default function App() {
         ["오늘 총 공부", formatTimer(todayTotalWithLive), studying ? "진행 중 포함" : "저장된 기록 기준", "var(--accent)"],
         ["현재 과목", subject, formatTimer(currentSessionSeconds), "#00a661"],
         ["과목 오늘 누적", formatStudy(currentSubjectTodayTotal), subject, "#8b5cf6"],
+        ["그룹 오늘 합계", formatTimer(groupTodayTotal), enteredGroupId ? "그룹원 전체 합계" : "입장한 방 없음", "#f97316"],
       ];
 
       return (
@@ -2870,7 +2925,7 @@ export default function App() {
           <section
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+              gridTemplateColumns: easyLayout && isCompactScreen ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))",
               gap: 10,
             }}
           >
@@ -3316,6 +3371,25 @@ export default function App() {
           </div>
         </div>
       </section>
+
+      <section className="easy-flight-toggle-card">
+        <div>
+          <div className="flight-kicker">FLIGHT STUDY</div>
+          <h3>비행기 기능</h3>
+          <p>쉬운 모드 홈에서도 세계지도 비행 공부를 사용할 수 있습니다.</p>
+        </div>
+        <button type="button" onClick={toggleFlightFeature}>
+          {flightFeatureOpen ? "비행 끄기" : "비행 켜기"}
+        </button>
+      </section>
+
+      <div
+        className={flightFeatureOpen ? "flight-feature-shell open" : "flight-feature-shell closed"}
+        aria-hidden={!flightFeatureOpen}
+      >
+        {renderFlightModeUi()}
+        {renderEasyFlightControls()}
+      </div>
 
       {mobileHomeOrder.map((cardId) => renderMobileHomeCard(cardId))}
     </main>
@@ -5846,6 +5920,150 @@ export default function App() {
           @media (max-width: 900px) {
             body {
               overflow-x: hidden;
+            }
+          }
+
+          .easy-flight-toggle-card {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: center;
+            background:
+              radial-gradient(circle at 12% 0%, rgba(14,165,233,0.14), transparent 28%),
+              linear-gradient(135deg, rgba(255,255,255,0.98), rgba(239,246,255,0.94));
+            border: 1px solid rgba(191,219,254,0.95);
+            border-radius: 24px;
+            padding: 14px;
+            box-shadow: 0 10px 26px rgba(37,99,235,0.07);
+          }
+
+          .easy-flight-toggle-card h3 {
+            margin: 3px 0;
+            color: #0f172a;
+            font-size: 18px;
+            letter-spacing: -0.45px;
+          }
+
+          .easy-flight-toggle-card p {
+            margin: 0;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 750;
+            line-height: 1.4;
+          }
+
+          .easy-flight-toggle-card button,
+          .easy-flight-controls button {
+            border: 1px solid rgba(191,219,254,0.95);
+            border-radius: 16px;
+            background: linear-gradient(135deg, #2563eb, #0ea5e9);
+            color: white;
+            font-weight: 950;
+            min-height: 42px;
+            padding: 0 14px;
+          }
+
+          .easy-flight-controls {
+            display: grid;
+            gap: 10px;
+            margin-top: 10px;
+            margin-bottom: 12px;
+          }
+
+          .easy-flight-ticket,
+          .easy-flight-progress,
+          .easy-flight-actions {
+            border: 1px solid rgba(191,219,254,0.95);
+            border-radius: 22px;
+            background: rgba(255,255,255,0.96);
+            padding: 13px;
+            box-shadow: 0 10px 26px rgba(37,99,235,0.06);
+          }
+
+          .easy-flight-ticket {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: center;
+          }
+
+          .easy-flight-ticket h3 {
+            margin: 3px 0;
+            color: #0f172a;
+            font-size: 20px;
+            letter-spacing: -0.7px;
+          }
+
+          .easy-flight-ticket p {
+            margin: 0;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 750;
+            line-height: 1.35;
+          }
+
+          .easy-flight-ticket span,
+          .easy-flight-actions span,
+          .easy-flight-actions small,
+          .easy-flight-progress span {
+            display: block;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 850;
+          }
+
+          .easy-flight-ticket b,
+          .easy-flight-actions b,
+          .easy-flight-progress b {
+            color: #0f172a;
+            font-weight: 950;
+          }
+
+          .easy-flight-progress > div:first-child {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 8px;
+          }
+
+          .easy-flight-actions {
+            display: grid;
+            gap: 10px;
+          }
+
+          @media (max-width: 900px) {
+            .easy-flight-toggle-card {
+              display: grid;
+            }
+
+            .easy-flight-toggle-card button {
+              width: 100%;
+            }
+
+            .easy-flight-ticket {
+              display: grid;
+            }
+
+            .flight-dashboard-card {
+              padding: 12px !important;
+              border-radius: 24px !important;
+            }
+
+            .flight-dashboard-head {
+              display: grid !important;
+              gap: 10px !important;
+            }
+
+            .flight-map-viewport {
+              height: 420px !important;
+              min-height: 380px !important;
+            }
+
+            .flight-dashboard-card .flight-country {
+              min-width: 34px !important;
+              height: 30px !important;
+              font-size: 10px !important;
             }
           }
 
