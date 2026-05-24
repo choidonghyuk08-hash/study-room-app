@@ -102,6 +102,175 @@ const ICONS = {
   profile: "/icons/profile-icon.png",
 };
 
+
+
+const FLIGHT_COUNTRIES = [
+  { code: "KR", name: "대한민국", city: "서울", lat: 37.5665, lon: 126.9780 },
+  { code: "JP", name: "일본", city: "도쿄", lat: 35.6762, lon: 139.6503 },
+  { code: "CN", name: "중국", city: "베이징", lat: 39.9042, lon: 116.4074 },
+  { code: "TW", name: "대만", city: "타이베이", lat: 25.0330, lon: 121.5654 },
+  { code: "HK", name: "홍콩", city: "홍콩", lat: 22.3193, lon: 114.1694 },
+  { code: "TH", name: "태국", city: "방콕", lat: 13.7563, lon: 100.5018 },
+  { code: "VN", name: "베트남", city: "하노이", lat: 21.0278, lon: 105.8342 },
+  { code: "PH", name: "필리핀", city: "마닐라", lat: 14.5995, lon: 120.9842 },
+  { code: "ID", name: "인도네시아", city: "자카르타", lat: -6.2088, lon: 106.8456 },
+  { code: "MY", name: "말레이시아", city: "쿠알라룸푸르", lat: 3.1390, lon: 101.6869 },
+  { code: "SG", name: "싱가포르", city: "싱가포르", lat: 1.3521, lon: 103.8198 },
+  { code: "IN", name: "인도", city: "뉴델리", lat: 28.6139, lon: 77.2090 },
+  { code: "PK", name: "파키스탄", city: "이슬라마바드", lat: 33.6844, lon: 73.0479 },
+  { code: "SA", name: "사우디아라비아", city: "리야드", lat: 24.7136, lon: 46.6753 },
+  { code: "AE", name: "아랍에미리트", city: "두바이", lat: 25.2048, lon: 55.2708 },
+  { code: "TR", name: "튀르키예", city: "이스탄불", lat: 41.0082, lon: 28.9784 },
+  { code: "RU", name: "러시아", city: "모스크바", lat: 55.7558, lon: 37.6173 },
+  { code: "KZ", name: "카자흐스탄", city: "아스타나", lat: 51.1605, lon: 71.4704 },
+
+  { code: "GB", name: "영국", city: "런던", lat: 51.5074, lon: -0.1278 },
+  { code: "FR", name: "프랑스", city: "파리", lat: 48.8566, lon: 2.3522 },
+  { code: "DE", name: "독일", city: "베를린", lat: 52.5200, lon: 13.4050 },
+  { code: "IT", name: "이탈리아", city: "로마", lat: 41.9028, lon: 12.4964 },
+  { code: "ES", name: "스페인", city: "마드리드", lat: 40.4168, lon: -3.7038 },
+  { code: "PT", name: "포르투갈", city: "리스본", lat: 38.7223, lon: -9.1393 },
+  { code: "NL", name: "네덜란드", city: "암스테르담", lat: 52.3676, lon: 4.9041 },
+  { code: "BE", name: "벨기에", city: "브뤼셀", lat: 50.8503, lon: 4.3517 },
+  { code: "CH", name: "스위스", city: "취리히", lat: 47.3769, lon: 8.5417 },
+  { code: "AT", name: "오스트리아", city: "빈", lat: 48.2082, lon: 16.3738 },
+  { code: "SE", name: "스웨덴", city: "스톡홀름", lat: 59.3293, lon: 18.0686 },
+  { code: "NO", name: "노르웨이", city: "오슬로", lat: 59.9139, lon: 10.7522 },
+  { code: "DK", name: "덴마크", city: "코펜하겐", lat: 55.6761, lon: 12.5683 },
+  { code: "FI", name: "핀란드", city: "헬싱키", lat: 60.1699, lon: 24.9384 },
+  { code: "PL", name: "폴란드", city: "바르샤바", lat: 52.2297, lon: 21.0122 },
+  { code: "CZ", name: "체코", city: "프라하", lat: 50.0755, lon: 14.4378 },
+  { code: "GR", name: "그리스", city: "아테네", lat: 37.9838, lon: 23.7275 },
+
+  { code: "US", name: "미국", city: "뉴욕", lat: 40.7128, lon: -74.0060 },
+  { code: "CA", name: "캐나다", city: "토론토", lat: 43.6532, lon: -79.3832 },
+  { code: "MX", name: "멕시코", city: "멕시코시티", lat: 19.4326, lon: -99.1332 },
+  { code: "CU", name: "쿠바", city: "아바나", lat: 23.1136, lon: -82.3666 },
+  { code: "BR", name: "브라질", city: "상파울루", lat: -23.5558, lon: -46.6396 },
+  { code: "AR", name: "아르헨티나", city: "부에노스아이레스", lat: -34.6037, lon: -58.3816 },
+  { code: "CL", name: "칠레", city: "산티아고", lat: -33.4489, lon: -70.6693 },
+  { code: "PE", name: "페루", city: "리마", lat: -12.0464, lon: -77.0428 },
+  { code: "CO", name: "콜롬비아", city: "보고타", lat: 4.7110, lon: -74.0721 },
+
+  { code: "AU", name: "호주", city: "시드니", lat: -33.8688, lon: 151.2093 },
+  { code: "NZ", name: "뉴질랜드", city: "오클랜드", lat: -36.8509, lon: 174.7645 },
+
+  { code: "EG", name: "이집트", city: "카이로", lat: 30.0444, lon: 31.2357 },
+  { code: "MA", name: "모로코", city: "카사블랑카", lat: 33.5731, lon: -7.5898 },
+  { code: "ZA", name: "남아프리카공화국", city: "케이프타운", lat: -33.9249, lon: 18.4241 },
+  { code: "KE", name: "케냐", city: "나이로비", lat: -1.2921, lon: 36.8219 },
+  { code: "NG", name: "나이지리아", city: "라고스", lat: 6.5244, lon: 3.3792 },
+];
+
+function toRad(deg) {
+  return (deg * Math.PI) / 180;
+}
+
+function routeDistanceKm(from, to) {
+  const earthKm = 6371;
+  const dLat = toRad(to.lat - from.lat);
+  const dLon = toRad(to.lon - from.lon);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(from.lat)) * Math.cos(toRad(to.lat)) * Math.sin(dLon / 2) ** 2;
+
+  return Math.round(earthKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+}
+
+function routeFlightMinutes(from, to) {
+  const distance = routeDistanceKm(from, to);
+  return Math.max(25, Math.round((distance / 850) * 60 + 35));
+}
+
+function formatFlightTime(minutes) {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h <= 0) return `${m}분`;
+  return `${h}시간 ${m}분`;
+}
+
+function normalizeLon(lon) {
+  let next = lon;
+  while (next < -180) next += 360;
+  while (next > 180) next -= 360;
+  return next;
+}
+
+function projectFlightPoint(lat, lon) {
+  return {
+    x: ((normalizeLon(lon) + 180) / 360) * 1672,
+    y: ((90 - lat) / 180) * 941,
+  };
+}
+
+function interpolateGreatCirclePoint(from, to, fraction) {
+  const lat1 = toRad(from.lat);
+  const lon1 = toRad(from.lon);
+  const lat2 = toRad(to.lat);
+  const lon2 = toRad(to.lon);
+
+  const delta =
+    2 *
+    Math.asin(
+      Math.sqrt(
+        Math.sin((lat2 - lat1) / 2) ** 2 +
+          Math.cos(lat1) * Math.cos(lat2) * Math.sin((lon2 - lon1) / 2) ** 2
+      )
+    );
+
+  if (!Number.isFinite(delta) || delta === 0) {
+    return { lat: from.lat, lon: from.lon };
+  }
+
+  const a = Math.sin((1 - fraction) * delta) / Math.sin(delta);
+  const b = Math.sin(fraction * delta) / Math.sin(delta);
+
+  const x = a * Math.cos(lat1) * Math.cos(lon1) + b * Math.cos(lat2) * Math.cos(lon2);
+  const y = a * Math.cos(lat1) * Math.sin(lon1) + b * Math.cos(lat2) * Math.sin(lon2);
+  const z = a * Math.sin(lat1) + b * Math.sin(lat2);
+
+  return {
+    lat: Math.atan2(z, Math.sqrt(x * x + y * y)) * (180 / Math.PI),
+    lon: Math.atan2(y, x) * (180 / Math.PI),
+  };
+}
+
+function buildGreatCircleRoute(from, to, steps = 80) {
+  const points = Array.from({ length: steps + 1 }, (_, index) => {
+    const fraction = index / steps;
+    const geo = interpolateGreatCirclePoint(from, to, fraction);
+    const projected = projectFlightPoint(geo.lat, geo.lon);
+
+    return {
+      ...geo,
+      ...projected,
+    };
+  });
+
+  const segments = [];
+  let current = [points[0]];
+
+  for (let i = 1; i < points.length; i += 1) {
+    const prev = points[i - 1];
+    const next = points[i];
+
+    if (Math.abs(next.x - prev.x) > 1672 / 2) {
+      segments.push(current);
+      current = [next];
+    } else {
+      current.push(next);
+    }
+  }
+
+  segments.push(current);
+
+  return { points, segments };
+}
+
+function svgPolylinePoints(points) {
+  return points.map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(" ");
+}
+
 function IconImage({ src, alt, size = 32, style = {} }) {
   return (
     <img
@@ -337,11 +506,13 @@ const weatherDayLabel = (date, index) => {
   return date;
 };
 
-const RIGHT_PANEL_DEFAULT_ORDER = ["theme", "total", "weather", "dday", "rank"];
+const RIGHT_PANEL_DEFAULT_ORDER = ["theme", "total", "flightTicket", "flightStatus", "weather", "dday", "rank"];
 
 const RIGHT_PANEL_LABELS = {
   theme: "테마",
   total: "오늘 총 공부시간",
+  flightTicket: "비행 티켓",
+  flightStatus: "비행 상태",
   weather: "주간 날씨",
   dday: "오늘 할 일",
   rank: "그룹원 현황 및 랭킹",
@@ -438,11 +609,57 @@ export default function App() {
   const [authMsg, setAuthMsg] = useState("");
   const [mobileTab, setMobileTab] = useState("home");
   const [sectionTransitionKey, setSectionTransitionKey] = useState(0);
-  const [desktopEasyMode, setDesktopEasyMode] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return window.localStorage.getItem("studyRoomDesktopEasyMode") === "true";
+  const [appMode, setAppMode] = useState(() => {
+    if (typeof window === "undefined") return "advanced";
+
+    const savedMode = window.localStorage.getItem("studyRoomAppMode");
+    if (["advanced", "easy"].includes(savedMode)) return savedMode;
+
+    return window.localStorage.getItem("studyRoomDesktopEasyMode") === "true" ? "easy" : "advanced";
   });
+  const desktopEasyMode = appMode === "easy";
   const easyLayout = isCompactScreen || desktopEasyMode;
+  const changeAppMode = (nextMode) => {
+    setAppMode(nextMode);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("studyRoomAppMode", nextMode);
+      window.localStorage.setItem("studyRoomDesktopEasyMode", String(nextMode === "easy"));
+    }
+    setMobileTab("home");
+    setSectionTransitionKey((key) => key + 1);
+  };
+  const toggleFlightFeature = () => {
+    setFlightFeatureOpen((prev) => {
+      const next = !prev;
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("studyRoomFlightFeatureOpen", next ? "true" : "false");
+      }
+      return next;
+    });
+  };
+
+  const changeFlightMapZoom = (zoomUpdater) => {
+    const viewport = flightMapViewportRef.current;
+
+    const focus = viewport
+      ? {
+          ratioX:
+            (viewport.scrollLeft + viewport.clientWidth / 2) /
+            Math.max(1, viewport.scrollWidth),
+          ratioY:
+            (viewport.scrollTop + viewport.clientHeight / 2) /
+            Math.max(1, viewport.scrollHeight),
+        }
+      : { ratioX: 0.5, ratioY: 0.5 };
+
+    setFlightMapZoom((prev) => {
+      const nextValue = typeof zoomUpdater === "function" ? zoomUpdater(prev) : zoomUpdater;
+      const nextZoom = Math.max(1, Math.min(4, Number(nextValue.toFixed(2))));
+      flightMapZoomFocusRef.current = focus;
+      return nextZoom;
+    });
+  };
+
   const switchEasyTab = (nextTab) => {
     setMobileTab((prev) => {
       if (prev === nextTab) return prev;
@@ -451,23 +668,17 @@ export default function App() {
     });
   };
   const toggleDesktopMode = () => {
-    setDesktopEasyMode((prev) => {
-      const next = !prev;
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem("studyRoomDesktopEasyMode", String(next));
-      }
-      setMobileTab("home");
-      setSectionTransitionKey((key) => key + 1);
-      return next;
-    });
+    changeAppMode(appMode === "advanced" ? "easy" : "advanced");
   };
   const [themeKey, setThemeKey] = useState(() => {
     if (typeof window === "undefined") return "blue";
     return window.localStorage.getItem("studyRoomTheme") || "blue";
   });
   const currentTheme = THEME_COLORS[themeKey] || THEME_COLORS.blue;
+  const modeAccent = currentTheme.accent;
+  const currentIcons = ICONS;
   const themeVars = {
-    "--accent": currentTheme.accent,
+    "--accent": modeAccent,
     "--accent-dark": currentTheme.accentDark,
     "--accent-soft": currentTheme.accentSoft,
     "--accent-soft-2": currentTheme.accentSoft2,
@@ -485,6 +696,11 @@ export default function App() {
     "--soft-bg-2": "#f2f4f6",
     "--border": "rgba(229,232,235,0.85)",
     "--border-soft": "#eef1f4",
+    "--flight-blue": "#2563eb",
+    "--flight-sky": "#0ea5e9",
+    "--flight-cloud": "#f8fbff",
+    "--flight-navy": "#0f172a",
+    "--flight-green": "#22c55e",
   };
   const changeTheme = (nextTheme) => {
     setThemeKey(nextTheme);
@@ -557,9 +773,54 @@ export default function App() {
   const [chatText, setChatText] = useState("");
 
   const soundRef = useRef(null);
+  const flightMapViewportRef = useRef(null);
+  const flightMapZoomFocusRef = useRef(null);
   const [soundType, setSoundType] = useState("white");
   const [soundVolume, setSoundVolume] = useState(45);
   const [soundPlaying, setSoundPlaying] = useState(false);
+
+  const [flightFeatureOpen, setFlightFeatureOpen] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("studyRoomFlightFeatureOpen") === "true";
+  });
+  const [flightFromCode, setFlightFromCode] = useState("KR");
+  const [flightToCode, setFlightToCode] = useState("JP");
+  const [flightPickTarget, setFlightPickTarget] = useState("to");
+  const [flightMapZoom, setFlightMapZoom] = useState(1);
+  const [flightTicketCutting, setFlightTicketCutting] = useState(false);
+
+  useEffect(() => {
+    const focus = flightMapZoomFocusRef.current;
+    if (!focus) return;
+
+    let timeoutId = null;
+
+    const applyCenteredScroll = () => {
+      const viewport = flightMapViewportRef.current;
+      if (!viewport) return;
+
+      viewport.scrollLeft =
+        viewport.scrollWidth * focus.ratioX - viewport.clientWidth / 2;
+      viewport.scrollTop =
+        viewport.scrollHeight * focus.ratioY - viewport.clientHeight / 2;
+    };
+
+    window.requestAnimationFrame(() => {
+      applyCenteredScroll();
+
+      timeoutId = window.setTimeout(() => {
+        applyCenteredScroll();
+        flightMapZoomFocusRef.current = null;
+      }, 80);
+    });
+
+    return () => {
+      if (timeoutId) window.clearTimeout(timeoutId);
+    };
+  }, [flightMapZoom]);
+
+
+  const [activeFlight, setActiveFlight] = useState(null);
 
   const [ddays, setDdays] = useState([]);
   const [ddayOpen, setDdayOpen] = useState(false);
@@ -610,6 +871,25 @@ export default function App() {
       return [];
     }
   });
+
+  useEffect(() => {
+    if (!flightFeatureOpen) return;
+
+    const flightTopCards = ["flightTicket", "flightStatus"];
+
+    setRightPanelOrder((prev) => {
+      const rest = prev.filter((cardId) => !flightTopCards.includes(cardId));
+      const nextOrder = [...flightTopCards, ...rest];
+
+      setHiddenRightCards((hiddenPrev) => {
+        const nextHidden = hiddenPrev.filter((cardId) => !flightTopCards.includes(cardId));
+        saveRightPanelSettings(nextOrder, nextHidden);
+        return nextHidden;
+      });
+
+      return nextOrder;
+    });
+  }, [flightFeatureOpen]);
   const [rightPanelEditOpen, setRightPanelEditOpen] = useState(false);
   const [mobileHomeOrder, setMobileHomeOrder] = useState(() => {
     if (typeof window === "undefined") return MOBILE_HOME_DEFAULT_ORDER;
@@ -1100,6 +1380,48 @@ export default function App() {
     if (!member.lastSeenAtMs) return false;
     return nowTick - member.lastSeenAtMs < 65000;
   };
+
+  useEffect(() => {
+    if (!flightFeatureOpen || !studying || !activeFlight) return;
+
+    const viewport = flightMapViewportRef.current;
+    if (!viewport) return;
+
+    const from = FLIGHT_COUNTRIES.find((c) => c.code === activeFlight.fromCode || c.code === flightFromCode);
+    const to = FLIGHT_COUNTRIES.find((c) => c.code === activeFlight.toCode || c.code === flightToCode);
+    if (!from || !to) return;
+
+    const activeMinutes = activeFlight.minutes || routeFlightMinutes(from, to);
+    const progress = Math.min(1, Math.max(0, currentSessionSeconds / Math.max(1, activeMinutes * 60)));
+    const route = buildGreatCircleRoute(from, to, 96);
+    const progressIndex = Math.min(
+      route.points.length - 1,
+      Math.max(0, Math.round(progress * (route.points.length - 1)))
+    );
+    const planePoint = route.points[progressIndex] || route.points[0];
+
+    window.requestAnimationFrame(() => {
+      const latestViewport = flightMapViewportRef.current;
+      if (!latestViewport) return;
+
+      const targetX = (planePoint.x / 1672) * latestViewport.scrollWidth;
+      const targetY = (planePoint.y / 941) * latestViewport.scrollHeight;
+
+      latestViewport.scrollTo({
+        left: targetX - latestViewport.clientWidth / 2,
+        top: targetY - latestViewport.clientHeight / 2,
+        behavior: "smooth",
+      });
+    });
+  }, [
+    activeFlight,
+    currentSessionSeconds,
+    flightFeatureOpen,
+    flightFromCode,
+    flightToCode,
+    studying,
+  ]);
+
 
   const formatLastSeen = (member) => {
     if (isMemberOnline(member)) return "접속 중";
@@ -2013,6 +2335,264 @@ export default function App() {
     );
   };
 
+  const startFlightStudy = async () => {
+    const from = FLIGHT_COUNTRIES.find((c) => c.code === flightFromCode);
+    const to = FLIGHT_COUNTRIES.find((c) => c.code === flightToCode);
+
+    if (!from || !to || from.code === to.code) {
+      alert("출발 국가와 도착 국가는 서로 다르게 선택해 주세요.");
+      return;
+    }
+
+    if (!uid) {
+      alert("로그인 정보가 확인되지 않았습니다. 다시 로그인해 주세요.");
+      return;
+    }
+
+    if (studying) {
+      alert("이미 공부 측정 중입니다. 현재 세션을 종료한 뒤 비행을 시작해 주세요.");
+      return;
+    }
+
+    const flightSubject = subject || "비행 집중";
+    const flightDetail = detail.trim() || `${from.name}에서 ${to.name}까지 비행 집중 공부`;
+    const startMs = Date.now();
+    const startLabel = nowTime();
+    const startStudyDate = studyDayString(new Date(startMs));
+    const sessionId = `${uid}-${startMs}`;
+    const liveStudyRef = doc(db, "users", uid, "liveStudy", "current");
+
+    setSubject(flightSubject);
+    setDetail(flightDetail);
+    setFlightTicketCutting(true);
+
+    window.setTimeout(async () => {
+      await setDoc(
+        liveStudyRef,
+        {
+          studying: true,
+          sessionId,
+          subject: flightSubject,
+          detail: flightDetail,
+          startedAtMs: startMs,
+          startedAtLabel: startLabel,
+          baseSeconds: 0,
+          studyDate: startStudyDate,
+          updatedAt: serverTimestamp(),
+          flight: {
+            fromCode: from.code,
+            fromName: from.name,
+            toCode: to.code,
+            toName: to.name,
+            minutes: routeFlightMinutes(from, to),
+            distanceKm: routeDistanceKm(from, to),
+          },
+        },
+        { merge: true }
+      );
+
+      setStudying(true);
+      setStartedAt(startLabel);
+      setSessionSec(0);
+      setTotalSec(0);
+      setUnread(0);
+      setActiveFlight({
+        fromCode: from.code,
+        fromName: from.name,
+        fromCity: from.city,
+        toCode: to.code,
+        toName: to.name,
+        toCity: to.city,
+        minutes: routeFlightMinutes(from, to),
+        distanceKm: routeDistanceKm(from, to),
+        startedAt: startLabel,
+        startedAtMs: startMs,
+      });
+
+      if (enteredGroupId) {
+        try {
+          await setDoc(
+            doc(db, "groups", enteredGroupId, "members", uid),
+            {
+              uid,
+              userId,
+              displayName,
+              role: currentGroup?.ownerUid === uid ? "방장" : "참여자",
+              subject: flightSubject,
+              detail: flightDetail,
+              studying: true,
+              liveSessionId: sessionId,
+              liveStartedAtMs: startMs,
+              liveStudyDate: startStudyDate,
+              updatedAt: serverTimestamp(),
+            },
+            { merge: true }
+          );
+        } catch (error) {
+          console.error("비행 공부 그룹 상태 업데이트 실패:", error);
+        }
+      }
+
+      setFlightTicketCutting(false);
+    }, 900);
+  };
+
+  const renderFlightModeUi = () => {
+    const from = FLIGHT_COUNTRIES.find((c) => c.code === flightFromCode) || FLIGHT_COUNTRIES[0];
+    const to = FLIGHT_COUNTRIES.find((c) => c.code === flightToCode) || FLIGHT_COUNTRIES[1];
+    const distance = routeDistanceKm(from, to);
+    const minutes = routeFlightMinutes(from, to);
+    const activeMinutes = activeFlight?.minutes || minutes;
+    const flightProgress = studying && activeFlight
+      ? Math.min(100, Math.round((currentSessionSeconds / Math.max(1, activeMinutes * 60)) * 100))
+      : 0;
+    const flightInProgress = studying && activeFlight;
+    const effectiveFlightMapZoom = flightInProgress ? Math.max(flightMapZoom, 3.2) : flightMapZoom;
+
+    const route = buildGreatCircleRoute(from, to, 96);
+    const progressIndex = Math.min(
+      route.points.length - 1,
+      Math.max(0, Math.round(((studying && activeFlight ? flightProgress : 0) / 100) * (route.points.length - 1)))
+    );
+    const planePoint = route.points[progressIndex] || route.points[0];
+    const nextPoint = route.points[Math.min(route.points.length - 1, progressIndex + 1)] || planePoint;
+    const planeRotate = Math.atan2(nextPoint.y - planePoint.y, nextPoint.x - planePoint.x) * (180 / Math.PI);
+
+    const chooseCountryOnMap = (country) => {
+      if (studying || flightTicketCutting) return;
+
+      if (flightPickTarget === "from") {
+        if (country.code === flightToCode) {
+          alert("출발 국가와 도착 국가는 서로 달라야 합니다.");
+          return;
+        }
+        setFlightFromCode(country.code);
+        setFlightPickTarget("to");
+        return;
+      }
+
+      if (country.code === flightFromCode) {
+        alert("출발 국가와 도착 국가는 서로 달라야 합니다.");
+        return;
+      }
+
+      setFlightToCode(country.code);
+    };
+
+    return (
+      <section className={flightInProgress ? "flight-dashboard-card tracking-flight" : "flight-dashboard-card"}>
+        <div className="flight-dashboard-head">
+          <div>
+            <div className="flight-kicker">FLIGHT STUDY MODE</div>
+            <h2>비행기 모드</h2>
+            <p>세계지도에서 출발지와 도착지를 직접 선택하면, 공부 시간 동안 비행기가 경로를 따라 이동합니다.</p>
+          </div>
+
+          <div className="flight-route-summary">
+            <span>{from.code}</span>
+            <b>→</b>
+            <span>{to.code}</span>
+            <small>{distance.toLocaleString()}km · 예상 {formatFlightTime(minutes)}</small>
+          </div>
+        </div>
+
+        <div className="flight-dashboard-grid">
+          <div>
+            <div className="flight-panel-head">
+              <div>
+                <b>WORLD ROUTE MAP</b>
+                <span>{flightInProgress ? "비행 추적 중 · 국가 표시 숨김" : `현재 선택: ${flightPickTarget === "from" ? "출발 국가" : "도착 국가"}`}</span>
+              </div>
+              <div className="flight-map-tools">
+                <div className="flight-pick-tabs">
+                  <button
+                    type="button"
+                    className={flightPickTarget === "from" ? "active" : ""}
+                    onClick={() => setFlightPickTarget("from")}
+                    disabled={studying || flightTicketCutting}
+                  >
+                    출발 선택
+                  </button>
+                  <button
+                    type="button"
+                    className={flightPickTarget === "to" ? "active" : ""}
+                    onClick={() => setFlightPickTarget("to")}
+                    disabled={studying || flightTicketCutting}
+                  >
+                    도착 선택
+                  </button>
+                </div>
+                <div className="flight-zoom-controls">
+                  <button type="button" onClick={() => changeFlightMapZoom((v) => v - 0.25)}>−</button>
+                  <span>{Math.round(effectiveFlightMapZoom * 100)}%</span>
+                  <button type="button" onClick={() => changeFlightMapZoom((v) => v + 0.25)}>+</button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flight-map-viewport" ref={flightMapViewportRef}>
+              <div
+                className="flight-map"
+                style={{
+                  width: `${effectiveFlightMapZoom * 100}%`,
+                }}
+              >
+                <div className="flight-map-grid" />
+                <svg viewBox="0 0 1672 941" preserveAspectRatio="none">
+                  {route.segments.map((segment, index) => (
+                    <polyline
+                      key={`route-${index}`}
+                      className="flight-route-line"
+                      points={svgPolylinePoints(segment)}
+                    />
+                  ))}
+                </svg>
+
+                {FLIGHT_COUNTRIES.filter((country) => {
+                  if (!flightInProgress) return true;
+                  return country.code === from.code || country.code === to.code;
+                }).map((country) => {
+                  const left = `${((country.lon + 180) / 360) * 100}%`;
+                  const top = `${((90 - country.lat) / 180) * 100}%`;
+                  const isFrom = country.code === from.code;
+                  const isTo = country.code === to.code;
+                  const selected = isFrom || isTo;
+
+                  return (
+                    <button
+                      key={country.code}
+                      type="button"
+                      title={`${country.name} · ${country.city}`}
+                      className={selected ? "flight-country selected" : "flight-country"}
+                      data-kind={isFrom ? `FROM · ${country.name}` : isTo ? `TO · ${country.name}` : ""}
+                      style={{ left, top }}
+                      onClick={() => chooseCountryOnMap(country)}
+                      disabled={studying || flightTicketCutting}
+                    >
+                      {country.code}
+                    </button>
+                  );
+                })}
+
+              <div
+                  className="flight-plane"
+                  style={{
+                    left: `${(planePoint.x / 1672) * 100}%`,
+                    top: `${(planePoint.y / 941) * 100}%`,
+                    transform: `translate(-50%, -50%) rotate(${planeRotate}deg)`,
+                  }}
+                >
+                  ✈
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+    );
+  };
+
   const RightPanelControlBar = ({ cardId }) => {
     const index = rightPanelOrder.indexOf(cardId);
 
@@ -2583,6 +3163,8 @@ export default function App() {
         animation: easyLayout && mobileTab === "home" ? "srFadeSlideIn 520ms cubic-bezier(0.16, 1, 0.3, 1)" : "none",
       }}
     >
+      
+
       <section style={{ ...S.card, padding: 12 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
           <div>
@@ -2905,6 +3487,102 @@ export default function App() {
       );
     }
 
+    if (cardId === "flightTicket") {
+      if (!flightFeatureOpen) return null;
+
+      const from = FLIGHT_COUNTRIES.find((c) => c.code === flightFromCode) || FLIGHT_COUNTRIES[0];
+      const to = FLIGHT_COUNTRIES.find((c) => c.code === flightToCode) || FLIGHT_COUNTRIES[1];
+      const distance = routeDistanceKm(from, to);
+      const minutes = routeFlightMinutes(from, to);
+
+      return (
+        <RightPanelItem key={cardId} cardId={cardId}>
+          <section className="flight-side-card">
+            <div className="flight-panel-head">
+              <div>
+                <b>BOARDING PASS</b>
+                <span>{flightTicketCutting ? "티켓 확인 중" : studying ? "비행 중" : "탑승 대기"}</span>
+              </div>
+            </div>
+
+            <div className={flightTicketCutting ? "flight-ticket cutting" : "flight-ticket"}>
+              <div className="flight-ticket-main">
+                <span>STUDY AIR</span>
+                <h2>{from.code} → {to.code}</h2>
+                <p>{from.name} {from.city} 출발 · {to.name} {to.city} 도착</p>
+                <div className="flight-ticket-row">
+                  <div>
+                    <small>DISTANCE</small>
+                    <b>{distance.toLocaleString()}km</b>
+                  </div>
+                  <div>
+                    <small>TIME</small>
+                    <b>{formatFlightTime(minutes)}</b>
+                  </div>
+                </div>
+              </div>
+              <div className="flight-ticket-stub">
+                <span>GATE</span>
+                <b>SR</b>
+                <small>{from.code}{to.code}</small>
+              </div>
+            </div>
+
+            <div className="flight-study-form flight-action-only">
+              <div className="flight-current-study">
+                <span>현재 선택된 공부</span>
+                <b>{subject || "과목 없음"}</b>
+                <small>{detail.trim() || "고급모드의 공부 과목과 내용을 기준으로 비행 공부가 시작됩니다."}</small>
+              </div>
+
+              {studying ? (
+                <button type="button" className="flight-stop" onClick={stopStudy}>착륙하기 · 공부 종료</button>
+              ) : (
+                <button type="button" onClick={startFlightStudy} disabled={flightTicketCutting || from.code === to.code}>
+                  {flightTicketCutting ? "티켓 우측 절취 중..." : "탑승 시작"}
+                </button>
+              )}
+            </div>
+          </section>
+        </RightPanelItem>
+      );
+    }
+
+    if (cardId === "flightStatus") {
+      if (!flightFeatureOpen) return null;
+
+      const from = FLIGHT_COUNTRIES.find((c) => c.code === flightFromCode) || FLIGHT_COUNTRIES[0];
+      const to = FLIGHT_COUNTRIES.find((c) => c.code === flightToCode) || FLIGHT_COUNTRIES[1];
+      const minutes = activeFlight?.minutes || routeFlightMinutes(from, to);
+      const flightProgress = studying && activeFlight
+        ? Math.min(100, Math.round((currentSessionSeconds / Math.max(1, minutes * 60)) * 100))
+        : 0;
+
+      return (
+        <RightPanelItem key={cardId} cardId={cardId}>
+          <section className="flight-side-card">
+            <div className="flight-panel-head">
+              <div>
+                <b>IN-FLIGHT STATUS</b>
+                <span>{flightProgress}% 진행</span>
+              </div>
+            </div>
+
+            <div className="flight-progress">
+              <i style={{ width: `${flightProgress}%` }} />
+            </div>
+
+            <div className="flight-stats">
+              <div><span>오늘 총 공부</span><b>{formatTimer(todayTotalWithLive)}</b></div>
+              <div><span>현재 세션</span><b>{formatTimer(currentSessionSeconds)}</b></div>
+              <div><span>예상 비행시간</span><b>{formatFlightTime(minutes)}</b></div>
+              <div><span>그룹 합계</span><b>{formatTimer(groupTodayTotal)}</b></div>
+            </div>
+          </section>
+        </RightPanelItem>
+      );
+    }
+
     if (cardId === "weather") {
       if (isCompactScreen) return null;
 
@@ -2943,7 +3621,7 @@ export default function App() {
             </div>
 
             {weatherDays.length > 0 && (
-              <div style={{ display: "grid", gap: 8, maxHeight: 350, overflowY: "auto", paddingRight: 2 }}>
+              <div style={{ display: "grid", gap: 8 }}>
                 {weatherDays.map((day) => {
                   const shouldCarryUmbrella =
                     Number(day.rain) >= 50 ||
@@ -3451,6 +4129,80 @@ export default function App() {
     return <div style={{ ...S.page, ...themeVars }}>앱을 불러오는 중입니다...</div>;
   }
 
+  if (isCompactScreen) {
+    return (
+      <div
+        style={{
+          ...S.page,
+          ...themeVars,
+          minHeight: "100dvh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 24,
+          background:
+            "linear-gradient(135deg, #f7f8fa 0%, #eef3f8 45%, #e8edf3 100%)",
+        }}
+      >
+        <div
+          style={{
+            width: "100%",
+            maxWidth: 420,
+            background: "white",
+            border: "1px solid rgba(229,232,235,0.95)",
+            borderRadius: 28,
+            padding: "30px 24px",
+            textAlign: "center",
+            boxShadow: "0 18px 44px rgba(25,31,40,0.10)",
+          }}
+        >
+          <div
+            style={{
+              width: 58,
+              height: 58,
+              margin: "0 auto 16px",
+              borderRadius: 20,
+              background: "var(--accent-soft)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "var(--accent)",
+              fontSize: 28,
+              fontWeight: 950,
+            }}
+          >
+            !
+          </div>
+
+          <h1
+            style={{
+              margin: "0 0 10px",
+              fontSize: 24,
+              lineHeight: 1.25,
+              letterSpacing: -0.8,
+              color: "#191f28",
+            }}
+          >
+            이 사이트는 패드 및 PC 전용 사이트입니다.
+          </h1>
+
+          <p
+            style={{
+              margin: 0,
+              color: "#6b7684",
+              fontSize: 14,
+              lineHeight: 1.55,
+              fontWeight: 700,
+            }}
+          >
+            원활한 이용을 위해 iPad, 태블릿, 노트북 또는 PC에서 접속해 주세요.
+            휴대폰 화면에서는 앱을 사용할 수 없습니다.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) {
     return (
       <div style={{ ...S.page, ...themeVars }}>
@@ -3470,7 +4222,7 @@ export default function App() {
                       justifyContent: "center",
                     }}
                   >
-                    <IconImage src={ICONS.logo} alt="Study Room" size={38} />
+                    <IconImage src={currentIcons.logo} alt="Study Room" size={38} />
                   </div>
                   <p style={{ color: "#a1a1aa", margin: 0, fontWeight: 900 }}>Study Room</p>
                 </div>
@@ -3624,7 +4376,13 @@ export default function App() {
   }
 
   return (
-    <div style={{ ...S.page, ...themeVars }}>
+    <div
+      style={{
+        ...S.page,
+        ...themeVars,
+        background: "var(--app-bg)",
+      }}
+    >
       <audio ref={soundRef} src={currentSound.src} loop preload="auto" />
       <style>
         {`
@@ -3706,6 +4464,1159 @@ export default function App() {
           button:active {
             transform: scale(0.965);
           }
+
+
+          .flight-os {
+            min-height: calc(100vh - 28px);
+            color: #0f172a;
+            padding: 18px;
+            background:
+              radial-gradient(circle at 18% 0%, rgba(14,165,233,0.18), transparent 30%),
+              radial-gradient(circle at 92% 18%, rgba(37,99,235,0.12), transparent 32%),
+              linear-gradient(135deg, #dbeafe 0%, #eff6ff 42%, #ffffff 100%);
+            border: 1px solid rgba(147,197,253,0.8);
+          }
+
+          .flight-os * {
+            box-sizing: border-box;
+          }
+
+          .flight-topbar {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 18px;
+            align-items: center;
+            background: rgba(255,255,255,0.88);
+            border: 1px solid rgba(147,197,253,0.75);
+            border-radius: 28px;
+            padding: 16px 18px;
+            box-shadow: 0 18px 42px rgba(37,99,235,0.10);
+            margin-bottom: 14px;
+            backdrop-filter: blur(18px);
+          }
+
+          .flight-title {
+            font-size: 30px;
+            font-weight: 950;
+            letter-spacing: -1.1px;
+            color: #0f172a;
+          }
+
+          .flight-subtitle {
+            margin-top: 4px;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 850;
+          }
+
+          .flight-route-summary {
+            text-align: center;
+            display: grid;
+            grid-template-columns: auto auto auto;
+            gap: 10px;
+            align-items: center;
+            color: #0f172a;
+            font-weight: 950;
+          }
+
+          .flight-route-summary span {
+            min-width: 54px;
+            padding: 8px 10px;
+            border-radius: 16px;
+            background: #eff6ff;
+            color: var(--flight-blue);
+            border: 1px solid #bfdbfe;
+          }
+
+          .flight-route-summary small {
+            grid-column: 1 / -1;
+            color: #64748b;
+            font-size: 12px;
+          }
+
+          .flight-mode-tabs {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+          }
+
+          .flight-mode-tabs button,
+          .flight-os button {
+            border: none;
+            border-radius: 16px;
+            padding: 10px 12px;
+            background: #eff6ff;
+            color: #1e3a8a;
+            font-weight: 950;
+            cursor: pointer;
+            border: 1px solid #bfdbfe;
+          }
+
+          .flight-mode-tabs button.active,
+          .flight-os button:hover {
+            background: linear-gradient(135deg, #2563eb, #0ea5e9);
+            color: white;
+            box-shadow: 0 12px 26px rgba(37,99,235,0.20);
+          }
+
+          .flight-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.8fr);
+            grid-template-areas:
+              "map ticket"
+              "map status"
+              "side side";
+            gap: 14px;
+          }
+
+          .flight-panel {
+            background: rgba(255,255,255,0.92);
+            border: 1px solid rgba(147,197,253,0.78);
+            border-radius: 30px;
+            padding: 16px;
+            box-shadow: 0 18px 42px rgba(37,99,235,0.10);
+            backdrop-filter: blur(18px);
+          }
+
+          .flight-panel-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 12px;
+          }
+
+          .flight-panel-head b {
+            color: #0f172a;
+            font-size: 13px;
+            letter-spacing: 0.8px;
+          }
+
+          .flight-panel-head span {
+            color: var(--flight-blue);
+            font-weight: 950;
+            font-size: 12px;
+          }
+
+          .flight-map-panel { grid-area: map; min-height: 640px; }
+          .flight-ticket-panel { grid-area: ticket; }
+          .flight-status-panel { grid-area: status; }
+          .flight-side-panel { grid-area: side; }
+
+          .flight-map {
+            position: relative;
+            height: 510px;
+            border-radius: 28px;
+            overflow: hidden;
+            background:
+              linear-gradient(rgba(37,99,235,0.06), rgba(37,99,235,0.06)),
+              url("/images/blue-world-map.png");
+            background-size: cover;
+            background-position: center;
+            border: 1px solid #bfdbfe;
+          }
+
+          .flight-map-grid {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(rgba(255,255,255,0.08), rgba(37,99,235,0.04));
+            pointer-events: none;
+          }
+
+          .flight-map svg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+          }
+
+          .flight-route-line {
+            fill: none;
+            stroke: #2563eb;
+            stroke-width: 5;
+            stroke-linecap: round;
+            stroke-dasharray: 14 12;
+            filter: drop-shadow(0 8px 10px rgba(37,99,235,0.24));
+          }
+
+          .flight-country {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            min-width: 38px;
+            height: 30px;
+            padding: 0 8px;
+            border-radius: 999px !important;
+            font-size: 11px;
+            background: rgba(255,255,255,0.88) !important;
+            color: #0f172a !important;
+            border: 1px solid #bfdbfe !important;
+          }
+
+          .flight-country.selected {
+            background: #2563eb !important;
+            color: white !important;
+            box-shadow: 0 10px 24px rgba(37,99,235,0.28);
+          }
+
+          .flight-plane {
+            position: absolute;
+            top: 42%;
+            transform: translate(-50%, -50%);
+            font-size: 34px;
+            transition: left 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            filter: drop-shadow(0 12px 16px rgba(37,99,235,0.25));
+          }
+
+          .flight-selectors {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 12px;
+          }
+
+          .flight-selectors label,
+          .flight-study-form label {
+            display: grid;
+            gap: 6px;
+          }
+
+          .flight-selectors span,
+          .flight-study-form span,
+          .flight-sound-box span,
+          .flight-member-list > b {
+            color: #475569;
+            font-size: 12px;
+            font-weight: 950;
+          }
+
+          .flight-os input,
+          .flight-os select,
+          .flight-os textarea {
+            width: 100%;
+            border: 1px solid #bfdbfe;
+            border-radius: 16px;
+            background: #f8fbff;
+            color: #0f172a;
+            padding: 11px 12px;
+            font-weight: 800;
+          }
+
+          .flight-os textarea {
+            min-height: 86px;
+          }
+
+          .flight-ticket {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 92px;
+            min-height: 210px;
+            border-radius: 26px;
+            overflow: hidden;
+            background: linear-gradient(135deg, #ffffff, #eff6ff);
+            border: 1px solid #bfdbfe;
+            box-shadow: 0 18px 34px rgba(37,99,235,0.12);
+            transform-origin: left center;
+          }
+
+          .flight-ticket.cutting .flight-ticket-stub {
+            animation: ticketCutAway 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          }
+
+          @keyframes ticketCutAway {
+            0% {
+              transform: translateX(0) rotate(0deg);
+              opacity: 1;
+            }
+            100% {
+              transform: translateX(110px) rotate(9deg);
+              opacity: 0;
+            }
+          }
+
+          .flight-ticket-main {
+            padding: 20px;
+          }
+
+          .flight-ticket-main > span {
+            color: var(--flight-blue);
+            font-size: 12px;
+            font-weight: 950;
+            letter-spacing: 1.2px;
+          }
+
+          .flight-ticket-main h2 {
+            margin: 8px 0 4px;
+            font-size: 40px;
+            letter-spacing: -1.5px;
+            color: #0f172a;
+          }
+
+          .flight-ticket-main p {
+            margin: 0;
+            color: #64748b;
+            font-weight: 800;
+          }
+
+          .flight-ticket-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 18px;
+          }
+
+          .flight-ticket-row div {
+            background: #f8fbff;
+            border: 1px solid #dbeafe;
+            border-radius: 18px;
+            padding: 10px;
+          }
+
+          .flight-ticket-row small,
+          .flight-ticket-stub span,
+          .flight-ticket-stub small {
+            display: block;
+            color: #64748b;
+            font-size: 10px;
+            font-weight: 900;
+          }
+
+          .flight-ticket-row b,
+          .flight-ticket-stub b {
+            color: #0f172a;
+          }
+
+          .flight-ticket-stub {
+            display: grid;
+            place-items: center;
+            text-align: center;
+            background: #dbeafe;
+            border-left: 2px dashed #93c5fd;
+            padding: 14px 8px;
+          }
+
+          .flight-ticket-stub b {
+            font-size: 32px;
+            color: var(--flight-blue);
+          }
+
+          .flight-study-form {
+            display: grid;
+            gap: 10px;
+            margin-top: 12px;
+          }
+
+          .flight-study-form button,
+          .flight-stop {
+            min-height: 46px;
+          }
+
+          .flight-stop {
+            background: #fee2e2 !important;
+            color: #b91c1c !important;
+            border-color: #fecaca !important;
+          }
+
+          .flight-progress {
+            height: 12px;
+            border-radius: 999px;
+            background: #dbeafe;
+            overflow: hidden;
+            margin-bottom: 12px;
+          }
+
+          .flight-progress i {
+            display: block;
+            height: 100%;
+            background: linear-gradient(90deg, #2563eb, #0ea5e9);
+            border-radius: 999px;
+            transition: width 0.5s ease;
+          }
+
+          .flight-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+          }
+
+          .flight-stats div,
+          .flight-sound-box,
+          .flight-member-list div {
+            border: 1px solid #dbeafe;
+            background: #f8fbff;
+            border-radius: 20px;
+            padding: 11px;
+          }
+
+          .flight-stats span,
+          .flight-member-list small {
+            display: block;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 900;
+          }
+
+          .flight-stats b {
+            color: #0f172a;
+          }
+
+          .flight-quick-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+          }
+
+          .flight-sound-box {
+            display: grid;
+            gap: 8px;
+            margin-top: 12px;
+          }
+
+          .flight-member-list {
+            display: grid;
+            gap: 8px;
+            margin-top: 12px;
+          }
+
+          .flight-member-list div {
+            display: grid;
+            grid-template-columns: 24px 1fr 10px auto;
+            gap: 8px;
+            align-items: center;
+          }
+
+          .flight-member-list i {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: #cbd5e1;
+          }
+
+          .flight-member-list i.online {
+            background: var(--flight-green);
+            box-shadow: 0 0 0 4px rgba(34,197,94,0.14);
+          }
+
+          .flight-member-list p {
+            color: #64748b;
+            margin: 0;
+          }
+
+          @media (max-width: 1280px) {
+            .flight-grid {
+              grid-template-columns: 1fr;
+              grid-template-areas:
+                "ticket"
+                "map"
+                "status"
+                "side";
+            }
+
+            .flight-topbar {
+              grid-template-columns: 1fr;
+              text-align: center;
+            }
+
+            .flight-mode-tabs {
+              justify-content: center;
+            }
+
+            .flight-quick-buttons,
+            .flight-selectors,
+            .flight-stats {
+              grid-template-columns: 1fr 1fr;
+            }
+          }
+
+          .flight-dashboard-card {
+            display: grid;
+            gap: 12px;
+            margin-bottom: 12px;
+            border-radius: 30px;
+            padding: 16px;
+            color: #0f172a;
+            background:
+              radial-gradient(circle at 14% 0%, rgba(14,165,233,0.16), transparent 30%),
+              linear-gradient(135deg, rgba(255,255,255,0.98), rgba(239,246,255,0.94));
+            border: 1px solid rgba(147,197,253,0.78);
+            box-shadow: 0 18px 42px rgba(37,99,235,0.10);
+          }
+
+          .flight-dashboard-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            align-items: center;
+          }
+
+          .flight-kicker {
+            color: var(--flight-blue);
+            font-size: 11px;
+            font-weight: 950;
+            letter-spacing: 1.4px;
+          }
+
+          .flight-dashboard-head h2 {
+            margin: 4px 0;
+            font-size: 28px;
+            letter-spacing: -1px;
+          }
+
+          .flight-dashboard-head p {
+            margin: 0;
+            color: #64748b;
+            font-weight: 750;
+          }
+
+          .flight-dashboard-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 340px;
+            gap: 12px;
+            align-items: start;
+          }
+
+          .flight-control-stack {
+            display: grid;
+            gap: 12px;
+          }
+
+          .flight-ticket-panel-inner,
+          .flight-status-panel-inner {
+            background: rgba(255,255,255,0.78);
+            border: 1px solid rgba(191,219,254,0.9);
+            border-radius: 26px;
+            padding: 12px;
+          }
+
+          .flight-map {
+            height: min(54vh, 520px);
+            min-height: 420px;
+          }
+
+          .flight-map-land {
+            position: absolute;
+            background: rgba(37,99,235,0.08);
+            border: 1px solid rgba(37,99,235,0.08);
+            filter: blur(0.2px);
+          }
+
+          .flight-map-land.land-a {
+            left: 12%;
+            top: 24%;
+            width: 22%;
+            height: 26%;
+            border-radius: 54% 46% 48% 52%;
+            transform: rotate(-12deg);
+          }
+
+          .flight-map-land.land-b {
+            left: 43%;
+            top: 22%;
+            width: 21%;
+            height: 28%;
+            border-radius: 44% 56% 52% 48%;
+            transform: rotate(8deg);
+          }
+
+          .flight-map-land.land-c {
+            left: 62%;
+            top: 36%;
+            width: 18%;
+            height: 22%;
+            border-radius: 56% 44% 54% 46%;
+            transform: rotate(-8deg);
+          }
+
+          .flight-map-land.land-d {
+            left: 74%;
+            top: 66%;
+            width: 12%;
+            height: 12%;
+            border-radius: 56% 44% 54% 46%;
+            transform: rotate(15deg);
+          }
+
+          .flight-pick-tabs {
+            display: flex;
+            gap: 8px;
+          }
+
+          .flight-pick-tabs button {
+            padding: 8px 10px;
+          }
+
+          .flight-pick-tabs button.active {
+            background: linear-gradient(135deg, #2563eb, #0ea5e9);
+            color: white;
+          }
+
+          .flight-country::after {
+            content: attr(data-kind);
+            position: absolute;
+            left: 50%;
+            top: -18px;
+            transform: translateX(-50%);
+            color: #2563eb;
+            font-size: 9px;
+            font-weight: 950;
+            white-space: nowrap;
+          }
+
+          .flight-country[data-kind=""]::after {
+            display: none;
+          }
+
+          .flight-plane {
+            color: #0f172a;
+            z-index: 7;
+          }
+
+          .flight-route-line {
+            stroke-dasharray: 12 10;
+            animation: flightRouteDash 1.8s linear infinite;
+          }
+
+          @keyframes flightRouteDash {
+            to {
+              stroke-dashoffset: -44;
+            }
+          }
+
+          .flight-ticket-row {
+            grid-template-columns: repeat(2, 1fr);
+          }
+
+          @media (max-width: 1280px) {
+            .flight-dashboard-grid {
+              grid-template-columns: 1fr;
+            }
+
+            .flight-dashboard-head {
+              display: grid;
+            }
+
+            .flight-route-summary {
+              justify-content: start;
+            }
+          }
+
+          .flight-toggle-card {
+            display: flex;
+            justify-content: space-between;
+            gap: 14px;
+            align-items: center;
+            margin-bottom: 12px;
+            border-radius: 28px;
+            padding: 16px 18px;
+            background:
+              radial-gradient(circle at 12% 0%, rgba(14,165,233,0.14), transparent 28%),
+              linear-gradient(135deg, rgba(255,255,255,0.98), rgba(239,246,255,0.94));
+            border: 1px solid rgba(191,219,254,0.95);
+            box-shadow: 0 14px 34px rgba(37,99,235,0.08);
+          }
+
+          .flight-toggle-card h3 {
+            margin: 3px 0 3px;
+            font-size: 18px;
+            letter-spacing: -0.45px;
+            color: #0f172a;
+          }
+
+          .flight-toggle-card p {
+            margin: 0;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 750;
+            line-height: 1.45;
+          }
+
+          .flight-toggle-card button,
+          .flight-dashboard-card button,
+          .flight-ticket-panel-inner button,
+          .flight-status-panel-inner button {
+            border-radius: 16px !important;
+            border: 1px solid rgba(191,219,254,0.95) !important;
+            background: #eff6ff !important;
+            color: #1e40af !important;
+            font-weight: 950 !important;
+            box-shadow: none !important;
+            transition:
+              transform 180ms ease,
+              box-shadow 180ms ease,
+              background 180ms ease,
+              color 180ms ease;
+          }
+
+          .flight-toggle-card button:hover,
+          .flight-dashboard-card button:hover,
+          .flight-ticket-panel-inner button:hover {
+            transform: translateY(-1px);
+            background: linear-gradient(135deg, #2563eb, #0ea5e9) !important;
+            color: white !important;
+            box-shadow: 0 12px 26px rgba(37,99,235,0.18) !important;
+          }
+
+          .flight-dashboard-card button:disabled,
+          .flight-ticket-panel-inner button:disabled {
+            opacity: 0.52;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none !important;
+          }
+
+          .flight-add-subject {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 42px;
+            gap: 8px;
+          }
+
+          .flight-add-subject button {
+            min-height: 42px;
+            padding: 0 !important;
+            font-size: 20px;
+            line-height: 1;
+          }
+
+          .flight-study-form {
+            gap: 10px;
+          }
+
+          .flight-study-form button {
+            border-radius: 18px !important;
+          }
+
+          .flight-stop {
+            background: #fee2e2 !important;
+            color: #b91c1c !important;
+            border-color: #fecaca !important;
+          }
+
+          .flight-stop:hover {
+            background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+            color: white !important;
+          }
+
+          @media (max-width: 900px) {
+            .flight-toggle-card {
+              display: grid;
+            }
+          }
+
+          .flight-dashboard-card .flight-map {
+            background:
+              linear-gradient(rgba(255,255,255,0.03), rgba(37,99,235,0.06)),
+              url("/images/blue-world-map.png") !important;
+            background-size: cover !important;
+            background-position: center !important;
+          }
+
+          .flight-dashboard-card .flight-map-grid {
+            background:
+              linear-gradient(rgba(255,255,255,0.05), rgba(37,99,235,0.03)) !important;
+            pointer-events: none;
+          }
+
+          .flight-dashboard-card .flight-country {
+            min-width: 30px;
+            height: 24px;
+            padding: 0 6px;
+            font-size: 10px;
+            background: rgba(255,255,255,0.88) !important;
+            border: 1px solid rgba(37,99,235,0.30) !important;
+            box-shadow: 0 6px 14px rgba(15,23,42,0.10);
+          }
+
+          .flight-dashboard-card .flight-country.selected {
+            background: #2563eb !important;
+            color: white !important;
+            border-color: rgba(255,255,255,0.76) !important;
+            box-shadow: 0 10px 24px rgba(37,99,235,0.28);
+          }
+
+          .flight-dashboard-card .flight-route-line {
+            stroke: #ffffff;
+            stroke-width: 6;
+            stroke-linecap: round;
+            stroke-dasharray: 16 12;
+            filter:
+              drop-shadow(0 0 5px rgba(37,99,235,0.95))
+              drop-shadow(0 10px 10px rgba(15,23,42,0.20));
+          }
+
+          .flight-dashboard-card .flight-plane {
+            font-size: 34px;
+            color: #0f172a;
+            text-shadow:
+              0 2px 0 rgba(255,255,255,0.8),
+              0 10px 22px rgba(37,99,235,0.35);
+          }
+
+          /* Expanded flight map: easier country selection */
+          .flight-dashboard-card {
+            min-height: calc(100vh - 170px);
+            padding: 18px;
+          }
+
+          .flight-dashboard-card .flight-dashboard-grid {
+            grid-template-columns: minmax(0, 1fr) 380px;
+            align-items: stretch;
+          }
+
+          .flight-dashboard-card .flight-map {
+            height: clamp(620px, calc(100vh - 310px), 780px) !important;
+            min-height: 620px !important;
+          }
+
+          .flight-dashboard-card .flight-country {
+            min-width: 40px !important;
+            height: 34px !important;
+            padding: 0 9px !important;
+            font-size: 11px !important;
+            border-radius: 999px !important;
+            z-index: 5;
+          }
+
+          .flight-dashboard-card .flight-country::before {
+            content: "";
+            position: absolute;
+            inset: -8px;
+            border-radius: 999px;
+          }
+
+          .flight-dashboard-card .flight-country:hover {
+            transform: translate(-50%, -50%) scale(1.12);
+            background: #dbeafe !important;
+            border-color: #2563eb !important;
+            box-shadow: 0 12px 28px rgba(37,99,235,0.26);
+          }
+
+          .flight-dashboard-card .flight-country.selected {
+            transform: translate(-50%, -50%) scale(1.08);
+          }
+
+          .flight-dashboard-card .flight-plane {
+            font-size: 42px !important;
+          }
+
+          .flight-ticket {
+            min-height: 230px;
+          }
+
+          .flight-ticket-main h2 {
+            font-size: 44px;
+          }
+
+          @media (max-width: 1280px) {
+            .flight-dashboard-card .flight-dashboard-grid {
+              grid-template-columns: 1fr;
+            }
+
+            .flight-dashboard-card .flight-map {
+              height: 580px !important;
+              min-height: 540px !important;
+            }
+          }
+
+          .flight-map-tools {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+          }
+
+          .flight-zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px;
+            border-radius: 999px;
+            background: rgba(239,246,255,0.9);
+            border: 1px solid rgba(191,219,254,0.95);
+          }
+
+          .flight-zoom-controls button {
+            width: 32px;
+            height: 30px;
+            padding: 0 !important;
+            border-radius: 999px !important;
+          }
+
+          .flight-zoom-controls span {
+            min-width: 48px;
+            text-align: center;
+            color: #1e40af;
+            font-size: 12px;
+            font-weight: 950;
+          }
+
+          .flight-map-viewport {
+            position: relative;
+            height: clamp(620px, calc(100vh - 310px), 780px);
+            min-height: 620px;
+            overflow: auto;
+            border-radius: 28px;
+            border: 1px solid #bfdbfe;
+            background: #dbeafe;
+            scroll-behavior: smooth;
+          }
+
+          .flight-map-viewport .flight-map {
+            height: auto !important;
+            min-height: 0 !important;
+            aspect-ratio: 1672 / 941;
+            min-width: 100%;
+            transition: width 220ms ease;
+            transform-origin: 0 0;
+            border: 0;
+            border-radius: 0;
+          }
+
+          .flight-dashboard-card .flight-map {
+            height: auto !important;
+            min-height: 0 !important;
+          }
+
+          .flight-dashboard-card .flight-route-line {
+            fill: none;
+            stroke: #ffffff;
+            stroke-width: 6;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: 16 12;
+            animation: flightRouteDash 1.8s linear infinite;
+            filter:
+              drop-shadow(0 0 5px rgba(37,99,235,0.95))
+              drop-shadow(0 10px 10px rgba(15,23,42,0.20));
+          }
+
+          @media (max-width: 1280px) {
+            .flight-map-viewport {
+              height: 580px;
+              min-height: 540px;
+            }
+          }
+
+          .flight-map-viewport {
+            overscroll-behavior: contain;
+          }
+
+          .flight-map-viewport .flight-map {
+            transform-origin: center center;
+          }
+
+          .flight-dashboard-card.tracking-flight .flight-pick-tabs {
+            display: none;
+          }
+
+          .flight-dashboard-card.tracking-flight .flight-zoom-controls {
+            opacity: 0.72;
+          }
+
+          .flight-dashboard-card.tracking-flight .flight-map-viewport {
+            scroll-behavior: smooth;
+          }
+
+          .flight-dashboard-card.tracking-flight .flight-route-line {
+            stroke-width: 7;
+            stroke-dasharray: 18 10;
+          }
+
+          .flight-dashboard-card.tracking-flight .flight-plane {
+            font-size: 52px !important;
+            z-index: 20;
+            filter:
+              drop-shadow(0 0 8px rgba(255,255,255,0.95))
+              drop-shadow(0 12px 22px rgba(37,99,235,0.42));
+          }
+
+          .flight-dashboard-card.tracking-flight .flight-map-grid {
+            background:
+              radial-gradient(circle at center, rgba(255,255,255,0.08), rgba(37,99,235,0.05)) !important;
+          }
+
+          .flight-map-viewport {
+            scroll-behavior: auto;
+          }
+
+          .flight-dashboard-card.tracking-flight .flight-country.selected {
+            display: grid;
+            min-width: 54px !important;
+            height: 38px !important;
+            font-size: 12px !important;
+            z-index: 24;
+            opacity: 0.96;
+          }
+
+          .flight-dashboard-card.tracking-flight .flight-country.selected::after {
+            top: -22px;
+            color: #0f172a;
+            background: rgba(255,255,255,0.88);
+            border: 1px solid rgba(147,197,253,0.8);
+            border-radius: 999px;
+            padding: 2px 7px;
+            box-shadow: 0 8px 18px rgba(15,23,42,0.12);
+          }
+
+          .flight-dashboard-card.tracking-flight .flight-plane {
+            font-size: 60px !important;
+          }
+
+          /* Keep zoom anchored to the viewport center instead of visually expanding from one edge. */
+          .flight-map-viewport {
+            scroll-behavior: auto !important;
+          }
+
+          .flight-map-viewport .flight-map {
+            transition: none !important;
+            transform-origin: 0 0 !important;
+          }
+
+          /* Keep the existing movable right-side sections visible in advanced mode. */
+          .flight-dashboard-card {
+            min-height: auto;
+          }
+
+          .flight-dashboard-card .flight-dashboard-grid {
+            grid-template-columns: minmax(0, 1fr) 340px;
+          }
+
+          @media (max-width: 1280px) {
+            .flight-dashboard-card .flight-dashboard-grid {
+              grid-template-columns: 1fr;
+            }
+          }
+
+          /* Flight section layout: map first, ticket directly below it */
+          .flight-dashboard-card .flight-dashboard-grid {
+            grid-template-columns: 1fr !important;
+            align-items: stretch;
+          }
+
+          .flight-control-stack {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(280px, 0.65fr);
+            gap: 12px;
+            align-items: start;
+          }
+
+          .flight-ticket-panel-inner {
+            order: 1;
+          }
+
+          .flight-status-panel-inner {
+            order: 2;
+          }
+
+          .flight-action-only {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 12px;
+          }
+
+          .flight-current-study {
+            display: grid;
+            gap: 3px;
+            padding: 12px 14px;
+            border-radius: 18px;
+            background: #f8fbff;
+            border: 1px solid #dbeafe;
+            min-width: 0;
+          }
+
+          .flight-current-study span {
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 900;
+          }
+
+          .flight-current-study b {
+            color: #0f172a;
+            font-size: 15px;
+            font-weight: 950;
+          }
+
+          .flight-current-study small {
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.35;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          .flight-action-only > button {
+            min-width: 160px;
+            min-height: 48px;
+            margin: 0 !important;
+          }
+
+          @media (max-width: 980px) {
+            .flight-control-stack {
+              grid-template-columns: 1fr;
+            }
+
+            .flight-action-only {
+              grid-template-columns: 1fr;
+            }
+
+            .flight-action-only > button {
+              width: 100%;
+            }
+          }
+
+          /* Flight map stays in the main area; ticket/status live as movable right-panel cards. */
+          .flight-dashboard-card .flight-dashboard-grid {
+            grid-template-columns: 1fr !important;
+          }
+
+          .flight-side-card {
+            background:
+              radial-gradient(circle at 12% 0%, rgba(14,165,233,0.14), transparent 30%),
+              linear-gradient(135deg, rgba(255,255,255,0.98), rgba(239,246,255,0.94));
+            border: 1px solid rgba(191,219,254,0.95);
+            border-radius: 28px;
+            padding: 14px;
+            box-shadow: 0 14px 34px rgba(37,99,235,0.08);
+          }
+
+          .flight-side-card .flight-ticket {
+            grid-template-columns: minmax(0, 1fr) 78px;
+            min-height: 188px;
+          }
+
+          .flight-side-card .flight-ticket-main {
+            padding: 16px;
+          }
+
+          .flight-side-card .flight-ticket-main h2 {
+            font-size: 32px;
+          }
+
+          .flight-side-card .flight-ticket-row {
+            grid-template-columns: 1fr;
+            margin-top: 12px;
+          }
+
+          .flight-side-card .flight-ticket-stub b {
+            font-size: 26px;
+          }
+
+          .flight-side-card .flight-action-only {
+            grid-template-columns: 1fr;
+          }
+
+          .flight-side-card .flight-action-only > button {
+            width: 100%;
+          }
+
+          .flight-side-card .flight-current-study small {
+            white-space: normal;
+          }
+
+          .flight-side-card .flight-stats {
+            grid-template-columns: 1fr;
+          }
+
         `}
       </style>
 
@@ -3766,7 +5677,7 @@ export default function App() {
                 height: 42,
                 border: "none",
                 borderRadius: 16,
-                background: "#f2f6ff",
+                background: false ? "rgba(2,6,23,0.72)" : "#f2f6ff",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -3776,13 +5687,13 @@ export default function App() {
                 padding: 0,
               }}
             >
-              <IconImage src={ICONS.profile} alt="내 정보" size={34} />
+              <IconImage src={currentIcons.profile} alt="내 정보" size={34} />
             </button>
             {[
-              { label: "홈", icon: ICONS.home },
-              { label: "방", icon: ICONS.room },
-              { label: "플래너", icon: ICONS.planner },
-              { label: "채팅", icon: ICONS.chat },
+              { label: "홈", icon: currentIcons.home },
+              { label: "방", icon: currentIcons.room },
+              { label: "플래너", icon: currentIcons.planner },
+              { label: "채팅", icon: currentIcons.chat },
             ].map((item, idx) => (
               <button
                 key={item.label}
@@ -3797,7 +5708,7 @@ export default function App() {
                   height: 42,
                   border: "none",
                   borderRadius: 16,
-                  background: idx === 0 ? "#edf4ff" : "transparent",
+                  background: false ? "rgba(2,6,23,0.58)" : idx === 0 ? "#edf4ff" : "transparent",
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
@@ -3826,7 +5737,7 @@ export default function App() {
           >
             <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                <IconImage src={ICONS.logo} alt="Study Room" size={34} />
+                <IconImage src={currentIcons.logo} alt="Study Room" size={34} />
                 <h1
                   style={{
                     margin: 0,
@@ -3861,22 +5772,49 @@ export default function App() {
               </div>
             </div>
 
-            <div style={{ display: easyLayout && mobileTab !== "home" ? "none" : "flex", alignItems: "center", gap: 8, width: easyLayout ? "100%" : "auto" }}>
+            <div style={{ display: isCompactScreen && mobileTab !== "home" ? "none" : "flex", alignItems: "center", gap: 8, width: easyLayout ? "100%" : "auto", flexWrap: "wrap" }}>
               {!isCompactScreen && (
-                <button
-                  type="button"
+                <div
                   style={{
-                    ...S.lightButton,
-                    height: 38,
-                    padding: "7px 10px",
+                    display: "flex",
+                    gap: 4,
+                    padding: 4,
+                    borderRadius: 999,
+                    background: false ? "rgba(0,229,255,0.08)" : "var(--input-bg)",
+                    border: "1px solid var(--border-soft)",
                     flex: "0 0 auto",
-                    background: desktopEasyMode ? "var(--accent)" : "var(--input-bg)",
-                    color: desktopEasyMode ? "white" : "var(--text-main)",
+                    boxShadow: false ? "0 0 22px rgba(0,229,255,0.16)" : "none",
                   }}
-                  onClick={toggleDesktopMode}
                 >
-                  {desktopEasyMode ? "고급 화면" : "쉬운 화면"}
-                </button>
+                  {[
+                    { id: "advanced", label: "고급" },
+                    { id: "easy", label: "쉬운" },
+                  ].map((mode) => {
+                    const active = appMode === mode.id;
+
+                    return (
+                      <button
+                        key={mode.id}
+                        type="button"
+                        onClick={() => changeAppMode(mode.id)}
+                        style={{
+                          border: "none",
+                          height: 30,
+                          padding: "0 10px",
+                          borderRadius: 999,
+                          cursor: "pointer",
+                          fontSize: 12,
+                          fontWeight: 950,
+                          background: active ? "var(--accent)" : "transparent",
+                          color: active ? (false ? "#020617" : "white") : "var(--text-main)",
+                          boxShadow: active ? "0 8px 18px var(--accent-shadow)" : "none",
+                        }}
+                      >
+                        {mode.label}
+                      </button>
+                    );
+                  })}
+                </div>
               )}
               <select
                 style={{ ...S.input, flex: easyLayout ? 1 : "0 0 auto", width: easyLayout ? "auto" : 190, height: 38, padding: "7px 10px" }}
@@ -3958,6 +5896,21 @@ export default function App() {
                   </div>
                 ))}
               </div>
+
+              <section className="flight-toggle-card">
+                <div>
+                  <div className="flight-kicker">FLIGHT STUDY</div>
+                  <h3>비행기 기능</h3>
+                  <p>세계지도에서 항로를 정하고 비행 시간 동안 공부할 수 있습니다.</p>
+                </div>
+                <button type="button" onClick={toggleFlightFeature}>
+                  {flightFeatureOpen ? "비행기 기능 끄기" : "비행기 기능 켜기"}
+                </button>
+              </section>
+
+              {flightFeatureOpen && renderFlightModeUi()}
+
+              
 
               <section
                 style={{
@@ -4187,12 +6140,16 @@ export default function App() {
 
                     {selectedGroup?.ownerUid === uid && (
                       <div
+                        className=""
                         style={{
                           marginTop: 10,
                           padding: "10px 12px",
-                          borderRadius: 14,
-                          background: "#f8fafc",
-                          border: "1px solid #e2e8f0",
+                          borderRadius: false ? 2 : 14,
+                          background: false
+                            ? "linear-gradient(135deg, rgba(30,41,59,0.96), rgba(15,23,42,0.92))"
+                            : "#f8fafc",
+                          border: false ? "1px solid rgba(250,204,21,0.38)" : "1px solid #e2e8f0",
+                          boxShadow: false ? "inset 0 0 14px rgba(250,204,21,0.05), 0 0 16px rgba(96,165,250,0.06)" : "none",
                         }}
                       >
                         <div
@@ -4234,6 +6191,7 @@ export default function App() {
                             fontWeight: 900,
                             letterSpacing: 2,
                             color: "#0f172a",
+                            textShadow: "none",
                           }}
                         >
                           {showRoomPassword ? selectedGroup.password || "저장된 비밀번호 없음" : "••••••••"}
@@ -4264,8 +6222,8 @@ export default function App() {
                                   gap: 8,
                                   padding: "8px 10px",
                                   borderRadius: 12,
-                                  background: "#fff7ed",
-                                  border: "1px solid #fed7aa",
+                                  background: false ? "rgba(255,90,79,0.12)" : "#fff7ed",
+                                  border: false ? "1px solid rgba(255,90,79,0.34)" : "1px solid #fed7aa",
                                 }}
                               >
                                 <div style={{ minWidth: 0 }}>
@@ -4298,8 +6256,8 @@ export default function App() {
                               style={{
                                 padding: "8px 10px",
                                 borderRadius: 12,
-                                background: "#f8fafc",
-                                border: "1px solid #e2e8f0",
+                                background: false ? "rgba(13,30,51,0.72)" : "#f8fafc",
+                                border: false ? "1px solid rgba(125,211,252,0.24)" : "1px solid #e2e8f0",
                                 ...S.small,
                                 fontSize: 11,
                               }}
@@ -4325,7 +6283,13 @@ export default function App() {
                               borderRadius: 999,
                               fontSize: 11,
                               fontWeight: 900,
-                              background: soundPlaying ? "#e8f3ff" : "#f2f4f6",
+                              background: false
+                                ? soundPlaying
+                                  ? "rgba(96,165,250,0.14)"
+                                  : "rgba(13,30,51,0.82)"
+                                : soundPlaying
+                                ? "#e8f3ff"
+                                : "#f2f4f6",
                               color: soundPlaying ? "#1b64da" : "#6b7684",
                             }}
                           >
@@ -4473,12 +6437,16 @@ export default function App() {
 
                   {selectedGroup?.ownerUid === uid && (
                     <div
+                      className=""
                       style={{
                         marginTop: 12,
                         padding: "10px 12px",
-                        borderRadius: 16,
-                        background: "var(--soft-bg)",
-                        border: "1px solid var(--border-soft)",
+                        borderRadius: false ? 2 : 16,
+                        background: false
+                          ? "linear-gradient(135deg, rgba(30,41,59,0.96), rgba(15,23,42,0.92))"
+                          : "var(--soft-bg)",
+                        border: false ? "1px solid rgba(250,204,21,0.38)" : "1px solid var(--border-soft)",
+                        boxShadow: false ? "inset 0 0 14px rgba(250,204,21,0.05), 0 0 16px rgba(96,165,250,0.06)" : "none",
                       }}
                     >
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
@@ -4494,7 +6462,17 @@ export default function App() {
                           {showRoomPassword ? "숨기기" : "확인"}
                         </button>
                       </div>
-                      <div style={{ marginTop: 8, fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace", fontSize: 18, fontWeight: 900, letterSpacing: 2 }}>
+                      <div
+                        style={{
+                          marginTop: 8,
+                          fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                          fontSize: 18,
+                          fontWeight: 900,
+                          letterSpacing: 2,
+                          color: "var(--text-main)",
+                          textShadow: "none",
+                        }}
+                      >
                         {showRoomPassword ? selectedGroup.password || "저장된 비밀번호 없음" : "••••••••"}
                       </div>
                     </div>
@@ -4727,7 +6705,14 @@ export default function App() {
                 </section>
               )}
 
-              {rightPanelOrder.map((cardId) => renderRightPanelCard(cardId))}
+              {(flightFeatureOpen
+                ? [
+                    "flightTicket",
+                    "flightStatus",
+                    ...rightPanelOrder.filter((cardId) => cardId !== "flightTicket" && cardId !== "flightStatus"),
+                  ]
+                : rightPanelOrder
+              ).map((cardId) => renderRightPanelCard(cardId))}
 
             </aside>
           </div>
@@ -4756,11 +6741,11 @@ export default function App() {
             }}
           >
             {[
-              { id: "home", label: "홈", icon: ICONS.home },
-              { id: "group", label: "그룹", icon: ICONS.room },
-              { id: "planner", label: "플래너", icon: ICONS.planner },
-              { id: "chat", label: "채팅", icon: ICONS.chat },
-              { id: "settings", label: "설정", icon: ICONS.profile },
+              { id: "home", label: "홈", icon: currentIcons.home },
+              { id: "group", label: "그룹", icon: currentIcons.room },
+              { id: "planner", label: "플래너", icon: currentIcons.planner },
+              { id: "chat", label: "채팅", icon: currentIcons.chat },
+              { id: "settings", label: "설정", icon: currentIcons.profile },
             ].map((item) => {
               const active = mobileTab === item.id;
 
@@ -4819,26 +6804,50 @@ export default function App() {
         )}
 
         {desktopEasyMode && !isCompactScreen && (
-          <button
-            type="button"
-            onClick={toggleDesktopMode}
+          <div
             style={{
               position: "fixed",
               right: 18,
               bottom: 92,
               zIndex: 75,
-              border: "none",
-              borderRadius: 18,
-              padding: "10px 14px",
-              fontWeight: 900,
-              cursor: "pointer",
-              background: "var(--text-main)",
-              color: "white",
-              boxShadow: "0 14px 32px rgba(25,31,40,0.18)",
+              display: "flex",
+              gap: 6,
+              padding: 6,
+              borderRadius: 999,
+              background: false
+                ? "linear-gradient(135deg, rgba(3,10,22,0.92), rgba(13,30,51,0.86))"
+                : "rgba(255,255,255,0.92)",
+              border: false ? "1px solid rgba(125,211,252,0.34)" : "1px solid var(--border-soft)",
+              boxShadow: false ? "0 0 26px rgba(96,165,250,0.14)" : "0 14px 32px rgba(25,31,40,0.18)",
+              backdropFilter: "blur(14px)",
             }}
           >
-            고급 화면
-          </button>
+            {[
+              { id: "advanced", label: "고급" },
+              { id: "easy", label: "쉬운" },
+            ].map((mode) => {
+              const active = appMode === mode.id;
+
+              return (
+                <button
+                  key={mode.id}
+                  type="button"
+                  onClick={() => changeAppMode(mode.id)}
+                  style={{
+                    border: "none",
+                    borderRadius: 999,
+                    padding: "8px 10px",
+                    fontWeight: 950,
+                    cursor: "pointer",
+                    background: active ? "var(--accent)" : "transparent",
+                    color: active ? (false ? "#020617" : "white") : "var(--text-main)",
+                  }}
+                >
+                  {mode.label}
+                </button>
+              );
+            })}
+          </div>
         )}
 
         {profileOpen && (
@@ -5338,8 +7347,14 @@ export default function App() {
                           minHeight: 60,
                           border: "1px solid var(--border)",
                           borderRadius: 14,
-                          background: selected ? "#18181b" : "white",
-                          color: selected ? "white" : "#18181b",
+                          background: false
+                            ? selected
+                              ? "rgba(56,213,255,0.22)"
+                              : "rgba(13,30,51,0.72)"
+                            : selected
+                            ? "#18181b"
+                            : "white",
+                          color: false ? "#eefaff" : selected ? "white" : "#18181b",
                           opacity: date ? 1 : 0,
                           cursor: date ? "pointer" : "default",
                         }}
@@ -5385,7 +7400,9 @@ export default function App() {
                 border: "1px solid var(--border)",
                 borderRadius: 18,
                 padding: 14,
-                background: "#f9fafb",
+                background: false
+                  ? "linear-gradient(135deg, rgba(3,10,22,0.96), rgba(13,30,51,0.86))"
+                  : "#f9fafb",
               }}
             >
               {!studying &&
@@ -5401,8 +7418,19 @@ export default function App() {
                     <div
                       style={{
                         maxWidth: "75%",
-                        background: m.senderUid === uid ? "#18181b" : "#e4e4e7",
-                        color: m.senderUid === uid ? "white" : "#18181b",
+                        background: false
+                          ? m.senderUid === uid
+                            ? "linear-gradient(135deg, rgba(96,165,250,0.18), rgba(14,165,233,0.12))"
+                            : "rgba(13,30,51,0.78)"
+                          : m.senderUid === uid
+                          ? "#18181b"
+                          : "#e4e4e7",
+                        color: false
+                          ? "#eefaff"
+                          : m.senderUid === uid
+                          ? "white"
+                          : "#18181b",
+                        border: false ? "1px solid rgba(125,211,252,0.24)" : "none",
                         padding: 12,
                         borderRadius: 18,
                         fontSize: 14,
