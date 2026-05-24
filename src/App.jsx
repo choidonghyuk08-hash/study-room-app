@@ -196,10 +196,28 @@ function normalizeLon(lon) {
   return next;
 }
 
+const FLIGHT_MAP_WIDTH = 1672;
+const FLIGHT_MAP_HEIGHT = 941;
+
+// The background image is a stylized world map, not a mathematically perfect
+// equirectangular map. These calibration values align markers with the visible
+// continents in /public/images/blue-world-map.png.
+const FLIGHT_MAP_CENTER_X = 815;
+const FLIGHT_MAP_LON_SCALE = 4.0;
+const FLIGHT_MAP_EQUATOR_Y = 530;
+const FLIGHT_MAP_LAT_SCALE = 4.67;
+
+function clampFlightMapPoint(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
 function projectFlightPoint(lat, lon) {
+  const x = FLIGHT_MAP_CENTER_X + normalizeLon(lon) * FLIGHT_MAP_LON_SCALE;
+  const y = FLIGHT_MAP_EQUATOR_Y - lat * FLIGHT_MAP_LAT_SCALE;
+
   return {
-    x: ((normalizeLon(lon) + 180) / 360) * 1672,
-    y: ((90 - lat) / 180) * 941,
+    x: clampFlightMapPoint(x, 24, FLIGHT_MAP_WIDTH - 24),
+    y: clampFlightMapPoint(y, 34, FLIGHT_MAP_HEIGHT - 34),
   };
 }
 
@@ -2552,8 +2570,9 @@ export default function App() {
                   if (!flightInProgress) return true;
                   return country.code === from.code || country.code === to.code;
                 }).map((country) => {
-                  const left = `${((country.lon + 180) / 360) * 100}%`;
-                  const top = `${((90 - country.lat) / 180) * 100}%`;
+                  const markerPoint = projectFlightPoint(country.lat, country.lon);
+                  const left = `${(markerPoint.x / FLIGHT_MAP_WIDTH) * 100}%`;
+                  const top = `${(markerPoint.y / FLIGHT_MAP_HEIGHT) * 100}%`;
                   const isFrom = country.code === from.code;
                   const isTo = country.code === to.code;
                   const selected = isFrom || isTo;
@@ -2577,8 +2596,8 @@ export default function App() {
               <div
                   className="flight-plane"
                   style={{
-                    left: `${(planePoint.x / 1672) * 100}%`,
-                    top: `${(planePoint.y / 941) * 100}%`,
+                    left: `${(planePoint.x / FLIGHT_MAP_WIDTH) * 100}%`,
+                    top: `${(planePoint.y / FLIGHT_MAP_HEIGHT) * 100}%`,
                     transform: `translate(-50%, -50%) rotate(${planeRotate}deg)`,
                   }}
                 >
