@@ -761,7 +761,7 @@ export default function App() {
 
     setFlightMapZoom((prev) => {
       const nextValue = typeof zoomUpdater === "function" ? zoomUpdater(prev) : zoomUpdater;
-      const nextZoom = Math.max(1, Math.min(4, Number(nextValue.toFixed(2))));
+      const nextZoom = Math.max(1, Math.min(6, Number(nextValue.toFixed(2))));
       flightMapZoomFocusRef.current = focus;
       return nextZoom;
     });
@@ -2719,25 +2719,48 @@ export default function App() {
 
     return (
       <section className="easy-flight-controls">
-        <div className="easy-flight-ticket">
-          <div>
-            <div className="flight-kicker">BOARDING PASS</div>
-            <h3>{from.code} → {to.code}</h3>
+        <div
+          className={[
+            "flight-ticket",
+            "easy-flight-boarding-pass",
+            flightTicketUsed || (studying && activeFlight) ? "ticket-used" : "",
+          ].filter(Boolean).join(" ")}
+        >
+          <div className="flight-ticket-main">
+            <span>STUDY AIR</span>
+            <h2>{from.code} → {to.code}</h2>
             <p>{from.name} {from.city} 출발 · {to.name} {to.city} 도착</p>
+            <div className="flight-ticket-row">
+              <div>
+                <small>DISTANCE</small>
+                <b>{distance.toLocaleString()}km</b>
+              </div>
+              <div>
+                <small>TIME</small>
+                <b>{formatFlightTime(minutes)}</b>
+              </div>
+            </div>
           </div>
-          <div>
-            <span>{distance.toLocaleString()}km</span>
-            <b>{formatFlightTime(minutes)}</b>
+          <div className="flight-ticket-stub">
+            <span>GATE</span>
+            <b>SR</b>
+            <small>{from.code}{to.code}</small>
           </div>
         </div>
 
-        <div className="easy-flight-progress">
+        <div className="easy-flight-progress detailed">
           <div>
             <b>IN-FLIGHT STATUS</b>
             <span>{flightProgress}% 진행</span>
           </div>
           <div className="flight-progress">
             <i style={{ width: `${flightProgress}%` }} />
+          </div>
+          <div className="flight-stats easy-flight-stats">
+            <div><span>오늘 총 공부</span><b>{formatTimer(todayTotalWithLive)}</b></div>
+            <div><span>현재 세션</span><b>{formatTimer(currentSessionSeconds)}</b></div>
+            <div><span>예상 비행시간</span><b>{formatFlightTime(minutes)}</b></div>
+            <div><span>그룹 오늘 합계</span><b>{formatTimer(groupTodayTotal)}</b></div>
           </div>
         </div>
 
@@ -6067,6 +6090,51 @@ export default function App() {
             }
           }
 
+          .easy-flight-boarding-pass {
+            min-height: 188px;
+          }
+
+          .easy-flight-boarding-pass .flight-ticket-main h2 {
+            font-size: 34px;
+          }
+
+          .easy-flight-boarding-pass .flight-ticket-row {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+          .easy-flight-progress.detailed {
+            display: grid;
+            gap: 10px;
+          }
+
+          .easy-flight-stats {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+          @media (max-width: 900px) {
+            .easy-flight-boarding-pass {
+              grid-template-columns: minmax(0, 1fr) 74px !important;
+              min-height: 174px;
+            }
+
+            .easy-flight-boarding-pass .flight-ticket-main {
+              padding: 15px;
+            }
+
+            .easy-flight-boarding-pass .flight-ticket-main h2 {
+              font-size: 28px;
+            }
+
+            .easy-flight-boarding-pass .flight-ticket-row {
+              grid-template-columns: 1fr;
+              gap: 7px;
+            }
+
+            .easy-flight-stats {
+              grid-template-columns: 1fr 1fr;
+            }
+          }
+
         `}
       </style>
 
@@ -7132,56 +7200,62 @@ export default function App() {
 
               {renderChatNoticeSettingsCard()}
 
-              {!easyLayout && rightPanelEditOpen && (
-                <section style={{ ...S.card, padding: 12, border: "1px solid var(--accent-soft-3)" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-                    <div>
-                      <div style={{ ...S.small, fontWeight: 900, color: "var(--accent)" }}>오른쪽 패널 편집 중</div>
-                      <div style={{ ...S.small, fontSize: 11, marginTop: 2 }}>
-                        각 섹션 위의 ↑↓와 삭제 버튼으로 배치를 바꿀 수 있습니다.
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      style={{ ...S.lightButton, padding: "7px 9px", fontSize: 11 }}
-                      onClick={resetRightPanelLayout}
-                    >
-                      초기화
-                    </button>
-                  </div>
-
-                  {hiddenRightCards.length > 0 && (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
-                      {hiddenRightCards.map((cardId) => (
+              {easyLayout ? (
+                renderRightPanelCard("theme")
+              ) : (
+                <>
+                  {rightPanelEditOpen && (
+                    <section style={{ ...S.card, padding: 12, border: "1px solid var(--accent-soft-3)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                        <div>
+                          <div style={{ ...S.small, fontWeight: 900, color: "var(--accent)" }}>오른쪽 패널 편집 중</div>
+                          <div style={{ ...S.small, fontSize: 11, marginTop: 2 }}>
+                            각 섹션 위의 ↑↓와 삭제 버튼으로 배치를 바꿀 수 있습니다.
+                          </div>
+                        </div>
                         <button
-                          key={cardId}
                           type="button"
-                          onClick={() => restoreRightPanelCard(cardId)}
-                          style={{
-                            ...S.lightButton,
-                            padding: "6px 8px",
-                            fontSize: 11,
-                            color: "var(--accent)",
-                            background: "var(--accent-soft)",
-                            borderColor: "var(--accent-soft-3)",
-                          }}
+                          style={{ ...S.lightButton, padding: "7px 9px", fontSize: 11 }}
+                          onClick={resetRightPanelLayout}
                         >
-                          + {RIGHT_PANEL_LABELS[cardId]}
+                          초기화
                         </button>
-                      ))}
-                    </div>
-                  )}
-                </section>
-              )}
+                      </div>
 
-              {(flightFeatureOpen
-                ? [
-                    "flightTicket",
-                    "flightStatus",
-                    ...rightPanelOrder.filter((cardId) => cardId !== "flightTicket" && cardId !== "flightStatus"),
-                  ]
-                : rightPanelOrder
-              ).map((cardId) => renderRightPanelCard(cardId))}
+                      {hiddenRightCards.length > 0 && (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+                          {hiddenRightCards.map((cardId) => (
+                            <button
+                              key={cardId}
+                              type="button"
+                              onClick={() => restoreRightPanelCard(cardId)}
+                              style={{
+                                ...S.lightButton,
+                                padding: "6px 8px",
+                                fontSize: 11,
+                                color: "var(--accent)",
+                                background: "var(--accent-soft)",
+                                borderColor: "var(--accent-soft-3)",
+                              }}
+                            >
+                              + {RIGHT_PANEL_LABELS[cardId]}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+                  )}
+
+                  {(flightFeatureOpen
+                    ? [
+                        "flightTicket",
+                        "flightStatus",
+                        ...rightPanelOrder.filter((cardId) => cardId !== "flightTicket" && cardId !== "flightStatus"),
+                      ]
+                    : rightPanelOrder
+                  ).map((cardId) => renderRightPanelCard(cardId))}
+                </>
+              )}
 
             </aside>
           </div>
