@@ -1294,7 +1294,7 @@ export default function App() {
   };
 
   const renderTopModeControls = (compact = false) => {
-    if (isCompactScreen) return null;
+    if (isCompactScreen && !compact) return null;
 
     const modes = [
       { id: "advanced", label: "고급" },
@@ -5077,6 +5077,34 @@ export default function App() {
     >
       
 
+      {easyLayout && (
+        <section className="mobile-flight-mode-toolbar">
+          <button
+            type="button"
+            className="mobile-theme-button"
+            onClick={cycleUnlockedStdrTheme}
+            title={`STDR Air 등급 해금 테마 변경 · 현재 ${currentTheme.label}`}
+          >
+            테마 {currentTheme.label}
+          </button>
+          <button
+            type="button"
+            className="mobile-theme-button"
+            onClick={toggleDarkMode}
+            title="라이트/다크 모드 전환"
+          >
+            {darkMode ? "라이트 모드" : "다크 모드"}
+          </button>
+          <button
+            type="button"
+            className={flightFeatureOpen ? "mobile-flight-button active" : "mobile-flight-button"}
+            onClick={toggleFlightFeature}
+          >
+            {flightFeatureOpen ? "비행 모드 ON" : "비행 모드 켜기"}
+          </button>
+        </section>
+      )}
+
       <section style={{ ...S.card, padding: 12 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
           <div>
@@ -5117,9 +5145,18 @@ export default function App() {
       </section>
 
       <div
-        className={flightFeatureOpen ? "flight-feature-shell open" : "flight-feature-shell closed"}
+        className={flightFeatureOpen ? "flight-feature-shell open mobile-flight-feature-shell" : "flight-feature-shell closed mobile-flight-feature-shell"}
         aria-hidden={!flightFeatureOpen}
       >
+        {flightFeatureOpen && easyLayout && (
+          <div className="mobile-flight-mode-head">
+            <div>
+              <b>STDR Air 비행기 모드</b>
+              <span>핸드폰에서도 출발지/도착지 선택, 탑승권, 여권, IN-FLIGHT STATUS를 사용할 수 있어요.</span>
+            </div>
+            <button type="button" onClick={toggleFlightFeature}>닫기</button>
+          </div>
+        )}
         {renderFlightModeUi()}
         {renderEasyFlightControls()}
       </div>
@@ -12250,6 +12287,174 @@ export default function App() {
 
           .passport-paper-page {
             border-color: color-mix(in srgb, var(--stdr-tier-accent) 42%, rgba(180,148,92,0.38)) !important;
+          }
+
+          /* Mobile flight mode + dark theme controls */
+          .mobile-flight-mode-toolbar {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+            padding: 10px;
+            border-radius: 22px;
+            background:
+              radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 36%),
+              var(--card-bg-solid);
+            border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+            box-shadow: 0 10px 28px color-mix(in srgb, var(--accent) 10%, transparent);
+          }
+
+          .mobile-theme-button,
+          .mobile-flight-button {
+            border: 1px solid color-mix(in srgb, var(--accent) 36%, var(--border));
+            border-radius: 16px;
+            background:
+              linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, var(--card-bg-solid)), color-mix(in srgb, var(--accent-dark) 8%, var(--input-bg)));
+            color: var(--text-main);
+            font-size: 11px;
+            font-weight: 950;
+            padding: 10px 8px;
+            cursor: pointer;
+            min-height: 42px;
+          }
+
+          .mobile-flight-button.active {
+            color: #ffffff;
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            box-shadow: 0 10px 22px var(--accent-shadow);
+          }
+
+          .mobile-flight-mode-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            border-radius: 20px;
+            background: var(--card-bg-solid);
+            border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+            margin-bottom: 10px;
+          }
+
+          .mobile-flight-mode-head b,
+          .mobile-flight-mode-head span {
+            display: block;
+          }
+
+          .mobile-flight-mode-head b {
+            font-size: 14px;
+            color: var(--text-main);
+          }
+
+          .mobile-flight-mode-head span {
+            margin-top: 2px;
+            color: var(--text-sub);
+            font-size: 11px;
+            line-height: 1.35;
+            font-weight: 750;
+          }
+
+          .mobile-flight-mode-head button {
+            border: 1px solid color-mix(in srgb, var(--accent) 36%, var(--border));
+            border-radius: 999px;
+            background: var(--input-bg);
+            color: var(--text-main);
+            font-weight: 950;
+            padding: 8px 10px;
+            cursor: pointer;
+            flex: 0 0 auto;
+          }
+
+          @media (max-width: 900px) {
+            .mobile-flight-feature-shell.open {
+              display: grid !important;
+              gap: 10px !important;
+              max-height: none !important;
+              overflow: visible !important;
+              opacity: 1 !important;
+              transform: none !important;
+              pointer-events: auto !important;
+            }
+
+            .mobile-flight-feature-shell.closed {
+              display: none !important;
+            }
+
+            .flight-dashboard-card {
+              border-radius: 24px !important;
+              padding: 12px !important;
+              overflow: hidden !important;
+            }
+
+            .flight-dashboard-head {
+              display: grid !important;
+              grid-template-columns: 1fr !important;
+              gap: 10px !important;
+            }
+
+            .flight-route-summary {
+              width: 100% !important;
+            }
+
+            .flight-mileage-panel {
+              grid-template-columns: 1fr !important;
+            }
+
+            .flight-dashboard-grid {
+              grid-template-columns: 1fr !important;
+            }
+
+            .flight-map-tools {
+              flex-wrap: wrap !important;
+              justify-content: flex-start !important;
+            }
+
+            .flight-map-viewport {
+              min-height: 280px !important;
+              max-height: 56vh !important;
+              overflow: auto !important;
+              -webkit-overflow-scrolling: touch;
+            }
+
+            .flight-unlock-box {
+              min-width: 0 !important;
+            }
+
+            .flight-unlock-strip {
+              grid-template-rows: repeat(2, minmax(54px, auto)) !important;
+              grid-auto-columns: minmax(76px, 88px) !important;
+            }
+
+            .easy-flight-controls {
+              display: grid !important;
+              gap: 10px !important;
+            }
+
+            .easy-flight-boarding-pass {
+              min-height: auto !important;
+            }
+          }
+
+          .dark-app .mobile-flight-mode-toolbar,
+          .dark-app .mobile-flight-mode-head {
+            background:
+              radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--accent) 20%, transparent), transparent 36%),
+              rgba(15,23,42,0.96) !important;
+            border-color: color-mix(in srgb, var(--accent) 36%, rgba(148,163,184,0.26)) !important;
+            color: var(--text-main) !important;
+          }
+
+          .dark-app .mobile-theme-button,
+          .dark-app .mobile-flight-button,
+          .dark-app .mobile-flight-mode-head button {
+            background:
+              linear-gradient(135deg, color-mix(in srgb, var(--accent) 18%, #0f172a), color-mix(in srgb, var(--accent-dark) 14%, #111827)) !important;
+            border-color: color-mix(in srgb, var(--accent) 42%, rgba(148,163,184,0.28)) !important;
+            color: #f8fafc !important;
+          }
+
+          .dark-app .mobile-flight-button.active {
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark)) !important;
+            color: #ffffff !important;
           }
 
         `}
