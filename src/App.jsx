@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { initializeApp } from "firebase/app";
 import {
   createUserWithEmailAndPassword,
@@ -161,6 +161,59 @@ const FLIGHT_COUNTRIES = [
   { code: "KE", name: "케냐", city: "나이로비", lat: -1.2921, lon: 36.8219 },
   { code: "NG", name: "나이지리아", city: "라고스", lat: 6.5244, lon: 3.3792 },
 ];
+
+const DEFAULT_UNLOCKED_FLIGHT_COUNTRIES = ["KR", "JP", "US", "GB", "FR", "CN", "AU", "DE"];
+const FLIGHT_MILES_PER_MINUTE = 1;
+const FLIGHT_UNLOCK_BASE_COST = 80;
+const FLIGHT_UNLOCK_DISTANCE_DIVISOR = 180;
+
+function storageGetJson(key, fallback) {
+  if (typeof window === "undefined") return fallback;
+
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(key) || "null");
+    return parsed ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function storageSetJson(key, value) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(key, JSON.stringify(value));
+}
+
+function uniqueArray(list) {
+  return Array.from(new Set((list || []).filter(Boolean)));
+}
+
+function flightUnlockCost(country) {
+  const home = FLIGHT_COUNTRIES.find((item) => item.code === "KR") || FLIGHT_COUNTRIES[0];
+  if (!country || DEFAULT_UNLOCKED_FLIGHT_COUNTRIES.includes(country.code)) return 0;
+  return Math.max(
+    60,
+    Math.round(FLIGHT_UNLOCK_BASE_COST + routeDistanceKm(home, country) / FLIGHT_UNLOCK_DISTANCE_DIVISOR)
+  );
+}
+
+function passportStampId(fromCode, toCode) {
+  return `${fromCode}-${toCode}`;
+}
+
+function flightRewardTitle(country) {
+  const titles = {
+    JP: "도쿄 집중 착륙",
+    US: "뉴욕 장거리 집중 완료",
+    GB: "런던 클래식 공부 비행",
+    FR: "파리 감성 집중 완료",
+    CN: "베이징 루트 클리어",
+    AU: "시드니 장거리 비행 성공",
+    DE: "베를린 집중 루트 완료",
+    KR: "서울 귀환 완료",
+  };
+
+  return titles[country?.code] || `${country?.city || country?.name || "도착지"} 도착 완료`;
+}
 
 function toRad(deg) {
   return (deg * Math.PI) / 180;
@@ -390,6 +443,149 @@ function IconImage({ src, alt, size = 32, style = {} }) {
   );
 }
 
+function StudyRoomLogo({ dark = false, size = 34 }) {
+  const bg = dark ? "rgba(15,23,42,0.92)" : "rgba(239,246,255,0.95)";
+  const stroke = dark ? "rgba(96,165,250,0.72)" : "rgba(37,99,235,0.30)";
+  const text = dark ? "#dbeafe" : "#1d4ed8";
+  const glow = dark ? "rgba(96,165,250,0.38)" : "rgba(37,99,235,0.16)";
+
+  return (
+    <div
+      aria-label="Study Room"
+      title="Study Room"
+      style={{
+        width: size,
+        height: size,
+        borderRadius: Math.round(size * 0.32),
+        background: bg,
+        border: `1px solid ${stroke}`,
+        boxShadow: `0 10px 24px ${glow}, inset 0 0 0 1px rgba(255,255,255,0.06)`,
+        display: "grid",
+        placeItems: "center",
+        overflow: "hidden",
+        flex: "0 0 auto",
+      }}
+    >
+      <svg
+        viewBox="0 0 100 100"
+        width={Math.round(size * 0.82)}
+        height={Math.round(size * 0.82)}
+        style={{ display: "block" }}
+        aria-hidden="true"
+      >
+        <defs>
+          <linearGradient id="srLogoStroke" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0%" stopColor={dark ? "#93c5fd" : "#2563eb"} />
+            <stop offset="100%" stopColor={dark ? "#38bdf8" : "#0ea5e9"} />
+          </linearGradient>
+        </defs>
+        <rect x="8" y="8" width="84" height="84" rx="20" fill="none" stroke="url(#srLogoStroke)" strokeWidth="5" />
+        <text
+          x="50"
+          y="43"
+          textAnchor="middle"
+          fontSize="27"
+          fontWeight="950"
+          fill={text}
+          fontFamily="Pretendard, Inter, system-ui, sans-serif"
+          letterSpacing="-2"
+        >
+          ㅅㅌ
+        </text>
+        <text
+          x="50"
+          y="73"
+          textAnchor="middle"
+          fontSize="27"
+          fontWeight="950"
+          fill={text}
+          fontFamily="Pretendard, Inter, system-ui, sans-serif"
+          letterSpacing="-2"
+        >
+          ㄷㄹ
+        </text>
+      </svg>
+    </div>
+  );
+}
+
+function NavSvgIcon({ type, active = false, dark = false, size = 26 }) {
+  const stroke = active
+    ? "#ffffff"
+    : dark
+      ? "#dbeafe"
+      : "#1e293b";
+  const soft = active
+    ? "rgba(255,255,255,0.28)"
+    : dark
+      ? "rgba(96,165,250,0.22)"
+      : "rgba(37,99,235,0.12)";
+
+  const common = {
+    width: size,
+    height: size,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke,
+    strokeWidth: 1.9,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    style: { display: "block" },
+    "aria-hidden": true,
+  };
+
+  if (type === "profile") {
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="8" r="3.1" fill={soft} />
+        <path d="M5.2 19.2c.8-3.8 3.2-5.8 6.8-5.8s6 2 6.8 5.8" />
+        <path d="M8.2 19.2h7.6" />
+      </svg>
+    );
+  }
+
+  if (type === "room") {
+    return (
+      <svg {...common}>
+        <rect x="4" y="6.2" width="16" height="12.2" rx="3" fill={soft} />
+        <path d="M8 10h4.2" />
+        <path d="M8 13.4h8" />
+        <path d="M15.6 6.2v12.2" />
+      </svg>
+    );
+  }
+
+  if (type === "planner") {
+    return (
+      <svg {...common}>
+        <rect x="5" y="4.8" width="14" height="15" rx="3" fill={soft} />
+        <path d="M8.2 3.5v3" />
+        <path d="M15.8 3.5v3" />
+        <path d="M8.2 10.3h7.6" />
+        <path d="M8.2 13.6h5.4" />
+        <path d="M8.2 16.9h3.8" />
+      </svg>
+    );
+  }
+
+  if (type === "chat") {
+    return (
+      <svg {...common}>
+        <path d="M5.5 6.5h13v8.7a2.5 2.5 0 0 1-2.5 2.5h-5.5L6 20v-2.3h-.5A2.5 2.5 0 0 1 3 15.2V9a2.5 2.5 0 0 1 2.5-2.5Z" fill={soft} />
+        <path d="M8 10.3h8" />
+        <path d="M8 13.5h5.8" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg {...common}>
+      <path d="M4.5 11.2 12 5l7.5 6.2" />
+      <path d="M6.5 10.4v8.1h4v-4.4h3v4.4h4v-8.1" fill={soft} />
+    </svg>
+  );
+}
+
 const S = {
   page: {
     minHeight: "100vh",
@@ -535,6 +731,13 @@ const nowTime = () => {
   )}`;
 };
 
+const timeLabelFromMs = (ms) => {
+  const d = new Date(ms || Date.now());
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+};
+
+const INACTIVE_AUTO_STOP_MS = 5 * 60 * 60 * 1000;
+
 const formatTimer = (sec) => {
   const h = String(Math.floor(sec / 3600)).padStart(2, "0");
   const m = String(Math.floor((sec % 3600) / 60)).padStart(2, "0");
@@ -561,12 +764,98 @@ const timeTableHours = [
   ...Array.from({ length: 6 }, (_, i) => `${String(i).padStart(2, "0")}:00`),
 ];
 
+const parseTimeMinutes = (time) => {
+  const [h, m] = String(time || "00:00").split(":").map((v) => Number(v));
+  if (Number.isNaN(h) || Number.isNaN(m)) return 0;
+  return h * 60 + m;
+};
+
+const studyOrderMinutes = (time) => {
+  const minutes = parseTimeMinutes(time);
+  return minutes < 360 ? minutes + 1440 : minutes;
+};
+
 const SOUND_OPTIONS = [
   { id: "white", label: "백색소음", src: "/sounds/white.mp3" },
   { id: "rain", label: "빗소리", src: "/sounds/rain.mp3" },
   { id: "fireplace", label: "장작소리", src: "/sounds/fireplace.mp3" },
   { id: "whale", label: "고래소리", src: "/sounds/whale.mp3" },
   { id: "airplane", label: "비행기 소리", src: "/sounds/airplane.mp3", notice: "초반에 안내방송이 들어 있습니다. 집중 전 미리 확인해 주세요." },
+];
+
+const TIMETABLE_COLOR_PRESETS = [
+  {
+    id: "blue",
+    label: "파랑",
+    light: { bg: "rgba(147,197,253,0.72)", border: "rgba(96,165,250,0.82)", text: "#1e3a8a" },
+    dark: { bg: "rgba(59,130,246,0.42)", border: "rgba(147,197,253,0.50)", text: "#dbeafe" },
+  },
+  {
+    id: "sky",
+    label: "하늘",
+    light: { bg: "rgba(125,211,252,0.72)", border: "rgba(56,189,248,0.78)", text: "#075985" },
+    dark: { bg: "rgba(14,165,233,0.38)", border: "rgba(125,211,252,0.48)", text: "#e0f2fe" },
+  },
+  {
+    id: "cyan",
+    label: "청록",
+    light: { bg: "rgba(153,246,228,0.76)", border: "rgba(45,212,191,0.74)", text: "#134e4a" },
+    dark: { bg: "rgba(13,148,136,0.36)", border: "rgba(94,234,212,0.42)", text: "#ccfbf1" },
+  },
+  {
+    id: "green",
+    label: "초록",
+    light: { bg: "rgba(187,247,208,0.78)", border: "rgba(74,222,128,0.74)", text: "#14532d" },
+    dark: { bg: "rgba(22,163,74,0.34)", border: "rgba(134,239,172,0.42)", text: "#dcfce7" },
+  },
+  {
+    id: "lime",
+    label: "연두",
+    light: { bg: "rgba(217,249,157,0.76)", border: "rgba(163,230,53,0.72)", text: "#365314" },
+    dark: { bg: "rgba(101,163,13,0.32)", border: "rgba(190,242,100,0.42)", text: "#ecfccb" },
+  },
+  {
+    id: "yellow",
+    label: "노랑",
+    light: { bg: "rgba(254,240,138,0.70)", border: "rgba(250,204,21,0.72)", text: "#713f12" },
+    dark: { bg: "rgba(202,138,4,0.32)", border: "rgba(253,224,71,0.42)", text: "#fef9c3" },
+  },
+  {
+    id: "orange",
+    label: "주황",
+    light: { bg: "rgba(254,215,170,0.78)", border: "rgba(251,146,60,0.72)", text: "#7c2d12" },
+    dark: { bg: "rgba(234,88,12,0.32)", border: "rgba(251,146,60,0.44)", text: "#ffedd5" },
+  },
+  {
+    id: "red",
+    label: "빨강",
+    light: { bg: "rgba(254,202,202,0.78)", border: "rgba(248,113,113,0.78)", text: "#7f1d1d" },
+    dark: { bg: "rgba(185,28,28,0.34)", border: "rgba(248,113,113,0.44)", text: "#fee2e2" },
+  },
+  {
+    id: "pink",
+    label: "분홍",
+    light: { bg: "rgba(251,207,232,0.78)", border: "rgba(244,114,182,0.70)", text: "#831843" },
+    dark: { bg: "rgba(190,24,93,0.38)", border: "rgba(244,114,182,0.48)", text: "#fce7f3" },
+  },
+  {
+    id: "rose",
+    label: "장미",
+    light: { bg: "rgba(255,228,230,0.86)", border: "rgba(251,113,133,0.72)", text: "#881337" },
+    dark: { bg: "rgba(225,29,72,0.32)", border: "rgba(251,113,133,0.44)", text: "#ffe4e6" },
+  },
+  {
+    id: "purple",
+    label: "보라",
+    light: { bg: "rgba(221,214,254,0.80)", border: "rgba(167,139,250,0.76)", text: "#4c1d95" },
+    dark: { bg: "rgba(124,58,237,0.34)", border: "rgba(196,181,253,0.44)", text: "#ede9fe" },
+  },
+  {
+    id: "gray",
+    label: "회색",
+    light: { bg: "rgba(226,232,240,0.82)", border: "rgba(148,163,184,0.70)", text: "#334155" },
+    dark: { bg: "rgba(71,85,105,0.42)", border: "rgba(148,163,184,0.46)", text: "#e2e8f0" },
+  },
 ];
 
 const WEATHER_CODE_LABELS = {
@@ -687,13 +976,13 @@ function SectionTitle({ children }) {
   return (
     <div
       style={{
-        borderTop: "1px solid #d4d4d8",
+        borderTop: "1px solid var(--border)",
         paddingTop: 6,
         marginTop: 12,
         fontSize: 10,
         fontWeight: 900,
         letterSpacing: 1.2,
-        color: "#52525b",
+        color: "var(--text-mid)",
       }}
     >
       {children}
@@ -702,6 +991,8 @@ function SectionTitle({ children }) {
 }
 
 export default function App() {
+  // Stable recovery build: removes the experimental 16-fix runtime changes that caused a blank screen.
+
   const today = studyDayString();
   const isCompactScreen = typeof window !== "undefined" && window.innerWidth <= 900;
 
@@ -741,23 +1032,33 @@ export default function App() {
       if (typeof window !== "undefined") {
         window.localStorage.setItem("studyRoomFlightFeatureOpen", next ? "true" : "false");
       }
+
+      if (!next) {
+        setFlightFullscreenOpen(false);
+      }
+
       return next;
     });
   };
 
-  const changeFlightMapZoom = (zoomUpdater) => {
-    const viewport = flightMapViewportRef.current;
+  const changeFlightMapZoom = (zoomUpdater, event) => {
+    const localViewport =
+      event?.currentTarget
+        ?.closest(".flight-dashboard-card")
+        ?.querySelector(".flight-map-viewport") || flightMapViewportRef.current;
 
-    const focus = viewport
+    const focus = localViewport
       ? {
-          ratioX:
-            (viewport.scrollLeft + viewport.clientWidth / 2) /
-            Math.max(1, viewport.scrollWidth),
-          ratioY:
-            (viewport.scrollTop + viewport.clientHeight / 2) /
-            Math.max(1, viewport.scrollHeight),
+          centerXRatio:
+            (localViewport.scrollLeft + localViewport.clientWidth / 2) /
+            Math.max(1, localViewport.scrollWidth),
+          centerYRatio:
+            (localViewport.scrollTop + localViewport.clientHeight / 2) /
+            Math.max(1, localViewport.scrollHeight),
         }
-      : { ratioX: 0.5, ratioY: 0.5 };
+      : { centerXRatio: 0.5, centerYRatio: 0.5 };
+
+    flightMapZoomTargetRef.current = localViewport;
 
     setFlightMapZoom((prev) => {
       const nextValue = typeof zoomUpdater === "function" ? zoomUpdater(prev) : zoomUpdater;
@@ -781,6 +1082,10 @@ export default function App() {
     if (typeof window === "undefined") return "blue";
     return window.localStorage.getItem("studyRoomTheme") || "blue";
   });
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("studyRoomDarkMode") === "true";
+  });
   const currentTheme = THEME_COLORS[themeKey] || THEME_COLORS.blue;
   const modeAccent = currentTheme.accent;
   const currentIcons = ICONS;
@@ -792,21 +1097,21 @@ export default function App() {
     "--accent-soft-3": currentTheme.accentSoft3,
     "--accent-text": currentTheme.accentText,
     "--accent-shadow": currentTheme.accentShadow,
-    "--app-bg": "#f7f8fa",
-    "--card-bg": "rgba(255,255,255,0.96)",
-    "--card-bg-solid": "white",
-    "--text-main": "#191f28",
-    "--text-sub": "#8b95a1",
-    "--text-mid": "#4e5968",
-    "--input-bg": "#f2f4f6",
-    "--soft-bg": "#f7f8fa",
-    "--soft-bg-2": "#f2f4f6",
-    "--border": "rgba(229,232,235,0.85)",
-    "--border-soft": "#eef1f4",
+    "--app-bg": darkMode ? "#0b1220" : "#f7f8fa",
+    "--card-bg": darkMode ? "rgba(15,23,42,0.94)" : "rgba(255,255,255,0.96)",
+    "--card-bg-solid": darkMode ? "#111827" : "white",
+    "--text-main": darkMode ? "#e5e7eb" : "#191f28",
+    "--text-sub": darkMode ? "#94a3b8" : "#8b95a1",
+    "--text-mid": darkMode ? "#cbd5e1" : "#4e5968",
+    "--input-bg": darkMode ? "#1e293b" : "#f2f4f6",
+    "--soft-bg": darkMode ? "#111827" : "#f7f8fa",
+    "--soft-bg-2": darkMode ? "#1e293b" : "#f2f4f6",
+    "--border": darkMode ? "rgba(71,85,105,0.74)" : "rgba(229,232,235,0.85)",
+    "--border-soft": darkMode ? "rgba(71,85,105,0.52)" : "#eef1f4",
     "--flight-blue": "#2563eb",
     "--flight-sky": "#0ea5e9",
-    "--flight-cloud": "#f8fbff",
-    "--flight-navy": "#0f172a",
+    "--flight-cloud": darkMode ? "#0f172a" : "#f8fbff",
+    "--flight-navy": darkMode ? "#e5e7eb" : "#0f172a",
     "--flight-green": "#22c55e",
   };
   const changeTheme = (nextTheme) => {
@@ -814,6 +1119,75 @@ export default function App() {
     if (typeof window !== "undefined") {
       window.localStorage.setItem("studyRoomTheme", nextTheme);
     }
+  };
+  const toggleDarkMode = () => {
+    setDarkMode((prev) => {
+      const next = !prev;
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("studyRoomDarkMode", next ? "true" : "false");
+      }
+      return next;
+    });
+  };
+
+  const cycleTheme = () => {
+    const keys = Object.keys(THEME_COLORS);
+    const currentIndex = Math.max(0, keys.indexOf(themeKey));
+    const nextTheme = keys[(currentIndex + 1) % keys.length] || "blue";
+    changeTheme(nextTheme);
+  };
+
+  const renderTopModeControls = (compact = false) => {
+    if (isCompactScreen) return null;
+
+    const modes = [
+      { id: "advanced", label: "고급" },
+      { id: "easy", label: "쉬운" },
+    ];
+
+    return (
+      <div className="top-mode-controls">
+        <button
+          type="button"
+          className="top-appearance-button"
+          onClick={cycleTheme}
+          title="테마 색상 변경"
+        >
+          색상
+        </button>
+        <button
+          type="button"
+          className="top-appearance-button"
+          onClick={toggleDarkMode}
+          title="라이트/다크 모드 전환"
+        >
+          {darkMode ? "라이트" : "다크"}
+        </button>
+
+        {modes.map((mode) => {
+          const active = appMode === mode.id;
+
+          return (
+            <button
+              key={mode.id}
+              type="button"
+              className={active ? "top-mode-button active" : "top-mode-button"}
+              onClick={() => changeAppMode(mode.id)}
+            >
+              {mode.label}
+            </button>
+          );
+        })}
+
+        <button
+          type="button"
+          className={flightFeatureOpen ? "top-mode-button flight active" : "top-mode-button flight"}
+          onClick={toggleFlightFeature}
+        >
+          {flightFeatureOpen ? "비행 ON" : "비행 OFF"}
+        </button>
+      </div>
+    );
   };
   const [signup, setSignup] = useState({ id: "", pw: "", pw2: "" });
   const [login, setLogin] = useState({ id: "", pw: "" });
@@ -862,6 +1236,18 @@ export default function App() {
   const [subjectPickerOpen, setSubjectPickerOpen] = useState(false);
   const [newSubject, setNewSubject] = useState("");
   const [detail, setDetail] = useState("");
+  const [taskColorMap, setTaskColorMap] = useState(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      return JSON.parse(window.localStorage.getItem("studyRoomTaskColorMapV2") || "{}");
+    } catch {
+      return {};
+    }
+  });
+  const [taskColorPickerVisible, setTaskColorPickerVisible] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("studyRoomTaskColorPickerVisible") === "true";
+  });
 
   const [studying, setStudying] = useState(false);
   const [totalSec, setTotalSec] = useState(0);
@@ -869,6 +1255,10 @@ export default function App() {
   const [startedAt, setStartedAt] = useState(null);
   const [liveStudy, setLiveStudy] = useState(null);
   const [nowTick, setNowTick] = useState(Date.now());
+  const [devPanelOpen, setDevPanelOpen] = useState(false);
+  const [devAuthed, setDevAuthed] = useState(false);
+  const [devPassword, setDevPassword] = useState("");
+  const [devTimeOffsetSec, setDevTimeOffsetSec] = useState(0);
 
   const [records, setRecords] = useState([]);
   const [groupRecords, setGroupRecords] = useState([]);
@@ -880,8 +1270,22 @@ export default function App() {
   const [chatText, setChatText] = useState("");
 
   const soundRef = useRef(null);
+  const soundRefB = useRef(null);
+  const soundLoopTimerRef = useRef(null);
+  const activeSoundRef = useRef("a");
+  const soundPlayingRef = useRef(false);
+  const soundTransitioningRef = useRef(false);
+  const soundVolumeRef = useRef(45);
+  const currentSoundSrcRef = useRef("");
+  const soundAudioCtxRef = useRef(null);
+  const soundBufferSourceRef = useRef(null);
+  const soundGainRef = useRef(null);
+  const soundBufferCacheRef = useRef(new Map());
   const flightMapViewportRef = useRef(null);
   const flightMapZoomFocusRef = useRef(null);
+  const flightMapZoomTargetRef = useRef(null);
+  const flightAutoLandingRef = useRef(false);
+  const inactiveAutoStopRef = useRef(false);
   const [soundType, setSoundType] = useState("white");
   const [soundVolume, setSoundVolume] = useState(45);
   const [soundPlaying, setSoundPlaying] = useState(false);
@@ -896,39 +1300,79 @@ export default function App() {
   const [flightMapZoom, setFlightMapZoom] = useState(1);
   const [flightTicketCutting, setFlightTicketCutting] = useState(false);
   const [flightTicketUsed, setFlightTicketUsed] = useState(false);
+  const [flightFullscreenOpen, setFlightFullscreenOpen] = useState(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const focus = flightMapZoomFocusRef.current;
     if (!focus) return;
 
+    let frameOne = null;
+    let frameTwo = null;
     let timeoutId = null;
 
     const applyCenteredScroll = () => {
-      const viewport = flightMapViewportRef.current;
+      const viewport = flightMapZoomTargetRef.current || flightMapViewportRef.current;
       if (!viewport) return;
 
-      viewport.scrollLeft =
-        viewport.scrollWidth * focus.ratioX - viewport.clientWidth / 2;
-      viewport.scrollTop =
-        viewport.scrollHeight * focus.ratioY - viewport.clientHeight / 2;
+      const maxLeft = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
+      const maxTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
+
+      const nextLeft =
+        viewport.scrollWidth * focus.centerXRatio - viewport.clientWidth / 2;
+      const nextTop =
+        viewport.scrollHeight * focus.centerYRatio - viewport.clientHeight / 2;
+
+      viewport.scrollLeft = Math.max(0, Math.min(maxLeft, nextLeft));
+      viewport.scrollTop = Math.max(0, Math.min(maxTop, nextTop));
     };
 
-    window.requestAnimationFrame(() => {
+    applyCenteredScroll();
+
+    frameOne = window.requestAnimationFrame(() => {
       applyCenteredScroll();
 
-      timeoutId = window.setTimeout(() => {
+      frameTwo = window.requestAnimationFrame(() => {
         applyCenteredScroll();
-        flightMapZoomFocusRef.current = null;
-      }, 80);
+
+        timeoutId = window.setTimeout(() => {
+          applyCenteredScroll();
+          flightMapZoomFocusRef.current = null;
+          flightMapZoomTargetRef.current = null;
+        }, 180);
+      });
     });
 
     return () => {
+      if (frameOne) window.cancelAnimationFrame(frameOne);
+      if (frameTwo) window.cancelAnimationFrame(frameTwo);
       if (timeoutId) window.clearTimeout(timeoutId);
     };
   }, [flightMapZoom]);
 
 
   const [activeFlight, setActiveFlight] = useState(null);
+  const [flightMiles, setFlightMiles] = useState(() => {
+    const saved = Number(typeof window !== "undefined" ? window.localStorage.getItem("studyRoomFlightMiles") : 0);
+    return Number.isFinite(saved) ? saved : 0;
+  });
+  const [unlockedFlightCountries, setUnlockedFlightCountries] = useState(() => {
+    const saved = storageGetJson("studyRoomUnlockedFlightCountries", DEFAULT_UNLOCKED_FLIGHT_COUNTRIES);
+    return uniqueArray([...DEFAULT_UNLOCKED_FLIGHT_COUNTRIES, ...(Array.isArray(saved) ? saved : [])]);
+  });
+  const [passportStamps, setPassportStamps] = useState(() => {
+    const saved = storageGetJson("studyRoomPassportStamps", []);
+    return Array.isArray(saved) ? saved : [];
+  });
+  const [arrivalReward, setArrivalReward] = useState(null);
+  const [flightProfileLoaded, setFlightProfileLoaded] = useState(false);
+  const [passportOpen, setPassportOpen] = useState(false);
+  const [passportPage, setPassportPage] = useState(0);
+  const [unlockListOpen, setUnlockListOpen] = useState(false);
+  const [devMileageAmount, setDevMileageAmount] = useState(100);
+  const [devMileageRemoveAmount, setDevMileageRemoveAmount] = useState(100);
+  const [devStampFromCode, setDevStampFromCode] = useState("KR");
+  const [devStampToCode, setDevStampToCode] = useState("JP");
+  const [devDeleteStampId, setDevDeleteStampId] = useState("");
 
   const [ddays, setDdays] = useState([]);
   const [ddayOpen, setDdayOpen] = useState(false);
@@ -1015,6 +1459,49 @@ export default function App() {
   });
   const [mobileHomeEditOpen, setMobileHomeEditOpen] = useState(false);
 
+  // 4,5,6번 기능용 상태는 기존 훅 순서를 최대한 건드리지 않기 위해 state 목록 끝에만 추가합니다.
+  const [editingRecordId, setEditingRecordId] = useState("");
+  const [editingRecordDetail, setEditingRecordDetail] = useState("");
+  const [mealBlocks, setMealBlocks] = useState(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const saved = JSON.parse(window.localStorage.getItem("studyRoomMealBlocks") || "[]");
+      return Array.isArray(saved) ? saved : [];
+    } catch {
+      return [];
+    }
+  });
+  const [mealForm, setMealForm] = useState({
+    type: "점심식사",
+    start: "12:00",
+    end: "13:00",
+  });
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    const shouldLockPageScroll = unlockListOpen || passportOpen || Boolean(arrivalReward);
+
+    if (!shouldLockPageScroll) return;
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    const previousBodyOverscroll = document.body.style.overscrollBehavior;
+    const previousHtmlOverscroll = document.documentElement.style.overscrollBehavior;
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overscrollBehavior = "none";
+    document.documentElement.style.overscrollBehavior = "none";
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+      document.body.style.overscrollBehavior = previousBodyOverscroll;
+      document.documentElement.style.overscrollBehavior = previousHtmlOverscroll;
+    };
+  }, [unlockListOpen, passportOpen, arrivalReward]);
+
   const uid = user?.uid || "";
   const userId = profile?.userId || "";
   const displayName = profile?.displayName || userId || "나";
@@ -1025,6 +1512,199 @@ export default function App() {
     (a, b) => (b.bannedAtMs || 0) - (a.bannedAtMs || 0)
   );
   const currentSound = SOUND_OPTIONS.find((item) => item.id === soundType) || SOUND_OPTIONS[0];
+
+  const isFlightCountryUnlocked = (code) => unlockedFlightCountries.includes(code);
+
+  const getPassportStats = (stamps = passportStamps) => {
+    const map = new Map();
+
+    (stamps || []).forEach((stamp) => {
+      const code = stamp.toCode;
+      if (!code) return;
+
+      const country = FLIGHT_COUNTRIES.find((item) => item.code === code);
+      const current = map.get(code) || {
+        code,
+        name: stamp.toName || country?.name || code,
+        city: country?.city || "",
+        count: 0,
+      };
+
+      current.count += 1;
+      map.set(code, current);
+    });
+
+    return Array.from(map.values()).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  };
+
+  const syncFlightProfileToServer = async (patch) => {
+    if (!uid) return;
+
+    try {
+      await setDoc(
+        doc(db, "users", uid, "flightProfile", "current"),
+        {
+          ...patch,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+    } catch (error) {
+      console.error("비행 프로필 서버 저장 실패:", error);
+    }
+  };
+
+  const saveFlightMiles = (nextMiles) => {
+    const safeMiles = Math.max(0, Math.round(Number(nextMiles) || 0));
+    setFlightMiles(safeMiles);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("studyRoomFlightMiles", String(safeMiles));
+    }
+    syncFlightProfileToServer({ flightMiles: safeMiles });
+    return safeMiles;
+  };
+
+  const saveUnlockedFlightCountries = (nextCodes) => {
+    const safeCodes = uniqueArray([...DEFAULT_UNLOCKED_FLIGHT_COUNTRIES, ...(nextCodes || [])]);
+    setUnlockedFlightCountries(safeCodes);
+    storageSetJson("studyRoomUnlockedFlightCountries", safeCodes);
+    syncFlightProfileToServer({ unlockedFlightCountries: safeCodes });
+    return safeCodes;
+  };
+
+  const savePassportStamps = (nextStamps) => {
+    const safeStamps = Array.isArray(nextStamps) ? nextStamps : [];
+    setPassportStamps(safeStamps);
+    storageSetJson("studyRoomPassportStamps", safeStamps);
+    syncFlightProfileToServer({ passportStamps: safeStamps });
+    return safeStamps;
+  };
+
+  const unlockFlightCountry = (country) => {
+    if (!country) return;
+    if (isFlightCountryUnlocked(country.code)) return;
+
+    const cost = flightUnlockCost(country);
+    if (flightMiles < cost) {
+      alert(`${country.name} 해금에는 ${cost} 마일이 필요합니다. 현재 보유 마일: ${flightMiles}M`);
+      return;
+    }
+
+    const ok = window.confirm(`${cost} 마일을 사용해서 ${country.name} 여행을 해금할까요?`);
+    if (!ok) return;
+
+    saveFlightMiles(flightMiles - cost);
+    saveUnlockedFlightCountries([...unlockedFlightCountries, country.code]);
+  };
+
+  const addPassportStamp = ({ from, to, seconds, milesEarned }) => {
+    if (!from || !to) return passportStamps;
+
+    const stamp = {
+      id: `${passportStampId(from.code, to.code)}-${Date.now()}`,
+      routeId: passportStampId(from.code, to.code),
+      fromCode: from.code,
+      fromName: from.name,
+      fromCity: from.city,
+      toCode: to.code,
+      toName: to.name,
+      toCity: to.city,
+      seconds,
+      milesEarned,
+      landedAt: nowTime(),
+      date: todayString(),
+    };
+
+    return savePassportStamps([stamp, ...passportStamps].slice(0, 80));
+  };
+
+  const addDevFlightMiles = () => {
+    const amount = Math.max(0, Math.round(Number(devMileageAmount || 0)));
+
+    if (!amount) {
+      alert("추가할 마일리지를 입력해 주세요.");
+      return;
+    }
+
+    saveFlightMiles(flightMiles + amount);
+  };
+
+  const removeDevFlightMiles = () => {
+    const amount = Math.max(0, Math.round(Number(devMileageRemoveAmount || 0)));
+
+    if (!amount) {
+      alert("삭제할 마일리지를 입력해 주세요.");
+      return;
+    }
+
+    const nextMiles = Math.max(0, flightMiles - amount);
+    saveFlightMiles(nextMiles);
+  };
+
+  const deleteDevPassportStamp = () => {
+    if (!passportStamps.length) {
+      alert("삭제할 스탬프가 없습니다.");
+      return;
+    }
+
+    const targetId = devDeleteStampId || passportStamps[0]?.id;
+    const targetStamp = passportStamps.find((stamp) => stamp.id === targetId);
+
+    if (!targetStamp) {
+      alert("삭제할 스탬프를 선택해 주세요.");
+      return;
+    }
+
+    const ok = window.confirm(`${targetStamp.fromCode} → ${targetStamp.toCode} 스탬프를 삭제할까요?`);
+    if (!ok) return;
+
+    const nextStamps = passportStamps.filter((stamp) => stamp.id !== targetId);
+    savePassportStamps(nextStamps);
+    setDevDeleteStampId(nextStamps[0]?.id || "");
+  };
+
+  const addDevPassportStamp = () => {
+    const from = FLIGHT_COUNTRIES.find((country) => country.code === devStampFromCode) || FLIGHT_COUNTRIES[0];
+    const to = FLIGHT_COUNTRIES.find((country) => country.code === devStampToCode) || FLIGHT_COUNTRIES[1];
+
+    if (from.code === to.code) {
+      alert("출발/도착 국가는 서로 달라야 합니다.");
+      return;
+    }
+
+    const nextStamps = addPassportStamp({
+      from,
+      to,
+      seconds: 0,
+      milesEarned: 0,
+    });
+
+    saveUnlockedFlightCountries([...unlockedFlightCountries, from.code, to.code]);
+    setDevDeleteStampId(nextStamps[0]?.id || "");
+    setArrivalReward({
+      from,
+      to,
+      seconds: 0,
+      milesEarned: 0,
+      totalMiles: flightMiles,
+      stampCount: nextStamps.length,
+      title: `${to.name} 개발자 스탬프 추가`,
+    });
+  };
+
+  const getFlightDetailText = (fromCode = flightFromCode, toCode = flightToCode) => {
+    const from = FLIGHT_COUNTRIES.find((c) => c.code === fromCode);
+    const to = FLIGHT_COUNTRIES.find((c) => c.code === toCode);
+
+    if (!from || !to || from.code === to.code) return detail.trim() || "비행 집중 공부";
+    return `${from.name}에서 ${to.name}까지 비행 집중 공부`;
+  };
+
+  const applyFlightDetailByCodes = (fromCode = flightFromCode, toCode = flightToCode) => {
+    const nextDetail = getFlightDetailText(fromCode, toCode);
+    setDetail(nextDetail);
+    return nextDetail;
+  };
 
   const saveRightPanelSettings = (nextOrder, nextHidden) => {
     if (typeof window === "undefined") return;
@@ -1108,53 +1788,232 @@ export default function App() {
     setShowRoomPassword(false);
   }, [selectedGroupId]);
 
+  const stopWebAudioSound = () => {
+    clearSoundLoopTimer();
+
+    try {
+      if (soundBufferSourceRef.current) {
+        const source = soundBufferSourceRef.current;
+        const audioCtx = soundAudioCtxRef.current;
+        const gain = soundGainRef.current;
+
+        source.onended = null;
+
+        if (audioCtx && gain) {
+          const now = audioCtx.currentTime;
+          gain.gain.cancelScheduledValues(now);
+          gain.gain.setTargetAtTime(0, now, 0.025);
+          source.stop(now + 0.09);
+        } else {
+          source.stop(0);
+        }
+
+        window.setTimeout(() => {
+          try {
+            source.disconnect();
+          } catch {
+            // 이미 disconnect 되었을 수 있습니다.
+          }
+        }, 140);
+      }
+    } catch {
+      // 이미 정지된 source일 수 있습니다.
+    }
+
+    soundBufferSourceRef.current = null;
+  };
+
+  const clearSoundLoopTimer = () => {
+    if (soundLoopTimerRef.current) {
+      window.clearTimeout(soundLoopTimerRef.current);
+      soundLoopTimerRef.current = null;
+    }
+  };
+
+  const resetSoundElement = (audio) => {
+    if (!audio) return;
+    audio.pause();
+    audio.currentTime = 0;
+    audio.loop = false;
+    audio.onloadedmetadata = null;
+    audio.oncanplaythrough = null;
+    audio.onended = null;
+  };
+
+  const getSoundAudioContext = async () => {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) {
+      throw new Error("이 브라우저는 Web Audio API를 지원하지 않습니다.");
+    }
+
+    const audioCtx = soundAudioCtxRef.current || new AudioContextClass();
+    soundAudioCtxRef.current = audioCtx;
+
+    if (audioCtx.state === "suspended") {
+      await audioCtx.resume();
+    }
+
+    return audioCtx;
+  };
+
+  const createClickSafeLoopBuffer = (audioCtx, sourceBuffer) => {
+    const sampleRate = sourceBuffer.sampleRate;
+    const channelCount = sourceBuffer.numberOfChannels;
+    const totalFrames = sourceBuffer.length;
+
+    // 파일 앞/뒤에 들어 있는 아주 짧은 클릭/무음/컷 지점을 피합니다.
+    const trimFrames = Math.min(Math.floor(sampleRate * 0.045), Math.floor(totalFrames * 0.015));
+    const fadeFrames = Math.min(Math.floor(sampleRate * 0.18), Math.floor(totalFrames * 0.08));
+    const startFrame = trimFrames;
+    const endFrame = Math.max(startFrame + fadeFrames + 2, totalFrames - trimFrames);
+    const loopFrames = Math.max(1, endFrame - startFrame);
+
+    const outputBuffer = audioCtx.createBuffer(channelCount, loopFrames, sampleRate);
+
+    for (let channel = 0; channel < channelCount; channel += 1) {
+      const input = sourceBuffer.getChannelData(channel);
+      const output = outputBuffer.getChannelData(channel);
+
+      for (let i = 0; i < loopFrames; i += 1) {
+        output[i] = input[startFrame + i] || 0;
+      }
+
+      // 루프 마지막 구간을 시작 구간과 미리 섞어서 경계에서 튀는 소리를 줄입니다.
+      for (let i = 0; i < fadeFrames; i += 1) {
+        const tailIndex = loopFrames - fadeFrames + i;
+        const headSample = input[startFrame + i] || 0;
+        const tailSample = output[tailIndex] || 0;
+        const t = i / Math.max(1, fadeFrames - 1);
+        const equalPowerIn = Math.sin((t * Math.PI) / 2);
+        const equalPowerOut = Math.cos((t * Math.PI) / 2);
+
+        output[tailIndex] = tailSample * equalPowerOut + headSample * equalPowerIn;
+      }
+
+      // 시작과 끝 자체에도 아주 짧은 페이드를 걸어 '틱/타닥'을 한 번 더 방지합니다.
+      const edgeFadeFrames = Math.min(Math.floor(sampleRate * 0.018), Math.floor(loopFrames / 8));
+      for (let i = 0; i < edgeFadeFrames; i += 1) {
+        const t = i / Math.max(1, edgeFadeFrames - 1);
+        output[i] *= t;
+        output[loopFrames - 1 - i] *= t;
+      }
+    }
+
+    return outputBuffer;
+  };
+
+  const loadSoundBuffer = async (src) => {
+    const audioCtx = await getSoundAudioContext();
+    const cache = soundBufferCacheRef.current;
+
+    if (cache.has(src)) {
+      return cache.get(src);
+    }
+
+    const response = await fetch(src, { cache: "force-cache" });
+    if (!response.ok) {
+      throw new Error(`음원 파일을 불러오지 못했습니다: ${src}`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const decodedBuffer = await audioCtx.decodeAudioData(arrayBuffer.slice(0));
+    const audioBuffer = createClickSafeLoopBuffer(audioCtx, decodedBuffer);
+
+    cache.set(src, audioBuffer);
+    return audioBuffer;
+  };
+
+  const startWebAudioLoop = async () => {
+    const src = currentSoundSrcRef.current || currentSound.src;
+    const audioCtx = await getSoundAudioContext();
+    const buffer = await loadSoundBuffer(src);
+
+    stopWebAudioSound();
+
+    const source = audioCtx.createBufferSource();
+    const gain = soundGainRef.current || audioCtx.createGain();
+
+    soundGainRef.current = gain;
+
+    const now = audioCtx.currentTime;
+    gain.gain.cancelScheduledValues(now);
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(soundVolumeRef.current / 100, now + 0.12);
+
+    source.buffer = buffer;
+    source.loop = true;
+    source.loopStart = 0;
+    source.loopEnd = buffer.duration;
+    source.connect(gain);
+    gain.connect(audioCtx.destination);
+    source.start(0);
+
+    soundBufferSourceRef.current = source;
+  };
+
   useEffect(() => {
-    if (!soundRef.current) return;
-    soundRef.current.volume = soundVolume / 100;
+    soundVolumeRef.current = soundVolume;
+
+    if (soundGainRef.current && soundAudioCtxRef.current) {
+      const now = soundAudioCtxRef.current.currentTime;
+      soundGainRef.current.gain.cancelScheduledValues(now);
+      soundGainRef.current.gain.setTargetAtTime(soundVolume / 100, now, 0.035);
+    }
+
+    [soundRef.current, soundRefB.current].forEach((audio) => {
+      if (audio && !audio.paused) audio.volume = soundVolume / 100;
+    });
   }, [soundVolume]);
 
   useEffect(() => {
-    if (!soundRef.current) return;
+    currentSoundSrcRef.current = currentSound.src;
 
-    soundRef.current.pause();
-    soundRef.current.currentTime = 0;
-    soundRef.current.load();
+    if (!soundPlayingRef.current) return;
 
-    if (soundPlaying) {
-      soundRef.current
-        .play()
-        .catch(() => {
-          setSoundPlaying(false);
-          alert("브라우저가 자동 재생을 차단했습니다. 재생 버튼을 다시 눌러 주세요.");
-        });
-    }
+    window.setTimeout(() => {
+      playSound();
+    }, 40);
   }, [soundType]);
 
   useEffect(() => {
     return () => {
-      if (soundRef.current) {
-        soundRef.current.pause();
+      soundPlayingRef.current = false;
+      soundTransitioningRef.current = false;
+      stopWebAudioSound();
+
+      if (soundAudioCtxRef.current) {
+        soundAudioCtxRef.current.close().catch(() => {});
+        soundAudioCtxRef.current = null;
       }
+
+      [soundRef.current, soundRefB.current].forEach(resetSoundElement);
     };
   }, []);
 
   const playSound = async () => {
-    if (!soundRef.current) return;
-
     try {
-      soundRef.current.loop = true;
-      soundRef.current.volume = soundVolume / 100;
-      await soundRef.current.play();
+      soundPlayingRef.current = true;
+      soundTransitioningRef.current = false;
+      currentSoundSrcRef.current = currentSound.src;
+
+      [soundRef.current, soundRefB.current].forEach(resetSoundElement);
+
+      await startWebAudioLoop();
       setSoundPlaying(true);
     } catch (error) {
-      console.error("백색소음 재생 실패:", error);
-      alert("소리를 재생할 수 없습니다. 파일 위치가 public/sounds 안에 있는지 확인해 주세요.");
+      soundPlayingRef.current = false;
+      soundTransitioningRef.current = false;
+      setSoundPlaying(false);
+      console.error("소리 재생 실패:", error);
+      alert("소리를 재생할 수 없습니다. public/sounds 안의 음원 파일 이름과 위치를 확인해 주세요.");
     }
   };
 
   const stopSound = () => {
-    if (!soundRef.current) return;
-    soundRef.current.pause();
+    soundPlayingRef.current = false;
+    soundTransitioningRef.current = false;
+    stopWebAudioSound();
+    [soundRef.current, soundRefB.current].forEach(resetSoundElement);
     setSoundPlaying(false);
   };
 
@@ -1171,6 +2030,53 @@ export default function App() {
     const unsub = onSnapshot(doc(db, "users", uid), (snap) => {
       if (snap.exists()) setProfile({ uid, ...snap.data() });
     });
+    return () => unsub();
+  }, [uid]);
+
+  useEffect(() => {
+    if (!uid) {
+      setFlightProfileLoaded(false);
+      return;
+    }
+
+    const ref = doc(db, "users", uid, "flightProfile", "current");
+    const unsub = onSnapshot(ref, async (snap) => {
+      if (!snap.exists()) {
+        await setDoc(
+          ref,
+          {
+            flightMiles,
+            unlockedFlightCountries,
+            passportStamps,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true }
+        );
+        setFlightProfileLoaded(true);
+        return;
+      }
+
+      const data = snap.data();
+      const serverUnlocked = uniqueArray([
+        ...DEFAULT_UNLOCKED_FLIGHT_COUNTRIES,
+        ...(Array.isArray(data.unlockedFlightCountries) ? data.unlockedFlightCountries : []),
+      ]);
+      const serverStamps = Array.isArray(data.passportStamps) ? data.passportStamps : [];
+      const serverMiles = Math.max(0, Math.round(Number(data.flightMiles || 0)));
+
+      setFlightMiles(serverMiles);
+      setUnlockedFlightCountries(serverUnlocked);
+      setPassportStamps(serverStamps);
+      setFlightProfileLoaded(true);
+
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("studyRoomFlightMiles", String(serverMiles));
+        storageSetJson("studyRoomUnlockedFlightCountries", serverUnlocked);
+        storageSetJson("studyRoomPassportStamps", serverStamps);
+      }
+    });
+
     return () => unsub();
   }, [uid]);
 
@@ -1204,11 +2110,38 @@ export default function App() {
         setStartedAt(data.startedAtLabel || null);
         if (data.subject) setSubject(data.subject);
         if (data.detail) setDetail(data.detail);
+
+        if (data.flight?.fromCode && data.flight?.toCode) {
+          const restoredFrom = FLIGHT_COUNTRIES.find((c) => c.code === data.flight.fromCode) || FLIGHT_COUNTRIES[0];
+          const restoredTo = FLIGHT_COUNTRIES.find((c) => c.code === data.flight.toCode) || FLIGHT_COUNTRIES[1];
+
+          setFlightFromCode(restoredFrom.code);
+          setFlightToCode(restoredTo.code);
+          setFlightFeatureOpen(true);
+          setFlightTicketUsed(true);
+          setActiveFlight({
+            fromCode: restoredFrom.code,
+            fromName: restoredFrom.name,
+            fromCity: restoredFrom.city,
+            toCode: restoredTo.code,
+            toName: restoredTo.name,
+            toCity: restoredTo.city,
+            minutes: data.flight.minutes || routeFlightMinutes(restoredFrom, restoredTo),
+            distanceKm: data.flight.distanceKm || routeDistanceKm(restoredFrom, restoredTo),
+            startedAt: data.startedAtLabel || null,
+            startedAtMs: data.startedAtMs || Date.now(),
+          });
+        } else {
+          setActiveFlight(null);
+          setFlightTicketUsed(false);
+        }
       } else {
         setStudying(false);
         setTotalSec(0);
         setSessionSec(0);
         setStartedAt(null);
+        setActiveFlight(null);
+        setFlightTicketUsed(false);
       }
     });
 
@@ -1375,6 +2308,40 @@ export default function App() {
   }, [liveStudy]);
 
   useEffect(() => {
+    if (!uid || !liveStudy?.studying) return;
+
+    const liveStudyRef = doc(db, "users", uid, "liveStudy", "current");
+
+    const touchLiveStudyActivity = async () => {
+      try {
+        await setDoc(
+          liveStudyRef,
+          {
+            lastActiveAtMs: Date.now(),
+            lastActiveLabel: nowTime(),
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true }
+        );
+      } catch (error) {
+        console.error("순공 접속 시간 업데이트 실패:", error);
+      }
+    };
+
+    touchLiveStudyActivity();
+    const activityTimer = window.setInterval(touchLiveStudyActivity, 60000);
+
+    window.addEventListener("focus", touchLiveStudyActivity);
+    document.addEventListener("visibilitychange", touchLiveStudyActivity);
+
+    return () => {
+      window.clearInterval(activityTimer);
+      window.removeEventListener("focus", touchLiveStudyActivity);
+      document.removeEventListener("visibilitychange", touchLiveStudyActivity);
+    };
+  }, [uid, liveStudy?.studying]);
+
+  useEffect(() => {
     const timer = setInterval(() => {
       setNowTick(Date.now());
     }, 1000);
@@ -1478,6 +2445,45 @@ export default function App() {
     0
   );
 
+  const effectiveFlightNowTick = nowTick + devTimeOffsetSec * 1000;
+
+  useEffect(() => {
+    if (!studying || !activeFlight?.startedAtMs || !activeFlight?.minutes) {
+      flightAutoLandingRef.current = false;
+    inactiveAutoStopRef.current = false;
+      return;
+    }
+
+    const requiredSeconds = Math.max(1, Number(activeFlight.minutes || 0) * 60);
+    const elapsedSeconds = Math.max(
+      0,
+      Math.floor((effectiveFlightNowTick - activeFlight.startedAtMs) / 1000)
+    );
+
+    if (elapsedSeconds >= requiredSeconds && !flightAutoLandingRef.current) {
+      flightAutoLandingRef.current = true;
+      stopStudy({ autoLanding: true });
+    }
+  }, [studying, activeFlight?.startedAtMs, activeFlight?.minutes, effectiveFlightNowTick]);
+
+  useEffect(() => {
+    if (!studying || !liveStudy?.startedAtMs) {
+      inactiveAutoStopRef.current = false;
+      return;
+    }
+
+    const lastActiveAtMs = Number(liveStudy.lastActiveAtMs || liveStudy.updatedAtMs || liveStudy.startedAtMs || Date.now());
+    const inactiveMs = Math.max(0, nowTick - lastActiveAtMs);
+
+    if (inactiveMs > INACTIVE_AUTO_STOP_MS && !inactiveAutoStopRef.current) {
+      inactiveAutoStopRef.current = true;
+      stopStudy({
+        autoInactive: true,
+        forcedEndAtMs: Math.min(Date.now(), lastActiveAtMs + INACTIVE_AUTO_STOP_MS),
+      });
+    }
+  }, [studying, liveStudy?.startedAtMs, liveStudy?.lastActiveAtMs, liveStudy?.updatedAtMs, nowTick]);
+
   const groupRankMembers = [...liveMembers].sort(
     (a, b) => getMemberTodayTotalSeconds(b) - getMemberTodayTotalSeconds(a)
   );
@@ -1488,48 +2494,6 @@ export default function App() {
     if (!member.lastSeenAtMs) return false;
     return nowTick - member.lastSeenAtMs < 65000;
   };
-
-  useEffect(() => {
-    if (!flightFeatureOpen || !studying || !activeFlight) return;
-
-    const viewport = flightMapViewportRef.current;
-    if (!viewport) return;
-
-    const from = FLIGHT_COUNTRIES.find((c) => c.code === activeFlight.fromCode || c.code === flightFromCode);
-    const to = FLIGHT_COUNTRIES.find((c) => c.code === activeFlight.toCode || c.code === flightToCode);
-    if (!from || !to) return;
-
-    const activeMinutes = activeFlight.minutes || routeFlightMinutes(from, to);
-    const progress = Math.min(1, Math.max(0, currentSessionSeconds / Math.max(1, activeMinutes * 60)));
-    const route = buildVisibleFlightRoute(from, to, 96);
-    const progressIndex = Math.min(
-      route.points.length - 1,
-      Math.max(0, Math.round(progress * (route.points.length - 1)))
-    );
-    const planePoint = route.points[progressIndex] || route.points[0];
-
-    window.requestAnimationFrame(() => {
-      const latestViewport = flightMapViewportRef.current;
-      if (!latestViewport) return;
-
-      const targetX = (planePoint.x / 1672) * latestViewport.scrollWidth;
-      const targetY = (planePoint.y / 941) * latestViewport.scrollHeight;
-
-      latestViewport.scrollTo({
-        left: targetX - latestViewport.clientWidth / 2,
-        top: targetY - latestViewport.clientHeight / 2,
-        behavior: "smooth",
-      });
-    });
-  }, [
-    activeFlight,
-    currentSessionSeconds,
-    flightFeatureOpen,
-    flightFromCode,
-    flightToCode,
-    studying,
-  ]);
-
 
   const formatLastSeen = (member) => {
     if (isMemberOnline(member)) return "접속 중";
@@ -1561,7 +2525,252 @@ export default function App() {
     return `${String(h).padStart(2, "0")}:00`;
   };
 
-  const recordsByHour = (hour, list) => list.filter((r) => getRecordHour(r.start) === hour);
+  const recordsByHour = (hour, list) =>
+    list
+      .filter((r) => getRecordHour(r.start) === hour)
+      .sort((a, b) => studyOrderMinutes(a.start) - studyOrderMinutes(b.start));
+
+  const sortStudyRecordsByTime = (list) =>
+    [...list].sort((a, b) => studyOrderMinutes(a.start) - studyOrderMinutes(b.start));
+
+  const taskTextKey = (record) =>
+    `${String(record.subject || "과목 없음").trim()}::${String(record.detail || "세부 내용 없음").trim()}`;
+
+  const taskColorKey = (record) => {
+    if (record.kind === "meal") return "meal";
+
+    // 색상은 subject/detail 전체가 아니라 화면에 보이는 TASK 한 묶음 기준으로 저장합니다.
+    // 병합된 task는 mergedIds 묶음 하나가 같은 색을 쓰고,
+    // 병합되지 않은 같은 내용의 다른 task는 서로 다른 색을 가질 수 있습니다.
+    const ids = Array.isArray(record.mergedIds) && record.mergedIds.length
+      ? record.mergedIds
+      : [record.id || `${record.start}-${record.end}-${taskTextKey(record)}`];
+
+    return `task::${ids.map(String).sort().join("|")}`;
+  };
+
+  const getTaskColorId = (record, fallbackIndex = 0) => {
+    if (record.kind === "meal") return "meal";
+
+    const saved = taskColorMap[taskColorKey(record)];
+    if (saved && TIMETABLE_COLOR_PRESETS.some((preset) => preset.id === saved)) return saved;
+
+    // 자동 색상도 subject/detail이 아니라 task 묶음 기준으로 계산합니다.
+    // 그래서 병합되지 않은 같은 내용의 task가 무조건 같은 색으로 바뀌지 않습니다.
+    const source = taskColorKey(record) || String(fallbackIndex);
+    const hash = [...source].reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+    return TIMETABLE_COLOR_PRESETS[hash % TIMETABLE_COLOR_PRESETS.length].id;
+  };
+
+  const saveTaskColor = (record, colorId) => {
+    const key = taskColorKey(record);
+    const nextMap = { ...taskColorMap, [key]: colorId };
+
+    setTaskColorMap(nextMap);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("studyRoomTaskColorMapV2", JSON.stringify(nextMap));
+    }
+  };
+
+  const toggleTaskColorPickerVisible = () => {
+    setTaskColorPickerVisible((prev) => {
+      const next = !prev;
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("studyRoomTaskColorPickerVisible", next ? "true" : "false");
+      }
+      return next;
+    });
+  };
+
+  const renderTaskColorPicker = (record, compact = false) => {
+    const selectedColorId = getTaskColorId(record);
+    const selectedPreset =
+      TIMETABLE_COLOR_PRESETS.find((preset) => preset.id === selectedColorId) ||
+      TIMETABLE_COLOR_PRESETS[0];
+    const selectedColor = darkMode ? selectedPreset.dark : selectedPreset.light;
+
+    return (
+      <div className={taskColorPickerVisible ? "task-color-picker open" : "task-color-picker"} title="타임테이블 형광펜 색깔 선택">
+        <button
+          type="button"
+          className="task-color-toggle"
+          onClick={toggleTaskColorPickerVisible}
+        >
+          <i style={{ background: selectedColor.bg, borderColor: selectedColor.border }} />
+          {compact ? "색" : taskColorPickerVisible ? "색상 숨기기" : "색상"}
+        </button>
+
+        {taskColorPickerVisible && (
+          <div className="task-color-palette">
+            {TIMETABLE_COLOR_PRESETS.map((preset) => {
+              const color = darkMode ? preset.dark : preset.light;
+              const selected = selectedColorId === preset.id;
+
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  aria-label={`${preset.label} 색으로 표시`}
+                  className={selected ? "task-color-dot selected" : "task-color-dot"}
+                  style={{
+                    width: compact ? 16 : 18,
+                    height: compact ? 16 : 18,
+                    background: color.bg,
+                    borderColor: selected ? color.text : color.border,
+                  }}
+                  onClick={() => saveTaskColor(record, preset.id)}
+                />
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const mergeCloseTaskRecords = (list) => {
+    const sorted = sortStudyRecordsByTime(list);
+    const merged = [];
+
+    sorted.forEach((record) => {
+      const recordKey = taskTextKey(record);
+      const recordStart = studyOrderMinutes(record.start);
+      let recordEnd = studyOrderMinutes(record.end || record.start);
+
+      if (recordEnd < recordStart) {
+        recordEnd += 24 * 60;
+      }
+
+      if (recordEnd === recordStart && record.seconds) {
+        recordEnd = recordStart + Math.max(0, Math.round(Number(record.seconds || 0) / 60));
+      }
+
+      const matchIndex = merged.findLastIndex((item) => {
+        if (taskTextKey(item) !== recordKey) return false;
+
+        const itemEnd = item.orderEndMinutes ?? studyOrderMinutes(item.end || item.start);
+        const gapMinutes = recordStart - itemEnd;
+
+        return gapMinutes >= 0 && gapMinutes <= 2;
+      });
+
+      if (matchIndex >= 0) {
+        const target = merged[matchIndex];
+        const nextEndMinutes = Math.max(target.orderEndMinutes || recordStart, recordEnd);
+
+        target.end = record.end || target.end;
+        target.orderEndMinutes = nextEndMinutes;
+        target.seconds = (target.seconds || 0) + (record.seconds || 0);
+        target.mergedIds = [...(target.mergedIds || [target.id]), record.id];
+
+        // 병합된 뒤의 색상 키는 mergedIds 기준으로 다시 계산합니다.
+        target.timeColorId = getTaskColorId(target);
+      } else {
+        const nextRecord = {
+          ...record,
+          orderEndMinutes: recordEnd,
+          mergedIds: [record.id],
+        };
+
+        nextRecord.timeColorId = getTaskColorId(nextRecord);
+        merged.push(nextRecord);
+      }
+    });
+
+    return merged.sort((a, b) => studyOrderMinutes(a.start) - studyOrderMinutes(b.start));
+  };
+
+  const saveMealBlocks = (nextMealBlocks) => {
+    setMealBlocks(nextMealBlocks);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("studyRoomMealBlocks", JSON.stringify(nextMealBlocks));
+    }
+  };
+
+  const saveRecordDetailOnly = async (recordId) => {
+    const nextDetail = editingRecordDetail.trim();
+
+    if (!recordId || !nextDetail) {
+      alert("수정할 내용을 입력해 주세요.");
+      return;
+    }
+
+    try {
+      await updateDoc(doc(db, "studyRecords", recordId), {
+        detail: nextDetail,
+        updatedAt: serverTimestamp(),
+      });
+
+      setEditingRecordId("");
+      setEditingRecordDetail("");
+    } catch (error) {
+      console.error("공부 내용 수정 실패:", error);
+      alert("공부 내용 수정 중 문제가 발생했습니다.");
+    }
+  };
+
+  const addMealBlock = () => {
+    if (!mealForm.start || !mealForm.end) {
+      alert("식사 시작/종료 시간을 입력해 주세요.");
+      return;
+    }
+
+    const nextMealBlocks = [
+      ...mealBlocks,
+      {
+        id: `meal-${Date.now()}`,
+        date: plannerDate,
+        type: mealForm.type,
+        start: mealForm.start,
+        end: mealForm.end,
+      },
+    ].sort((a, b) => studyOrderMinutes(a.start) - studyOrderMinutes(b.start));
+
+    saveMealBlocks(nextMealBlocks);
+  };
+
+  const removeMealBlock = (mealId) => {
+    saveMealBlocks(mealBlocks.filter((meal) => meal.id !== mealId));
+  };
+
+  const updateCurrentFlightStudyInfo = async () => {
+    if (!uid || !studying || !liveStudy?.studying) {
+      alert("비행 중인 공부가 있을 때만 변경할 수 있습니다.");
+      return;
+    }
+
+    const nextSubject = subject || "비행 집중";
+    const nextDetail = detail.trim() || "비행 집중 공부";
+
+    try {
+      await setDoc(
+        doc(db, "users", uid, "liveStudy", "current"),
+        {
+          subject: nextSubject,
+          detail: nextDetail,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+
+      if (enteredGroupId) {
+        await setDoc(
+          doc(db, "groups", enteredGroupId, "members", uid),
+          {
+            subject: nextSubject,
+            detail: nextDetail,
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true }
+        );
+      }
+
+      alert("비행 중 공부 과목/내용을 변경했습니다.");
+    } catch (error) {
+      console.error("비행 중 공부 정보 변경 실패:", error);
+      alert("비행 중 공부 정보 변경 중 문제가 발생했습니다.");
+    }
+  };
 
   const groupedPlannerContents = (list) => {
     const map = new Map();
@@ -2017,6 +3226,8 @@ export default function App() {
         startedAtLabel: startLabel,
         baseSeconds: 0,
         studyDate: startStudyDate,
+        lastActiveAtMs: startMs,
+        lastActiveLabel: startLabel,
         updatedAt: serverTimestamp(),
       },
       { merge: true }
@@ -2056,10 +3267,11 @@ export default function App() {
     }
   };
 
-  const stopStudy = async () => {
+  const stopStudy = async (options = {}) => {
     if (!uid) return;
 
-    const end = nowTime();
+    const effectiveEndAtMs = Number(options.forcedEndAtMs || Date.now());
+    const end = timeLabelFromMs(effectiveEndAtMs);
     const liveStudyRef = doc(db, "users", uid, "liveStudy", "current");
     const recordRef = doc(collection(db, "studyRecords"));
 
@@ -2083,13 +3295,17 @@ export default function App() {
         const liveDetail = data.detail || detail;
         const liveStartedAt = data.startedAtLabel || startedAt || "시작 시간 없음";
         const recordStudyDate = data.studyDate || studyDayString(data.startedAtMs ? new Date(data.startedAtMs) : new Date());
-        const finalSeconds = data.startedAtMs
+        const rawFinalSeconds = data.startedAtMs
           ? Math.max(
               0,
               (data.baseSeconds || 0) +
-                Math.floor((Date.now() - data.startedAtMs) / 1000)
+                Math.floor((effectiveEndAtMs - data.startedAtMs) / 1000)
             )
           : sessionSec;
+
+        const finalSeconds = options.autoInactive
+          ? Math.min(rawFinalSeconds, Math.ceil(INACTIVE_AUTO_STOP_MS / 1000))
+          : rawFinalSeconds;
 
         if (finalSeconds > 0) {
           transaction.set(recordRef, {
@@ -2153,6 +3369,46 @@ export default function App() {
       );
     }
 
+    if (result?.saved && activeFlight?.fromCode && activeFlight?.toCode) {
+      const rewardFrom = FLIGHT_COUNTRIES.find((c) => c.code === activeFlight.fromCode);
+      const rewardTo = FLIGHT_COUNTRIES.find((c) => c.code === activeFlight.toCode);
+      const requiredFlightSeconds = Math.max(1, Number(activeFlight.minutes || 0) * 60);
+      const completedFlight = (result.finalSeconds || 0) >= requiredFlightSeconds;
+
+      if (completedFlight) {
+        const earnedMiles = Math.max(
+          1,
+          Math.floor((result.finalSeconds || 0) / 60) * FLIGHT_MILES_PER_MINUTE
+        );
+
+        saveFlightMiles(flightMiles + earnedMiles);
+        const nextStamps = addPassportStamp({
+          from: rewardFrom,
+          to: rewardTo,
+          seconds: result.finalSeconds || 0,
+          milesEarned: earnedMiles,
+        });
+
+        setArrivalReward({
+          from: rewardFrom,
+          to: rewardTo,
+          seconds: result.finalSeconds || 0,
+          milesEarned: earnedMiles,
+          totalMiles: flightMiles + earnedMiles,
+          stampCount: nextStamps.length,
+          title: options.autoLanding
+            ? `${flightRewardTitle(rewardTo)} · 자동 착륙`
+            : options.autoInactive
+              ? `${flightRewardTitle(rewardTo)} · 미접속 자동 종료`
+              : flightRewardTitle(rewardTo),
+        });
+      } else {
+        setGroupMsg(
+          `비행 시간이 부족해서 여권 도장이 찍히지 않았습니다. 필요 시간: ${formatFlightTime(Math.ceil(requiredFlightSeconds / 60))}`
+        );
+      }
+    }
+
     setStudying(false);
     setStartedAt(null);
     setSessionSec(0);
@@ -2162,6 +3418,11 @@ export default function App() {
     setActiveFlight(null);
     setFlightTicketCutting(false);
     setFlightTicketUsed(false);
+    flightAutoLandingRef.current = false;
+
+    if (options.autoInactive && result?.saved) {
+      setGroupMsg("5시간 이상 미접속으로 순공이 자동 종료되었습니다. 인정된 시간 기준으로 보상이 처리되었습니다.");
+    }
 
     if (result?.reason === "already-stopped") {
       setGroupMsg("이미 다른 기기에서 순공이 종료되었습니다.");
@@ -2332,6 +3593,54 @@ export default function App() {
   };
 
 
+  const renderRoomInfoCard = (compact = false) => {
+    if (!currentGroup) return null;
+
+    return (
+      <section
+        style={{
+          ...S.card,
+          padding: compact ? 12 : 14,
+          marginBottom: compact ? 10 : 12,
+          border: "1px solid var(--border-soft)",
+        }}
+      >
+        <div style={{ ...S.small, fontWeight: 900, color: "var(--accent)" }}>현재 방 정보</div>
+        <h2 style={{ margin: "4px 0 8px", fontSize: compact ? 18 : 20 }}>
+          {currentGroup.name || "스터디 방"}
+        </h2>
+        <div style={{ display: "grid", gap: 8 }}>
+          <div
+            style={{
+              background: "var(--input-bg)",
+              border: "1px solid var(--border)",
+              borderRadius: 14,
+              padding: compact ? 9 : 10,
+            }}
+          >
+            <b style={{ display: "block", fontSize: 12, color: "var(--text-mid)" }}>방 설명</b>
+            <p style={{ ...S.small, margin: "4px 0 0", lineHeight: 1.45 }}>
+              {currentGroup.description || "아직 방 설명이 없습니다."}
+            </p>
+          </div>
+          <div
+            style={{
+              background: "var(--input-bg)",
+              border: "1px solid var(--border)",
+              borderRadius: 14,
+              padding: compact ? 9 : 10,
+            }}
+          >
+            <b style={{ display: "block", fontSize: 12, color: "var(--text-mid)" }}>방 목표</b>
+            <p style={{ ...S.small, margin: "4px 0 0", lineHeight: 1.45 }}>
+              {currentGroup.goal || "아직 방 목표가 없습니다."}
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  };
+
   const renderGroupRankCard = () => {
     return (
       <section style={{ ...S.card, padding: 14, minWidth: 0 }}>
@@ -2368,7 +3677,7 @@ export default function App() {
                     gap: 8,
                     alignItems: "center",
                     padding: "10px 0",
-                    borderBottom: "1px solid #eef1f4",
+                    borderBottom: "1px solid var(--border-soft)",
                   }}
                 >
                   <div
@@ -2376,8 +3685,8 @@ export default function App() {
                       width: 24,
                       height: 24,
                       borderRadius: 8,
-                      background: idx === 0 ? "#fff7d6" : "#f2f4f6",
-                      color: idx === 0 ? "#f59f00" : "#6b7684",
+                      background: idx === 0 ? (darkMode ? "rgba(234,179,8,0.18)" : "#fff7d6") : "var(--input-bg)",
+                      color: idx === 0 ? "#f59f00" : "var(--text-sub)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -2422,7 +3731,7 @@ export default function App() {
                         style={{
                           marginTop: 6,
                           border: "1px solid #fecaca",
-                          background: "#fff1f2",
+                          background: darkMode ? "rgba(127,29,29,0.28)" : "#fff1f2",
                           color: "#dc2626",
                           borderRadius: 10,
                           padding: "5px 8px",
@@ -2455,6 +3764,11 @@ export default function App() {
       return;
     }
 
+    if (!isFlightCountryUnlocked(from.code) || !isFlightCountryUnlocked(to.code)) {
+      alert("잠긴 국가는 비행할 수 없습니다. 비행 마일리지로 먼저 해금해 주세요.");
+      return;
+    }
+
     if (!uid) {
       alert("로그인 정보가 확인되지 않았습니다. 다시 로그인해 주세요.");
       return;
@@ -2466,7 +3780,7 @@ export default function App() {
     }
 
     const flightSubject = subject || "비행 집중";
-    const flightDetail = detail.trim() || `${from.name}에서 ${to.name}까지 비행 집중 공부`;
+    const flightDetail = getFlightDetailText(from.code, to.code);
     const startMs = Date.now();
     const startLabel = nowTime();
     const startStudyDate = studyDayString(new Date(startMs));
@@ -2477,6 +3791,7 @@ export default function App() {
     setDetail(flightDetail);
     setFlightTicketUsed(true);
     setFlightTicketCutting(true);
+    flightAutoLandingRef.current = false;
 
     window.setTimeout(async () => {
       await setDoc(
@@ -2490,12 +3805,16 @@ export default function App() {
           startedAtLabel: startLabel,
           baseSeconds: 0,
           studyDate: startStudyDate,
+          lastActiveAtMs: startMs,
+          lastActiveLabel: startLabel,
           updatedAt: serverTimestamp(),
           flight: {
             fromCode: from.code,
             fromName: from.name,
+            fromCity: from.city,
             toCode: to.code,
             toName: to.name,
+            toCity: to.city,
             minutes: routeFlightMinutes(from, to),
             distanceKm: routeDistanceKm(from, to),
           },
@@ -2550,16 +3869,28 @@ export default function App() {
   };
 
   const renderFlightModeUi = () => {
-    const from = FLIGHT_COUNTRIES.find((c) => c.code === flightFromCode) || FLIGHT_COUNTRIES[0];
-    const to = FLIGHT_COUNTRIES.find((c) => c.code === flightToCode) || FLIGHT_COUNTRIES[1];
+    const activeFromCode = activeFlight?.fromCode || flightFromCode;
+    const activeToCode = activeFlight?.toCode || flightToCode;
+    const from = FLIGHT_COUNTRIES.find((c) => c.code === activeFromCode) || FLIGHT_COUNTRIES[0];
+    const to = FLIGHT_COUNTRIES.find((c) => c.code === activeToCode) || FLIGHT_COUNTRIES[1];
     const distance = routeDistanceKm(from, to);
     const minutes = routeFlightMinutes(from, to);
     const activeMinutes = activeFlight?.minutes || minutes;
+    const liveElapsedSeconds =
+      studying && activeFlight?.startedAtMs
+        ? Math.max(0, Math.floor((effectiveFlightNowTick - activeFlight.startedAtMs) / 1000))
+        : currentSessionSeconds;
     const flightProgress = studying && activeFlight
-      ? Math.min(100, Math.round((currentSessionSeconds / Math.max(1, activeMinutes * 60)) * 100))
+      ? Math.min(100, Math.round((liveElapsedSeconds / Math.max(1, activeMinutes * 60)) * 100))
       : 0;
     const flightInProgress = studying && activeFlight;
-    const effectiveFlightMapZoom = flightInProgress ? Math.max(flightMapZoom, 3.2) : flightMapZoom;
+    const effectiveFlightMapZoom = flightMapZoom;
+    const visibleCountries = FLIGHT_COUNTRIES.filter((country) => isFlightCountryUnlocked(country.code) || !flightInProgress);
+    const lockedCountries = FLIGHT_COUNTRIES.filter((country) => !isFlightCountryUnlocked(country.code));
+    const nextUnlockCountries = lockedCountries
+      .map((country) => ({ country, cost: flightUnlockCost(country) }))
+      .sort((a, b) => a.cost - b.cost)
+      .slice(0, 8);
 
     const route = buildVisibleFlightRoute(from, to, 96);
     const progressIndex = Math.min(
@@ -2573,12 +3904,19 @@ export default function App() {
     const chooseCountryOnMap = (country) => {
       if (studying || flightTicketCutting) return;
 
+      if (!isFlightCountryUnlocked(country.code)) {
+        unlockFlightCountry(country);
+        return;
+      }
+
       if (flightPickTarget === "from") {
         if (country.code === flightToCode) {
           alert("출발 국가와 도착 국가는 서로 달라야 합니다.");
           return;
         }
+
         setFlightFromCode(country.code);
+        applyFlightDetailByCodes(country.code, flightToCode);
         setFlightPickTarget("to");
         return;
       }
@@ -2589,6 +3927,7 @@ export default function App() {
       }
 
       setFlightToCode(country.code);
+      applyFlightDetailByCodes(flightFromCode, country.code);
     };
 
     return (
@@ -2605,7 +3944,85 @@ export default function App() {
             <b>→</b>
             <span>{to.code}</span>
             <small>{distance.toLocaleString()}km · 예상 {formatFlightTime(minutes)}</small>
+            <button
+              type="button"
+              className="flight-fullscreen-open"
+              onClick={() => setFlightFullscreenOpen(true)}
+            >
+              전체화면 모드
+            </button>
           </div>
+        </div>
+
+        <div className="flight-mileage-panel">
+          <div className="flight-mileage-card">
+            <span>FLIGHT MILEAGE</span>
+            <b>{flightMiles.toLocaleString()}M</b>
+            <small>{flightProfileLoaded ? "서버 저장됨" : "서버 동기화 중"} · 공부 1분당 {FLIGHT_MILES_PER_MINUTE}마일</small>
+          </div>
+          <div className="flight-mileage-card">
+            <span>PASSPORT</span>
+            <b>{passportStamps.length} STAMPS</b>
+            <small>{getPassportStats().length}개 국가 스탬프 보유</small>
+            <button type="button" className="passport-open-button" onClick={() => setPassportOpen(true)}>
+              여권 열기
+            </button>
+          </div>
+          <div className="flight-unlock-box">
+            <div className="flight-unlock-box-head">
+              <span>잠긴 여행지</span>
+              <button type="button" onClick={() => setUnlockListOpen(true)}>
+                자세히 보기
+              </button>
+            </div>
+            <div className="flight-unlock-strip">
+              {nextUnlockCountries.map(({ country, cost }) => (
+                <button
+                  key={country.code}
+                  type="button"
+                  disabled={flightMiles < cost}
+                  onClick={() => unlockFlightCountry(country)}
+                  title={`${country.name} 해금`}
+                >
+                  <b>{country.code}</b>
+                  <span>{cost}M</span>
+                </button>
+              ))}
+              {!nextUnlockCountries.length && (
+                <span className="all-unlocked-message">모든 나라 해금 완료</span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="flight-passport-book">
+          <div>
+            <b>여권 스탬프 통계</b>
+            <span>어느 나라 스탬프를 몇 개 모았는지 확인</span>
+          </div>
+          {getPassportStats().length ? (
+            <>
+              <div className="passport-stat-list">
+                {getPassportStats().slice(0, 10).map((stat) => (
+                  <span key={stat.code}>
+                    <b>{stat.code}</b>
+                    {stat.name}
+                    <small>{stat.count}개</small>
+                  </span>
+                ))}
+              </div>
+              <div className="passport-stamp-list">
+                {passportStamps.slice(0, 8).map((stamp) => (
+                  <span key={stamp.id}>
+                    {stamp.fromCode} → {stamp.toCode}
+                    <small>{stamp.milesEarned}M</small>
+                  </span>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p>아직 스탬프가 없습니다. 첫 비행을 완료해 보세요.</p>
+          )}
         </div>
 
         <div className="flight-dashboard-grid">
@@ -2613,7 +4030,7 @@ export default function App() {
             <div className="flight-panel-head">
               <div>
                 <b>WORLD ROUTE MAP</b>
-                <span>{flightInProgress ? "비행 추적 중 · 국가 표시 숨김" : `현재 선택: ${flightPickTarget === "from" ? "출발 국가" : "도착 국가"}`}</span>
+                <span>{flightInProgress ? "비행 중 · 화면 위치는 고정" : `현재 선택: ${flightPickTarget === "from" ? "출발 국가" : "도착 국가"}`}</span>
               </div>
               <div className="flight-map-tools">
                 <div className="flight-pick-tabs">
@@ -2635,9 +4052,9 @@ export default function App() {
                   </button>
                 </div>
                 <div className="flight-zoom-controls">
-                  <button type="button" onClick={() => changeFlightMapZoom((v) => v - 0.25)}>−</button>
+                  <button type="button" onClick={(event) => changeFlightMapZoom((v) => v - 0.25, event)}>−</button>
                   <span>{Math.round(effectiveFlightMapZoom * 100)}%</span>
-                  <button type="button" onClick={() => changeFlightMapZoom((v) => v + 0.25)}>+</button>
+                  <button type="button" onClick={(event) => changeFlightMapZoom((v) => v + 0.25, event)}>+</button>
                 </div>
               </div>
             </div>
@@ -2647,6 +4064,9 @@ export default function App() {
                 className="flight-map"
                 style={{
                   width: `${effectiveFlightMapZoom * 100}%`,
+                  height: `${effectiveFlightMapZoom * 510}px`,
+                  minWidth: "100%",
+                  minHeight: 510,
                 }}
               >
                 <div className="flight-map-grid" />
@@ -2660,7 +4080,7 @@ export default function App() {
                   ))}
                 </svg>
 
-                {FLIGHT_COUNTRIES.filter((country) => {
+                {visibleCountries.filter((country) => {
                   if (!flightInProgress) return true;
                   return country.code === from.code || country.code === to.code;
                 }).map((country) => {
@@ -2670,19 +4090,24 @@ export default function App() {
                   const isFrom = country.code === from.code;
                   const isTo = country.code === to.code;
                   const selected = isFrom || isTo;
+                  const locked = !isFlightCountryUnlocked(country.code);
 
                   return (
                     <button
                       key={country.code}
                       type="button"
-                      title={`${country.name} · ${country.city}`}
-                      className={selected ? "flight-country selected" : "flight-country"}
-                      data-kind={isFrom ? `FROM · ${country.name}` : isTo ? `TO · ${country.name}` : ""}
+                      title={locked ? `${country.name} 해금 필요 · ${flightUnlockCost(country)}M` : `${country.name} · ${country.city}`}
+                      className={[
+                        "flight-country",
+                        selected ? "selected" : "",
+                        locked ? "locked" : "",
+                      ].filter(Boolean).join(" ")}
+                      data-kind={isFrom ? `FROM · ${country.name}` : isTo ? `TO · ${country.name}` : locked ? `${flightUnlockCost(country)}M` : ""}
                       style={{ left, top }}
                       onClick={() => chooseCountryOnMap(country)}
                       disabled={studying || flightTicketCutting}
                     >
-                      {country.code}
+                      {locked ? "🔒" : country.code}
                     </button>
                   );
                 })}
@@ -2719,6 +4144,11 @@ export default function App() {
 
     return (
       <section className="easy-flight-controls">
+        <div className="easy-flight-mileage-mini">
+          <b>{flightMiles.toLocaleString()}M</b>
+          <span>비행 마일리지 · 여권 {passportStamps.length}개 · 국가 {getPassportStats().length}개</span>
+          <button type="button" onClick={() => setPassportOpen(true)}>여권</button>
+        </div>
         <div
           className={[
             "flight-ticket",
@@ -2770,6 +4200,22 @@ export default function App() {
             <b>{subject || "과목 없음"}</b>
             <small>{detail.trim() || "고급/쉬운 모드의 공부 과목과 내용을 기준으로 비행 공부가 시작됩니다."}</small>
           </div>
+
+          {studying && activeFlight && (
+            <div className="flight-live-edit">
+              <select value={subject} onChange={(e) => setSubject(e.target.value)}>
+                {subjects.map((s) => <option key={s}>{s}</option>)}
+              </select>
+              <input
+                value={detail}
+                onChange={(e) => setDetail(e.target.value)}
+                placeholder="비행 중 공부 내용"
+              />
+              <button type="button" onClick={updateCurrentFlightStudyInfo}>
+                과목/내용 변경
+              </button>
+            </div>
+          )}
 
           {studying ? (
             <button type="button" className="flight-stop" onClick={stopStudy}>착륙하기 · 공부 종료</button>
@@ -2843,7 +4289,7 @@ export default function App() {
               padding: "4px 7px",
               fontSize: 11,
               color: "#dc2626",
-              background: "#fff1f2",
+              background: darkMode ? "rgba(127,29,29,0.28)" : "#fff1f2",
               borderColor: "#fecaca",
             }}
           >
@@ -3229,9 +4675,9 @@ export default function App() {
                 margin: "10px 0",
                 padding: "10px 12px",
                 borderRadius: 16,
-                background: "var(--accent-soft)",
-                border: "1px solid var(--accent-soft-2)",
-                color: "var(--accent-text)",
+                background: darkMode ? "rgba(30,41,59,0.92)" : "var(--accent-soft)",
+                border: darkMode ? "1px solid rgba(96,165,250,0.30)" : "1px solid var(--accent-soft-2)",
+                color: darkMode ? "var(--text-main)" : "var(--accent-text)",
                 fontSize: 12,
                 fontWeight: 800,
                 lineHeight: 1.45,
@@ -3253,8 +4699,8 @@ export default function App() {
                       style={{
                         padding: "10px 11px",
                         borderRadius: 16,
-                        background: shouldCarryUmbrella ? "#fff7ed" : "var(--soft-bg)",
-                        border: shouldCarryUmbrella ? "1px solid #fed7aa" : "1px solid var(--border-soft)",
+                        background: shouldCarryUmbrella ? (darkMode ? "rgba(154,52,18,0.25)" : "#fff7ed") : "var(--soft-bg)",
+                        border: shouldCarryUmbrella ? (darkMode ? "1px solid rgba(251,146,60,0.36)" : "1px solid #fed7aa") : "1px solid var(--border-soft)",
                       }}
                     >
                       <div
@@ -3301,8 +4747,8 @@ export default function App() {
                             marginTop: 7,
                             padding: "6px 8px",
                             borderRadius: 12,
-                            background: "rgba(251,146,60,0.14)",
-                            color: "#c2410c",
+                            background: darkMode ? "rgba(251,146,60,0.18)" : "rgba(251,146,60,0.14)",
+                            color: darkMode ? "#fed7aa" : "#c2410c",
                             fontSize: 11,
                             fontWeight: 900,
                           }}
@@ -3393,17 +4839,6 @@ export default function App() {
             </button>
           </div>
         </div>
-      </section>
-
-      <section className="easy-flight-toggle-card">
-        <div>
-          <div className="flight-kicker">FLIGHT STUDY</div>
-          <h3>비행기 기능</h3>
-          <p>쉬운 모드 홈에서도 세계지도 비행 공부를 사용할 수 있습니다.</p>
-        </div>
-        <button type="button" onClick={toggleFlightFeature}>
-          {flightFeatureOpen ? "비행 끄기" : "비행 켜기"}
-        </button>
       </section>
 
       <div
@@ -3637,40 +5072,7 @@ export default function App() {
     if (hiddenRightCards.includes(cardId)) return null;
 
     if (cardId === "theme") {
-      return (
-        <RightPanelItem key={cardId} cardId={cardId}>
-          <section style={{ ...S.card, padding: 16 }}>
-            <div style={{ ...S.small, fontWeight: 900, color: "var(--accent)" }}>테마 색상</div>
-            <h3 style={{ margin: "4px 0 10px", fontSize: 18 }}>
-              {currentTheme.label}
-            </h3>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
-              {Object.entries(THEME_COLORS).map(([key, theme]) => (
-                <button
-                  key={key}
-                  type="button"
-                  title={theme.label}
-                  onClick={() => changeTheme(key)}
-                  style={{
-                    position: "relative",
-                    height: 34,
-                    borderRadius: 14,
-                    border: themeKey === key ? `2px solid ${theme.accent}` : "1px solid #e5e8eb",
-                    background: theme.accent,
-                    cursor: "pointer",
-                    boxShadow: themeKey === key ? `0 0 0 4px ${theme.accentShadow}` : "none",
-                  }}
-                >
-                  <span style={{ position: "absolute", opacity: 0 }}>{theme.label}</span>
-                </button>
-              ))}
-            </div>
-            <p style={{ ...S.small, margin: "8px 0 0" }}>
-              빨강, 초록, 파랑, 보라, 검정 중 원하는 색으로 앱의 주요 색상을 바꿀 수 있습니다.
-            </p>
-          </section>
-        </RightPanelItem>
-      );
+      return null;
     }
 
     if (cardId === "total") {
@@ -3750,6 +5152,22 @@ export default function App() {
                 <small>{detail.trim() || "고급모드의 공부 과목과 내용을 기준으로 비행 공부가 시작됩니다."}</small>
               </div>
 
+              {studying && activeFlight && (
+                <div className="flight-live-edit">
+                  <select value={subject} onChange={(e) => setSubject(e.target.value)}>
+                    {subjects.map((s) => <option key={s}>{s}</option>)}
+                  </select>
+                  <input
+                    value={detail}
+                    onChange={(e) => setDetail(e.target.value)}
+                    placeholder="비행 중 공부 내용"
+                  />
+                  <button type="button" onClick={updateCurrentFlightStudyInfo}>
+                    과목/내용 변경
+                  </button>
+                </div>
+              )}
+
               {studying ? (
                 <button type="button" className="flight-stop" onClick={stopStudy}>착륙하기 · 공부 종료</button>
               ) : (
@@ -3769,8 +5187,12 @@ export default function App() {
       const from = FLIGHT_COUNTRIES.find((c) => c.code === flightFromCode) || FLIGHT_COUNTRIES[0];
       const to = FLIGHT_COUNTRIES.find((c) => c.code === flightToCode) || FLIGHT_COUNTRIES[1];
       const minutes = activeFlight?.minutes || routeFlightMinutes(from, to);
+      const liveElapsedSeconds =
+        studying && activeFlight?.startedAtMs
+          ? Math.max(0, Math.floor((effectiveFlightNowTick - activeFlight.startedAtMs) / 1000))
+          : currentSessionSeconds;
       const flightProgress = studying && activeFlight
-        ? Math.min(100, Math.round((currentSessionSeconds / Math.max(1, minutes * 60)) * 100))
+        ? Math.min(100, Math.round((liveElapsedSeconds / Math.max(1, minutes * 60)) * 100))
         : 0;
 
       return (
@@ -3824,9 +5246,9 @@ export default function App() {
                 margin: "10px 0",
                 padding: "10px 12px",
                 borderRadius: 16,
-                background: "var(--accent-soft)",
-                border: "1px solid var(--accent-soft-2)",
-                color: "var(--accent-text)",
+                background: darkMode ? "rgba(30,41,59,0.92)" : "var(--accent-soft)",
+                border: darkMode ? "1px solid rgba(96,165,250,0.30)" : "1px solid var(--accent-soft-2)",
+                color: darkMode ? "var(--text-main)" : "var(--accent-text)",
                 fontSize: 12,
                 fontWeight: 800,
                 lineHeight: 1.45,
@@ -3848,8 +5270,8 @@ export default function App() {
                       style={{
                         padding: "10px 11px",
                         borderRadius: 16,
-                        background: shouldCarryUmbrella ? "#fff7ed" : "var(--soft-bg)",
-                        border: shouldCarryUmbrella ? "1px solid #fed7aa" : "1px solid var(--border-soft)",
+                        background: shouldCarryUmbrella ? (darkMode ? "rgba(154,52,18,0.25)" : "#fff7ed") : "var(--soft-bg)",
+                        border: shouldCarryUmbrella ? (darkMode ? "1px solid rgba(251,146,60,0.36)" : "1px solid #fed7aa") : "1px solid var(--border-soft)",
                       }}
                     >
                       <div
@@ -3896,8 +5318,8 @@ export default function App() {
                             marginTop: 7,
                             padding: "6px 8px",
                             borderRadius: 12,
-                            background: "rgba(251,146,60,0.14)",
-                            color: "#c2410c",
+                            background: darkMode ? "rgba(251,146,60,0.18)" : "rgba(251,146,60,0.14)",
+                            color: darkMode ? "#fed7aa" : "#c2410c",
                             fontSize: 11,
                             fontWeight: 900,
                           }}
@@ -3951,7 +5373,144 @@ export default function App() {
     return null;
   };
 
+  const displayOrderMinutes = (time) => {
+    const minutes = parseTimeMinutes(time);
+    return minutes < 360 ? minutes + 1440 : minutes;
+  };
+
+  const visualTimeColor = (record, index) => {
+    if (record.kind === "meal") {
+      return darkMode
+        ? { bg: "rgba(148,163,184,0.24)", border: "rgba(148,163,184,0.34)", text: "#e5e7eb" }
+        : { bg: "rgba(229,229,224,0.84)", border: "rgba(212,212,204,0.85)", text: "#3f3f46" };
+    }
+
+    const colorId = record.timeColorId || getTaskColorId(record, index);
+    const preset =
+      TIMETABLE_COLOR_PRESETS.find((item) => item.id === colorId) ||
+      TIMETABLE_COLOR_PRESETS[0];
+
+    return darkMode ? preset.dark : preset.light;
+  };
+
+  const renderVisualTimeTable = (items, compact = false) => {
+    const rowHeight = compact ? 28 : 38;
+    const labelWidth = compact ? 54 : 68;
+    const baseMinutes = 6 * 60;
+    const totalMinutes = 24 * 60;
+    const sortedItems = [...items].sort((a, b) => displayOrderMinutes(a.start) - displayOrderMinutes(b.start));
+
+    const normalizedItems = sortedItems
+      .map((item, index) => {
+        const rawStart = displayOrderMinutes(item.start);
+        let rawEnd = displayOrderMinutes(item.end || item.start);
+
+        // 핵심 수정:
+        // 시작/종료 시간이 같은 기록을 "다음날까지 24시간 공부"로 착각하지 않게 처리합니다.
+        // 종료 시간이 시작보다 작을 때만 자정을 넘긴 기록으로 봅니다.
+        if (rawEnd < rawStart) {
+          rawEnd += 24 * 60;
+        }
+
+        if (rawEnd === rawStart) {
+          const durationFromSeconds = Math.max(0, Math.round(Number(item.seconds || 0) / 60));
+          rawEnd = rawStart + durationFromSeconds;
+        }
+
+        const start = Math.max(baseMinutes, Math.min(baseMinutes + totalMinutes, rawStart));
+        const end = Math.max(baseMinutes, Math.min(baseMinutes + totalMinutes, rawEnd));
+
+        return { item, index, start, end };
+      })
+      .filter((entry) => entry.end > entry.start);
+
+    return (
+      <div className="visual-timetable-wrap cell-timetable-wrap">
+        <div
+          className="cell-timetable"
+          style={{
+            "--tt-row-height": `${rowHeight}px`,
+            "--tt-label-width": `${labelWidth}px`,
+          }}
+        >
+          {timeTableHours.map((hour, rowIndex) => {
+            const rowStart = baseMinutes + rowIndex * 60;
+
+            return (
+              <div key={hour} className="cell-timetable-row" style={{ minHeight: rowHeight }}>
+                <div className="cell-timetable-hour" style={{ width: labelWidth }}>
+                  {hour}
+                </div>
+
+                {Array.from({ length: 6 }, (_, cellIndex) => {
+                  const cellStart = rowStart + cellIndex * 10;
+                  const cellEnd = cellStart + 10;
+
+                  const fills = normalizedItems
+                    .map((entry) => {
+                      const overlapStart = Math.max(entry.start, cellStart);
+                      const overlapEnd = Math.min(entry.end, cellEnd);
+                      if (overlapEnd <= overlapStart) return null;
+
+                      const color = visualTimeColor(entry.item, entry.index);
+                      const left = ((overlapStart - cellStart) / 10) * 100;
+                      const width = ((overlapEnd - overlapStart) / 10) * 100;
+
+                      return {
+                        id: `${entry.item.id || entry.index}-${rowIndex}-${cellIndex}-${overlapStart}-${overlapEnd}`,
+                        left,
+                        width,
+                        color,
+                        title: `${entry.item.start}-${entry.item.end}`,
+                      };
+                    })
+                    .filter(Boolean);
+
+                  return (
+                    <div key={`${hour}-${cellIndex}`} className="cell-timetable-cell">
+                      {fills.map((fill, fillIndex) => (
+                        <i
+                          key={fill.id}
+                          className="cell-timetable-fill"
+                          title={fill.title}
+                          style={{
+                            left: `${fill.left}%`,
+                            width: `${fill.width}%`,
+                            top: fills.length > 1 ? `${4 + fillIndex * 5}px` : undefined,
+                            height: fills.length > 1 ? "10px" : undefined,
+                            background: fill.color.bg,
+                            borderColor: fill.color.border,
+                          }}
+                        />
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   const renderTodayPlannerCompact = (list, total, date) => {
+    const sortedList = sortStudyRecordsByTime(list);
+    const mergedTaskList = mergeCloseTaskRecords(sortedList);
+    const mealBlocksForDate = mealBlocks
+      .filter((meal) => meal.date === date)
+      .sort((a, b) => studyOrderMinutes(a.start) - studyOrderMinutes(b.start));
+    const timeTableItems = [
+      ...mergedTaskList.map((record) => ({ ...record, kind: "study" })),
+      ...mealBlocksForDate.map((meal) => ({
+        ...meal,
+        kind: "meal",
+        subject: meal.type,
+        detail: "순공시간에 포함되지 않는 식사 시간",
+        seconds: Math.max(0, (studyOrderMinutes(meal.end) - studyOrderMinutes(meal.start)) * 60),
+      })),
+    ].sort((a, b) => studyOrderMinutes(a.start) - studyOrderMinutes(b.start));
+
     return (
       <div
         style={{
@@ -3966,9 +5525,12 @@ export default function App() {
         }}
       >
         <div
+          className="planner-hero"
           style={{
-            background: "linear-gradient(135deg, var(--accent-soft) 0%, var(--accent-soft-2) 45%, var(--accent-soft-3) 100%)",
-            color: "var(--accent-text)",
+            background: darkMode
+              ? "linear-gradient(135deg, rgba(30,41,59,0.95) 0%, rgba(15,23,42,0.96) 100%)"
+              : "linear-gradient(135deg, var(--accent-soft) 0%, var(--accent-soft-2) 45%, var(--accent-soft-3) 100%)",
+            color: darkMode ? "#e5e7eb" : "var(--accent-text)",
             padding: "8px 10px",
             borderRadius: 12,
             marginBottom: 8,
@@ -4051,11 +5613,11 @@ export default function App() {
                 overflowY: "auto",
               }}
             >
-              {list.length ? (
-                groupedPlannerContents(list).map((group) => (
+              {mergedTaskList.length ? (
+                groupedPlannerContents(mergedTaskList).map((group) => (
                   <div key={group.subject} style={{ fontSize: 11, marginBottom: 6 }}>
                     <b>{group.subject}</b>
-                    <div style={{ color: "#52525b", marginTop: 2 }}>
+                    <div style={{ color: "var(--text-mid)", marginTop: 2 }}>
                       {group.details.map((detailText) => (
                         <div key={detailText}>· {detailText}</div>
                       ))}
@@ -4076,8 +5638,8 @@ export default function App() {
                 overflowY: "auto",
               }}
             >
-              {list.length ? (
-                list.map((r) => (
+              {mergedTaskList.length ? (
+                mergedTaskList.map((r) => (
                   <div
                     key={r.id}
                     style={{
@@ -4089,9 +5651,20 @@ export default function App() {
                       fontSize: 11,
                     }}
                   >
-                    <div style={{ color: "#71717a", fontSize: 10 }}>{r.start} - {r.end}</div>
+                    <div style={{ color: "#71717a", fontSize: 10 }}>
+                      {r.start} - {r.end}
+                      {r.mergedIds?.length > 1 && (
+                        <>
+                          <br />
+                          <span style={{ color: "var(--accent)", fontWeight: 900 }}>
+                            {r.mergedIds.length}개 병합
+                          </span>
+                        </>
+                      )}
+                    </div>
                     <div>
                       <b>{r.subject}</b> <span style={{ color: "#71717a" }}>{r.detail}</span>
+                      {renderTaskColorPicker(r, true)}
                     </div>
                     <b style={{ textAlign: "right" }}>{formatStudy(r.seconds || 0)}</b>
                   </div>
@@ -4113,51 +5686,7 @@ export default function App() {
           <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
             <SectionTitle>TIME TABLE</SectionTitle>
             <div style={{ ...S.small, fontSize: 10 }}>06:00부터 다음날 05:00까지</div>
-            <div
-              style={{
-                marginTop: 6,
-                borderTop: "1px solid var(--border)",
-                flex: 1,
-                minHeight: 0,
-                overflowY: "auto",
-              }}
-            >
-              {timeTableHours.map((hour) => {
-                const hourRecords = recordsByHour(hour, list);
-                return (
-                  <div
-                    key={hour}
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "42px 1fr",
-                      minHeight: 24,
-                      borderBottom: "1px solid var(--border)",
-                    }}
-                  >
-                    <div style={{ paddingTop: 5, fontSize: 9, color: "#71717a" }}>{hour}</div>
-                    <div style={{ padding: 2 }}>
-                      {hourRecords.map((r) => (
-                        <div
-                          key={r.id}
-                          style={{
-                            background: "linear-gradient(135deg, var(--accent-soft) 0%, var(--accent-soft-2) 100%)",
-                            border: "1px solid var(--accent-soft-3)",
-                            color: "var(--accent-text)",
-                            boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.45)",
-                            borderRadius: 7,
-                            padding: 4,
-                            fontSize: 9,
-                            marginBottom: 2,
-                          }}
-                        >
-                          <b>{r.subject}</b> · {r.start}-{r.end} · {formatStudy(r.seconds || 0)}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            {renderVisualTimeTable(timeTableItems, true)}
           </div>
         </div>
       </div>
@@ -4165,16 +5694,35 @@ export default function App() {
   };
 
   const renderPlanner = (list, total, date) => {
+    const sortedList = sortStudyRecordsByTime(list);
+    const mergedTaskList = mergeCloseTaskRecords(sortedList);
+    const mealBlocksForDate = mealBlocks
+      .filter((meal) => meal.date === date)
+      .sort((a, b) => studyOrderMinutes(a.start) - studyOrderMinutes(b.start));
+    const timeTableItems = [
+      ...mergedTaskList.map((record) => ({ ...record, kind: "study" })),
+      ...mealBlocksForDate.map((meal) => ({
+        ...meal,
+        kind: "meal",
+        subject: meal.type,
+        detail: "순공시간에 포함되지 않는 식사 시간",
+        seconds: Math.max(0, (studyOrderMinutes(meal.end) - studyOrderMinutes(meal.start)) * 60),
+      })),
+    ].sort((a, b) => studyOrderMinutes(a.start) - studyOrderMinutes(b.start));
+
     return (
       <div style={S.card}>
         <div
+          className="planner-hero"
           style={{
-            background: "linear-gradient(135deg, var(--accent-soft) 0%, var(--accent-soft-2) 45%, var(--accent-soft-3) 100%)",
-            color: "var(--accent-text)",
+            background: darkMode
+              ? "linear-gradient(135deg, rgba(30,41,59,0.96) 0%, rgba(15,23,42,0.98) 100%)"
+              : "linear-gradient(135deg, var(--accent-soft) 0%, var(--accent-soft-2) 45%, var(--accent-soft-3) 100%)",
+            color: darkMode ? "#e5e7eb" : "var(--accent-text)",
             padding: 16,
             borderRadius: 18,
             marginBottom: 18,
-            border: "1px solid var(--accent-soft-2)",
+            border: darkMode ? "1px solid rgba(96,165,250,0.30)" : "1px solid var(--accent-soft-2)",
           }}
         >
           <div style={{ fontSize: 12, letterSpacing: 2, opacity: 0.8 }}>
@@ -4229,11 +5777,11 @@ export default function App() {
                 minHeight: 60,
               }}
             >
-              {list.length ? (
-                groupedPlannerContents(list).map((group) => (
+              {mergedTaskList.length ? (
+                groupedPlannerContents(mergedTaskList).map((group) => (
                   <div key={group.subject} style={{ fontSize: 14, marginBottom: 10 }}>
                     <b>{group.subject}</b>
-                    <div style={{ color: "#52525b", marginTop: 3 }}>
+                    <div style={{ color: "var(--text-mid)", marginTop: 3 }}>
                       {group.details.map((detailText) => (
                         <div key={detailText}>· {detailText}</div>
                       ))}
@@ -4247,8 +5795,8 @@ export default function App() {
 
             <SectionTitle>TASK</SectionTitle>
             <div style={{ borderTop: "1px solid var(--border)" }}>
-              {list.length ? (
-                list.map((r) => (
+              {mergedTaskList.length ? (
+                mergedTaskList.map((r) => (
                   <div
                     key={r.id}
                     style={{
@@ -4262,13 +5810,66 @@ export default function App() {
                   >
                     <div style={S.small}>
                       {r.start} - {r.end}
+                      {r.mergedIds?.length > 1 && (
+                        <>
+                          <br />
+                          <span style={{ color: "var(--accent)", fontWeight: 900 }}>
+                            {r.mergedIds.length}개 병합
+                          </span>
+                        </>
+                      )}
                     </div>
                     <div>
                       <b>{r.subject}</b>
                       <br />
-                      <span style={S.small}>{r.detail}</span>
+                      {editingRecordId === r.id ? (
+                        <div style={{ display: "grid", gap: 6, marginTop: 6 }}>
+                          <input
+                            style={S.input}
+                            value={editingRecordDetail}
+                            onChange={(e) => setEditingRecordDetail(e.target.value)}
+                            placeholder="수정할 공부 내용"
+                          />
+                          <div style={{ display: "flex", gap: 6 }}>
+                            <button
+                              type="button"
+                              style={{ ...S.lightButton, padding: "6px 8px", fontSize: 11 }}
+                              onClick={() => saveRecordDetailOnly(r.id)}
+                            >
+                              저장
+                            </button>
+                            <button
+                              type="button"
+                              style={{ ...S.lightButton, padding: "6px 8px", fontSize: 11 }}
+                              onClick={() => {
+                                setEditingRecordId("");
+                                setEditingRecordDetail("");
+                              }}
+                            >
+                              취소
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <span style={S.small}>{r.detail}</span>
+                          {renderTaskColorPicker(r)}
+                        </>
+                      )}
                     </div>
-                    <b style={{ textAlign: "right" }}>{formatStudy(r.seconds || 0)}</b>
+                    <div style={{ display: "grid", justifyItems: "end", gap: 6 }}>
+                      <b style={{ textAlign: "right" }}>{formatStudy(r.seconds || 0)}</b>
+                      <button
+                        type="button"
+                        style={{ ...S.lightButton, padding: "5px 8px", fontSize: 11 }}
+                        onClick={() => {
+                          setEditingRecordId(r.id);
+                          setEditingRecordDetail(r.detail || "");
+                        }}
+                      >
+                        내용 수정
+                      </button>
+                    </div>
                   </div>
                 ))
               ) : (
@@ -4290,53 +5891,105 @@ export default function App() {
             <SectionTitle>TOTAL</SectionTitle>
             <h1>{formatStudy(total)}</h1>
 
+            <SectionTitle>식사 시간</SectionTitle>
+            <div style={S.small}>점심/저녁식사는 순공시간에 포함되지 않는 시간으로 Time Table에만 표시됩니다.</div>
+            <div className="meal-block-form">
+              <select
+                value={mealForm.type}
+                onChange={(e) => setMealForm((prev) => ({ ...prev, type: e.target.value }))}
+              >
+                <option>점심식사</option>
+                <option>저녁식사</option>
+                <option>식사</option>
+              </select>
+              <input
+                type="time"
+                value={mealForm.start}
+                onChange={(e) => setMealForm((prev) => ({ ...prev, start: e.target.value }))}
+              />
+              <input
+                type="time"
+                value={mealForm.end}
+                onChange={(e) => setMealForm((prev) => ({ ...prev, end: e.target.value }))}
+              />
+              <button type="button" onClick={addMealBlock}>추가</button>
+            </div>
+
+            {mealBlocksForDate.length > 0 && (
+              <div className="meal-block-list">
+                {mealBlocksForDate.map((meal) => (
+                  <span key={meal.id}>
+                    {meal.type} {meal.start}-{meal.end}
+                    <button type="button" onClick={() => removeMealBlock(meal.id)}>×</button>
+                  </span>
+                ))}
+              </div>
+            )}
+
             <SectionTitle>TIME TABLE</SectionTitle>
             <div style={S.small}>06:00부터 다음날 05:00까지 하루 흐름으로 표시됩니다.</div>
 
-            <div style={{ marginTop: 10, borderTop: "1px solid var(--border)" }}>
-              {timeTableHours.map((hour) => {
-                const hourRecords = recordsByHour(hour, list);
-                return (
-                  <div
-                    key={hour}
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "60px 1fr",
-                      minHeight: 38,
-                      borderBottom: "1px solid var(--border)",
-                    }}
-                  >
-                    <div style={{ paddingTop: 9, fontSize: 12, color: "#71717a" }}>
-                      {hour}
-                    </div>
-                    <div style={{ padding: 5 }}>
-                      {hourRecords.map((r) => (
-                        <div
-                          key={r.id}
-                          style={{
-                            background: "linear-gradient(135deg, var(--accent-soft) 0%, var(--accent-soft-2) 100%)",
-                            border: "1px solid var(--accent-soft-3)",
-                            color: "var(--accent-text)",
-                            boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.45)",
-                            borderRadius: 10,
-                            padding: 7,
-                            fontSize: 12,
-                            marginBottom: 4,
-                          }}
-                        >
-                          <b>{r.subject}</b>
-                          <br />
-                          {r.start} - {r.end} · {formatStudy(r.seconds || 0)}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            {renderVisualTimeTable(timeTableItems, false)}
           </div>
         </div>
       </div>
+    );
+  };
+
+  const renderFlightFullscreenSummary = () => {
+    const from = FLIGHT_COUNTRIES.find((c) => c.code === (activeFlight?.fromCode || flightFromCode)) || FLIGHT_COUNTRIES[0];
+    const to = FLIGHT_COUNTRIES.find((c) => c.code === (activeFlight?.toCode || flightToCode)) || FLIGHT_COUNTRIES[1];
+    const minutes = activeFlight?.minutes || routeFlightMinutes(from, to);
+    const distance = routeDistanceKm(from, to);
+    const liveElapsedSeconds =
+      studying && activeFlight?.startedAtMs
+        ? Math.max(0, Math.floor((effectiveFlightNowTick - activeFlight.startedAtMs) / 1000))
+        : currentSessionSeconds;
+    const flightProgress = studying && activeFlight
+      ? Math.min(100, Math.round((liveElapsedSeconds / Math.max(1, minutes * 60)) * 100))
+      : 0;
+
+    return (
+      <aside className="flight-fullscreen-side">
+        <section className={["flight-ticket", flightTicketUsed || (studying && activeFlight) ? "ticket-used" : ""].filter(Boolean).join(" ")}>
+          <div className="flight-ticket-main">
+            <span>BOARDING PASS</span>
+            <h2>{from.code} → {to.code}</h2>
+            <p>{from.name} {from.city} 출발 · {to.name} {to.city} 도착</p>
+            <div className="flight-ticket-row">
+              <div>
+                <small>DISTANCE</small>
+                <b>{distance.toLocaleString()}km</b>
+              </div>
+              <div>
+                <small>TIME</small>
+                <b>{formatFlightTime(minutes)}</b>
+              </div>
+            </div>
+          </div>
+          <div className="flight-ticket-stub">
+            <span>GATE</span>
+            <b>SR</b>
+            <small>{from.code}{to.code}</small>
+          </div>
+        </section>
+
+        <section className="flight-side-card">
+          <div className="flight-side-head">
+            <b>IN-FLIGHT STATUS</b>
+            <span>{flightProgress}% 진행</span>
+          </div>
+          <div className="flight-progress">
+            <i style={{ width: `${flightProgress}%` }} />
+          </div>
+          <div className="flight-stats">
+            <div><span>오늘 총 공부</span><b>{formatTimer(todayTotalWithLive)}</b></div>
+            <div><span>현재 세션</span><b>{formatTimer(currentSessionSeconds)}</b></div>
+            <div><span>예상 비행시간</span><b>{formatFlightTime(minutes)}</b></div>
+            <div><span>그룹 오늘 합계</span><b>{formatTimer(groupTodayTotal)}</b></div>
+          </div>
+        </section>
+      </aside>
     );
   };
 
@@ -4363,7 +6016,7 @@ export default function App() {
                       justifyContent: "center",
                     }}
                   >
-                    <IconImage src={currentIcons.logo} alt="Study Room" size={38} />
+                    <StudyRoomLogo dark={true} size={38} />
                   </div>
                   <p style={{ color: "#a1a1aa", margin: 0, fontWeight: 900 }}>Study Room</p>
                 </div>
@@ -4499,7 +6152,7 @@ export default function App() {
                   <div
                     style={{
                       marginTop: 14,
-                      background: "#fef2f2",
+                      background: darkMode ? "rgba(127,29,29,0.35)" : "#fef2f2",
                       color: "#dc2626",
                       padding: 12,
                       borderRadius: 14,
@@ -4518,13 +6171,16 @@ export default function App() {
 
   return (
     <div
+      className={darkMode ? "dark-app" : ""}
+      data-theme-mode={darkMode ? "dark" : "light"}
       style={{
         ...S.page,
         ...themeVars,
         background: "var(--app-bg)",
       }}
     >
-      <audio ref={soundRef} src={currentSound.src} loop preload="auto" />
+      <audio ref={soundRef} preload="auto" playsInline controls={false} style={{ display: "none" }} />
+      <audio ref={soundRefB} preload="auto" playsInline controls={false} style={{ display: "none" }} />
       <style>
         {`
           @keyframes srFadeSlideIn {
@@ -5163,11 +6819,17 @@ export default function App() {
 
           .flight-pick-tabs {
             display: flex;
-            gap: 8px;
+            gap: 6px;
+            padding: 4px;
+            border-radius: 999px;
+            overflow: hidden;
+            background: rgba(239,246,255,0.9);
+            border: 1px solid rgba(191,219,254,0.95);
           }
 
           .flight-pick-tabs button {
             padding: 8px 10px;
+            border-radius: 999px !important;
           }
 
           .flight-pick-tabs button.active {
@@ -5456,6 +7118,7 @@ export default function App() {
             gap: 6px;
             padding: 4px;
             border-radius: 999px;
+            overflow: hidden;
             background: rgba(239,246,255,0.9);
             border: 1px solid rgba(191,219,254,0.95);
           }
@@ -6135,8 +7798,2836 @@ export default function App() {
             }
           }
 
+          /* 1~3번 수정 전용: 비행 경로 자체는 고정하고 비행기만 부드럽게 이동 */
+          .flight-route-line {
+            animation: none !important;
+            stroke-dashoffset: 0 !important;
+          }
+
+          .dev-time-toggle {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            z-index: 95;
+            width: 48px;
+            height: 48px;
+            border: 0;
+            border-radius: 18px;
+            background: linear-gradient(135deg, #111827, #2563eb);
+            color: white;
+            font-size: 12px;
+            font-weight: 950;
+            box-shadow: 0 16px 36px rgba(15,23,42,0.22);
+            cursor: pointer;
+          }
+
+          .dev-time-panel {
+            position: fixed;
+            right: 18px;
+            bottom: 76px;
+            z-index: 96;
+            width: min(360px, calc(100vw - 36px));
+            background: rgba(255,255,255,0.98);
+            border: 1px solid rgba(191,219,254,0.95);
+            border-radius: 24px;
+            padding: 14px;
+            box-shadow: 0 18px 46px rgba(15,23,42,0.16);
+          }
+
+          .dev-time-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            align-items: flex-start;
+            margin-bottom: 12px;
+          }
+
+          .dev-time-head b {
+            display: block;
+            color: #0f172a;
+            font-size: 15px;
+            font-weight: 950;
+          }
+
+          .dev-time-head span,
+          .dev-time-controls p {
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.45;
+          }
+
+          .dev-time-head button {
+            border: 0;
+            background: #f1f5f9;
+            color: #334155;
+            border-radius: 999px;
+            width: 28px;
+            height: 28px;
+            font-weight: 950;
+            cursor: pointer;
+          }
+
+          .dev-time-login {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 8px;
+          }
+
+          .dev-time-login input {
+            border: 1px solid #dbeafe;
+            border-radius: 14px;
+            padding: 10px 12px;
+            background: #f8fafc;
+            color: #0f172a;
+            min-width: 0;
+          }
+
+          .dev-time-login button,
+          .dev-time-grid button {
+            border: 0;
+            border-radius: 14px;
+            background: #2563eb;
+            color: white;
+            font-weight: 950;
+            padding: 10px 12px;
+            cursor: pointer;
+          }
+
+          .dev-time-current {
+            border-radius: 18px;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            padding: 12px;
+            margin-bottom: 10px;
+          }
+
+          .dev-time-current span {
+            display: block;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 900;
+          }
+
+          .dev-time-current b {
+            display: block;
+            margin-top: 2px;
+            color: #1e40af;
+            font-size: 20px;
+            font-weight: 950;
+          }
+
+          .dev-time-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+          }
+
+          .dev-time-controls p {
+            margin: 10px 0 0;
+          }
+
+          @media (max-width: 720px) {
+            .dev-time-toggle {
+              right: 14px;
+              bottom: 76px;
+            }
+
+            .dev-time-panel {
+              right: 14px;
+              bottom: 132px;
+            }
+          }
+
+          .meal-block-form {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 110px 110px auto;
+            gap: 6px;
+            margin: 8px 0 10px;
+          }
+
+          .meal-block-form select,
+          .meal-block-form input {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 8px 9px;
+            background: var(--input-bg);
+            color: var(--text-main);
+            min-width: 0;
+          }
+
+          .meal-block-form button {
+            border: 0;
+            border-radius: 12px;
+            padding: 8px 10px;
+            background: #fb923c;
+            color: white;
+            font-weight: 900;
+            cursor: pointer;
+          }
+
+          .meal-block-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 4px 0 10px;
+          }
+
+          .meal-block-list span {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            border-radius: 999px;
+            padding: 5px 8px;
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            color: #9a3412;
+            font-size: 12px;
+            font-weight: 850;
+          }
+
+          .meal-block-list button {
+            border: 0;
+            background: transparent;
+            color: inherit;
+            cursor: pointer;
+            font-weight: 950;
+          }
+
+          @media (max-width: 720px) {
+            .meal-block-form {
+              grid-template-columns: 1fr 1fr;
+            }
+          }
+
+          .flight-live-edit {
+            display: grid;
+            gap: 6px;
+            margin-top: 8px;
+          }
+
+          .flight-live-edit select,
+          .flight-live-edit input {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 8px 9px;
+            background: var(--input-bg);
+            color: var(--text-main);
+            min-width: 0;
+          }
+
+          .flight-live-edit button {
+            border: 1px solid rgba(191,219,254,0.95);
+            border-radius: 14px;
+            background: #eff6ff;
+            color: #1e40af;
+            font-weight: 950;
+            padding: 8px 10px;
+            cursor: pointer;
+          }
+
+          /* Zoom fix: 확대/축소 보정은 JS가 즉시 수행하므로 smooth scroll을 끕니다. */
+          .flight-map-viewport {
+            scroll-behavior: auto !important;
+            overflow-anchor: none;
+          }
+
+          /* 11번: 점선 이동 애니메이션 제거. 비행기만 부드럽게 움직이게 유지 */
+          .flight-route-line,
+          .flight-dashboard-card .flight-route-line,
+          .flight-dashboard-card.tracking-flight .flight-route-line {
+            animation: none !important;
+            stroke-dashoffset: 0 !important;
+          }
+
+          .flight-fullscreen {
+            position: fixed;
+            inset: 0;
+            z-index: 130;
+            background: rgba(248,251,255,0.98);
+            padding: 16px;
+            box-sizing: border-box;
+            overflow: auto;
+          }
+
+          .flight-fullscreen-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+          }
+
+          .flight-fullscreen-top h2 {
+            margin: 2px 0 0;
+            color: #0f172a;
+            font-size: 28px;
+          }
+
+          .flight-fullscreen-top button {
+            border: 1px solid #bfdbfe;
+            border-radius: 16px;
+            background: #eff6ff;
+            color: #1e40af;
+            font-weight: 950;
+            padding: 10px 14px;
+            cursor: pointer;
+          }
+
+          .flight-fullscreen-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(320px, 390px);
+            gap: 12px;
+            align-items: start;
+          }
+
+          .flight-fullscreen-map .flight-dashboard-card {
+            min-height: calc(100vh - 116px);
+          }
+
+          .flight-fullscreen-map .flight-map-viewport {
+            height: calc(100vh - 280px) !important;
+            min-height: 520px !important;
+          }
+
+          .flight-fullscreen-side {
+            display: grid;
+            gap: 12px;
+          }
+
+          @media (max-width: 1100px) {
+            .flight-fullscreen-grid {
+              grid-template-columns: 1fr;
+            }
+          }
+
+          .flight-fullscreen-open {
+            border: 1px solid rgba(191,219,254,0.95);
+            border-radius: 999px;
+            background: #eff6ff;
+            color: #1e40af;
+            font-size: 11px;
+            font-weight: 950;
+            padding: 7px 10px;
+            cursor: pointer;
+            white-space: nowrap;
+          }
+
+          .flight-route-summary .flight-fullscreen-open {
+            margin-left: 2px;
+          }
+
+          .dark-app {
+            background: #0b1220;
+          }
+
+          .dark-app img {
+            filter: brightness(0.92) contrast(1.05);
+          }
+
+          .dark-app .flight-fullscreen,
+          .dark-app .flight-dashboard-card,
+          .dark-app .flight-side-card {
+            color: var(--text-main);
+          }
+
+          .dark-app .flight-map-viewport {
+            background: #0f172a;
+            border-color: rgba(96,165,250,0.34);
+          }
+
+          .dark-app {
+            color-scheme: dark;
+          }
+
+          .dark-app section,
+          .dark-app aside,
+          .dark-app main {
+            color: var(--text-main);
+          }
+
+          .dark-app .flight-os,
+          .dark-app .flight-fullscreen {
+            background:
+              radial-gradient(circle at 16% 0%, rgba(37,99,235,0.20), transparent 32%),
+              radial-gradient(circle at 92% 18%, rgba(14,165,233,0.14), transparent 34%),
+              linear-gradient(135deg, #020617 0%, #0f172a 54%, #111827 100%) !important;
+            border-color: rgba(96,165,250,0.28) !important;
+            color: var(--text-main) !important;
+          }
+
+          .dark-app .flight-topbar,
+          .dark-app .flight-ticket,
+          .dark-app .flight-side-card,
+          .dark-app .flight-current-study,
+          .dark-app .flight-status-panel-inner,
+          .dark-app .dev-time-panel,
+          .dark-app .easy-flight-toggle-card {
+            background: rgba(15,23,42,0.94) !important;
+            border-color: rgba(96,165,250,0.28) !important;
+            color: var(--text-main) !important;
+          }
+
+          .dark-app .flight-ticket-row div,
+          .dark-app .flight-stats div,
+          .dark-app .flight-sound-box,
+          .dark-app .flight-member-list div,
+          .dark-app .dev-time-current {
+            background: rgba(30,41,59,0.82) !important;
+            border-color: rgba(96,165,250,0.24) !important;
+            color: var(--text-main) !important;
+          }
+
+          .dark-app .flight-route-summary span,
+          .dark-app .flight-os button,
+          .dark-app .flight-live-edit button,
+          .dark-app .flight-fullscreen-open,
+          .dark-app .flight-fullscreen-top button,
+          .dark-app .dev-time-login button,
+          .dark-app .dev-time-grid button {
+            background: rgba(30,41,59,0.92) !important;
+            border-color: rgba(96,165,250,0.34) !important;
+            color: #dbeafe !important;
+          }
+
+          .dark-app .flight-mode-tabs button.active,
+          .dark-app .flight-os button:hover {
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark)) !important;
+            color: #ffffff !important;
+          }
+
+          .dark-app .flight-os input,
+          .dark-app .flight-os select,
+          .dark-app .flight-os textarea,
+          .dark-app .dev-time-login input,
+          .dark-app .flight-live-edit input,
+          .dark-app .flight-live-edit select {
+            background: #1e293b !important;
+            color: #e5e7eb !important;
+            border-color: rgba(96,165,250,0.28) !important;
+          }
+
+          .dark-app .flight-map-viewport {
+            background: #0f172a !important;
+            border-color: rgba(96,165,250,0.30) !important;
+          }
+
+          .dark-app .flight-ticket-main p,
+          .dark-app .flight-route-summary small,
+          .dark-app .flight-stats span,
+          .dark-app .flight-current-study span,
+          .dark-app .dev-time-head span,
+          .dark-app .dev-time-controls p {
+            color: #94a3b8 !important;
+          }
+
+          .dark-app .meal-block-list span {
+            background: rgba(154,52,18,0.25) !important;
+            border-color: rgba(251,146,60,0.36) !important;
+            color: #fed7aa !important;
+          }
+
+          .dark-app [style*="#fff7ed"],
+          .dark-app [style*="#fff1f2"],
+          .dark-app [style*="#fef2f2"],
+          .dark-app [style*="#f8fafc"],
+          .dark-app [style*="#f2f4f6"],
+          .dark-app [style*="#edf4ff"],
+          .dark-app [style*="rgb(255, 255, 255)"] {
+            background: rgba(15,23,42,0.88) !important;
+            color: var(--text-main) !important;
+            border-color: var(--border) !important;
+          }
+
+          .dark-app .sr-logo-text {
+            fill: #dbeafe;
+          }
+
+          /* Dark mode coverage patch */
+          .dark-app .flight-dashboard-card,
+          .dark-app .easy-flight-toggle-card,
+          .dark-app .easy-flight-ticket,
+          .dark-app .easy-flight-progress,
+          .dark-app .easy-flight-actions,
+          .dark-app .easy-flight-controls,
+          .dark-app .flight-ticket,
+          .dark-app .easy-flight-boarding-pass {
+            background:
+              radial-gradient(circle at 12% 0%, rgba(37,99,235,0.18), transparent 30%),
+              linear-gradient(135deg, rgba(15,23,42,0.96), rgba(17,24,39,0.94)) !important;
+            border-color: rgba(96,165,250,0.32) !important;
+            color: var(--text-main) !important;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.24) !important;
+          }
+
+          .dark-app .flight-dashboard-card h2,
+          .dark-app .flight-dashboard-card h3,
+          .dark-app .flight-dashboard-card b,
+          .dark-app .easy-flight-toggle-card h3,
+          .dark-app .easy-flight-toggle-card b,
+          .dark-app .easy-flight-ticket h3,
+          .dark-app .easy-flight-ticket b,
+          .dark-app .easy-flight-progress b,
+          .dark-app .easy-flight-actions b,
+          .dark-app .flight-ticket-main h2,
+          .dark-app .flight-ticket-main b,
+          .dark-app .flight-ticket-stub b {
+            color: #e5e7eb !important;
+          }
+
+          .dark-app .flight-dashboard-card p,
+          .dark-app .flight-dashboard-card span,
+          .dark-app .flight-dashboard-card small,
+          .dark-app .easy-flight-toggle-card p,
+          .dark-app .easy-flight-ticket p,
+          .dark-app .easy-flight-ticket span,
+          .dark-app .easy-flight-actions span,
+          .dark-app .easy-flight-actions small,
+          .dark-app .easy-flight-progress span,
+          .dark-app .flight-ticket-main p,
+          .dark-app .flight-ticket-main span,
+          .dark-app .flight-ticket-main small,
+          .dark-app .flight-ticket-stub span,
+          .dark-app .flight-ticket-stub small {
+            color: #94a3b8 !important;
+          }
+
+          .dark-app .flight-ticket-row div,
+          .dark-app .flight-stats div,
+          .dark-app .flight-current-study,
+          .dark-app .flight-live-edit,
+          .dark-app .flight-panel-head,
+          .dark-app .flight-map-tools {
+            background: rgba(30,41,59,0.82) !important;
+            border-color: rgba(96,165,250,0.25) !important;
+            color: var(--text-main) !important;
+          }
+
+          .dark-app .flight-route-summary span,
+          .dark-app .flight-zoom-controls,
+          .dark-app .flight-pick-tabs {
+            background: rgba(30,41,59,0.86) !important;
+            border-color: rgba(96,165,250,0.28) !important;
+            color: #dbeafe !important;
+          }
+
+          .dark-app .flight-map-viewport,
+          .dark-app .flight-map {
+            background-color: #0f172a !important;
+            border-color: rgba(96,165,250,0.30) !important;
+          }
+
+          .dark-app [style*="현재 위치 기준 7일 예보"],
+          .dark-app [style*="PERSONAL STUDY PLANNER"] {
+            background: rgba(15,23,42,0.96) !important;
+            color: var(--text-main) !important;
+            border-color: var(--border) !important;
+          }
+
+          .dark-app [style*="linear-gradient(180deg, #ffffff"],
+          .dark-app [style*="rgba(255,255,255"],
+          .dark-app [style*="rgba(255, 255, 255"],
+          .dark-app [style*="#fbfcfd"],
+          .dark-app [style*="#f8fbff"],
+          .dark-app [style*="#f8fafc"],
+          .dark-app [style*="#eff6ff"],
+          .dark-app [style*="#edf4ff"],
+          .dark-app [style*="#f2f4f6"] {
+            background: rgba(15,23,42,0.94) !important;
+            color: var(--text-main) !important;
+            border-color: var(--border) !important;
+          }
+
+          .dark-app [style*="#0f172a"],
+          .dark-app [style*="#191f28"],
+          .dark-app [style*="#334155"] {
+            color: var(--text-main) !important;
+          }
+
+          .dark-app .flight-live-edit input,
+          .dark-app .flight-live-edit select,
+          .dark-app .flight-os input,
+          .dark-app .flight-os select,
+          .dark-app .flight-os textarea {
+            background: #1e293b !important;
+            color: #e5e7eb !important;
+            border-color: rgba(96,165,250,0.32) !important;
+          }
+
+          /* Dark mode final coverage: planner, chat, flight status, boarding button, password box */
+          .dark-app [style*="나의 공부 달력"],
+          .dark-app [style*="플래너"],
+          .dark-app [style*="white"],
+          .dark-app [style*="#f9fafb"],
+          .dark-app [style*="#e4e4e7"],
+          .dark-app [style*="#fef3c7"],
+          .dark-app [style*="#f8fafc"],
+          .dark-app [style*="#f2f4f6"],
+          .dark-app [style*="#e8f3ff"],
+          .dark-app [style*="rgba(255,255,255"],
+          .dark-app [style*="rgba(255, 255, 255"] {
+            background: rgba(15,23,42,0.94) !important;
+            color: var(--text-main) !important;
+            border-color: var(--border) !important;
+          }
+
+          .dark-app [style*="#18181b"] {
+            color: var(--text-main) !important;
+          }
+
+          .dark-app [style*="#334155"],
+          .dark-app [style*="#0f172a"],
+          .dark-app [style*="#1e40af"],
+          .dark-app [style*="#1b64da"] {
+            color: var(--text-main) !important;
+          }
+
+          .dark-app [style*="#64748b"],
+          .dark-app [style*="#71717a"],
+          .dark-app [style*="#6b7684"] {
+            color: var(--text-sub) !important;
+          }
+
+          .dark-app .flight-ticket-main,
+          .dark-app .flight-ticket-stub,
+          .dark-app .flight-ticket-row div,
+          .dark-app .flight-status-panel-inner,
+          .dark-app .flight-side-card,
+          .dark-app .easy-flight-progress,
+          .dark-app .easy-flight-actions,
+          .dark-app .easy-flight-boarding-pass {
+            background: rgba(15,23,42,0.96) !important;
+            color: var(--text-main) !important;
+            border-color: rgba(96,165,250,0.34) !important;
+          }
+
+          .dark-app .flight-ticket-main span,
+          .dark-app .flight-ticket-main h2,
+          .dark-app .flight-ticket-main p,
+          .dark-app .flight-ticket-main small,
+          .dark-app .flight-ticket-main b,
+          .dark-app .flight-ticket-stub span,
+          .dark-app .flight-ticket-stub b,
+          .dark-app .flight-ticket-stub small,
+          .dark-app .flight-status-panel-inner span,
+          .dark-app .flight-status-panel-inner b,
+          .dark-app .flight-side-card span,
+          .dark-app .flight-side-card b,
+          .dark-app .flight-side-card small,
+          .dark-app .easy-flight-progress span,
+          .dark-app .easy-flight-progress b {
+            color: var(--text-main) !important;
+          }
+
+          .dark-app .flight-ticket-main p,
+          .dark-app .flight-ticket-main small,
+          .dark-app .flight-ticket-stub span,
+          .dark-app .flight-ticket-stub small,
+          .dark-app .flight-status-panel-inner span,
+          .dark-app .flight-side-card span,
+          .dark-app .flight-side-card small,
+          .dark-app .easy-flight-progress span {
+            color: var(--text-sub) !important;
+          }
+
+          .dark-app .flight-study-form button,
+          .dark-app .flight-action-only button,
+          .dark-app .flight-stop,
+          .dark-app button[disabled] {
+            color: #e5e7eb !important;
+          }
+
+          .dark-app input,
+          .dark-app select,
+          .dark-app textarea {
+            background: #1e293b !important;
+            color: #e5e7eb !important;
+            border-color: rgba(96,165,250,0.30) !important;
+          }
+
+          .dark-app input::placeholder,
+          .dark-app textarea::placeholder {
+            color: #94a3b8 !important;
+          }
+
+          /* Final patch: planner hero + flight map controls in dark mode */
+          .dark-app .planner-hero {
+            background: linear-gradient(135deg, rgba(30,41,59,0.96), rgba(15,23,42,0.98)) !important;
+            color: #e5e7eb !important;
+            border-color: rgba(96,165,250,0.32) !important;
+          }
+
+          .dark-app .planner-hero *,
+          .dark-app .planner-hero h2,
+          .dark-app .planner-hero h3,
+          .dark-app .planner-hero b,
+          .dark-app .planner-hero div {
+            color: #e5e7eb !important;
+          }
+
+          .dark-app .flight-pick-tabs,
+          .dark-app .flight-zoom-controls {
+            background: rgba(15,23,42,0.92) !important;
+            border: 1px solid rgba(96,165,250,0.30) !important;
+            color: #dbeafe !important;
+          }
+
+          .dark-app .flight-pick-tabs button,
+          .dark-app .flight-zoom-controls button,
+          .dark-app .flight-zoom-controls span {
+            background: rgba(30,41,59,0.92) !important;
+            color: #dbeafe !important;
+            border: 1px solid rgba(96,165,250,0.32) !important;
+            box-shadow: none !important;
+          }
+
+          .dark-app .flight-pick-tabs button.active,
+          .dark-app .flight-zoom-controls button:hover,
+          .dark-app .flight-pick-tabs button:hover {
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark)) !important;
+            color: #ffffff !important;
+            border-color: rgba(147,197,253,0.55) !important;
+          }
+
+          .dark-app .flight-pick-tabs button:disabled,
+          .dark-app .flight-zoom-controls button:disabled {
+            opacity: 0.55;
+            color: #94a3b8 !important;
+          }
+
+          /* Strong final dark-mode patch: no sharp flight controls, no eye-burning white blocks */
+          .flight-pick-tabs,
+          .flight-zoom-controls {
+            border-radius: 999px !important;
+            overflow: hidden !important;
+            clip-path: inset(0 round 999px);
+          }
+
+          .flight-pick-tabs button,
+          .flight-zoom-controls button,
+          .flight-zoom-controls span {
+            border-radius: 999px !important;
+          }
+
+          .dark-app .flight-pick-tabs,
+          .dark-app .flight-zoom-controls {
+            background: rgba(15,23,42,0.96) !important;
+            border: 1px solid rgba(96,165,250,0.34) !important;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.035) !important;
+          }
+
+          .dark-app .flight-pick-tabs button,
+          .dark-app .flight-zoom-controls button,
+          .dark-app .flight-zoom-controls span {
+            background: rgba(30,41,59,0.94) !important;
+            color: #dbeafe !important;
+            border: 1px solid rgba(96,165,250,0.28) !important;
+          }
+
+          .dark-app .flight-pick-tabs button.active {
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark)) !important;
+            color: #ffffff !important;
+          }
+
+          .dark-app .flight-pick-tabs button:disabled,
+          .dark-app .flight-zoom-controls button:disabled {
+            background: rgba(15,23,42,0.78) !important;
+            color: #64748b !important;
+            border-color: rgba(71,85,105,0.65) !important;
+          }
+
+          /*
+            Broad dark-mode safety net.
+            Some cards still use inline light backgrounds, so this catches the remaining
+            white-ish values without affecting light mode.
+          */
+          .dark-app [style*="background: white"],
+          .dark-app [style*="background:white"],
+          .dark-app [style*=": white"],
+          .dark-app [style*="rgb(255, 255, 255)"],
+          .dark-app [style*="rgba(255,255,255"],
+          .dark-app [style*="rgba(255, 255, 255"],
+          .dark-app [style*="#ffffff"],
+          .dark-app [style*="#fff"],
+          .dark-app [style*="#fbfcfd"],
+          .dark-app [style*="#f9fafb"],
+          .dark-app [style*="#f8fafc"],
+          .dark-app [style*="#f8fbff"],
+          .dark-app [style*="#f7f8fa"],
+          .dark-app [style*="#f2f4f6"],
+          .dark-app [style*="#eff6ff"],
+          .dark-app [style*="#edf4ff"],
+          .dark-app [style*="#e4e4e7"],
+          .dark-app [style*="#e5e7eb"],
+          .dark-app [style*="#e5e8eb"],
+          .dark-app [style*="#eef1f4"] {
+            background: rgba(15,23,42,0.94) !important;
+            color: var(--text-main) !important;
+            border-color: var(--border) !important;
+          }
+
+          .dark-app [style*="linear-gradient(135deg, #ffffff"],
+          .dark-app [style*="linear-gradient(180deg, #ffffff"],
+          .dark-app [style*="linear-gradient(135deg, var(--accent-soft)"],
+          .dark-app [style*="linear-gradient(180deg, var(--accent-soft)"] {
+            background: linear-gradient(135deg, rgba(30,41,59,0.96), rgba(15,23,42,0.98)) !important;
+            color: var(--text-main) !important;
+            border-color: rgba(96,165,250,0.28) !important;
+          }
+
+          .dark-app [style*="color: #0f172a"],
+          .dark-app [style*="color:#0f172a"],
+          .dark-app [style*="color: #18181b"],
+          .dark-app [style*="color:#18181b"],
+          .dark-app [style*="color: #191f28"],
+          .dark-app [style*="color:#191f28"],
+          .dark-app [style*="color: #334155"],
+          .dark-app [style*="color:#334155"],
+          .dark-app [style*="color: #1e40af"],
+          .dark-app [style*="color:#1e40af"],
+          .dark-app [style*="color: #1b64da"],
+          .dark-app [style*="color:#1b64da"] {
+            color: var(--text-main) !important;
+          }
+
+          .dark-app [style*="color: #64748b"],
+          .dark-app [style*="color:#64748b"],
+          .dark-app [style*="color: #71717a"],
+          .dark-app [style*="color:#71717a"],
+          .dark-app [style*="color: #6b7684"],
+          .dark-app [style*="color:#6b7684"],
+          .dark-app [style*="color: #8b95a1"],
+          .dark-app [style*="color:#8b95a1"] {
+            color: var(--text-sub) !important;
+          }
+
+          .dark-app input,
+          .dark-app select,
+          .dark-app textarea {
+            background: #1e293b !important;
+            color: #e5e7eb !important;
+            border-color: rgba(96,165,250,0.30) !important;
+          }
+
+          .dark-app option {
+            background: #111827 !important;
+            color: #e5e7eb !important;
+          }
+
+          .dark-app button {
+            border-radius: 16px;
+          }
+
+          /* World route map rounded-container patch */
+          .flight-dashboard-card,
+          .flight-dashboard-grid,
+          .flight-dashboard-grid > div,
+          .flight-panel-head,
+          .flight-map-tools,
+          .flight-pick-tabs,
+          .flight-zoom-controls {
+            border-radius: 24px !important;
+          }
+
+          .flight-panel-head {
+            overflow: hidden !important;
+            padding: 10px 12px;
+            border: 1px solid rgba(191,219,254,0.70);
+            background: rgba(239,246,255,0.70);
+          }
+
+          .flight-map-tools {
+            overflow: hidden !important;
+          }
+
+          .flight-pick-tabs,
+          .flight-zoom-controls {
+            border-radius: 999px !important;
+            overflow: hidden !important;
+            clip-path: inset(0 round 999px);
+          }
+
+          .flight-pick-tabs button,
+          .flight-zoom-controls button,
+          .flight-zoom-controls span {
+            border-radius: 999px !important;
+          }
+
+          .dark-app .flight-panel-head,
+          .dark-app .flight-map-tools {
+            background: rgba(15,23,42,0.92) !important;
+            border-color: rgba(96,165,250,0.30) !important;
+            color: var(--text-main) !important;
+          }
+
+          .dark-app .flight-pick-tabs,
+          .dark-app .flight-zoom-controls {
+            background: rgba(15,23,42,0.96) !important;
+            border-color: rgba(96,165,250,0.34) !important;
+            color: #dbeafe !important;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.035) !important;
+          }
+
+          .dark-app .flight-pick-tabs button,
+          .dark-app .flight-zoom-controls button,
+          .dark-app .flight-zoom-controls span {
+            background: rgba(30,41,59,0.94) !important;
+            color: #dbeafe !important;
+            border: 1px solid rgba(96,165,250,0.28) !important;
+            box-shadow: none !important;
+          }
+
+          .dark-app .flight-pick-tabs button.active,
+          .dark-app .flight-pick-tabs button:hover,
+          .dark-app .flight-zoom-controls button:hover {
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark)) !important;
+            color: #ffffff !important;
+            border-color: rgba(147,197,253,0.55) !important;
+          }
+
+          /* Weather dark patch */
+          .dark-app .weather-card,
+          .dark-app [data-card-id="weather"],
+          .dark-app [style*="현재 위치 기준 7일 예보"],
+          .dark-app [style*="위치 권한을 허용"],
+          .dark-app [style*="날씨를 불러오지"] {
+            background: rgba(15,23,42,0.94) !important;
+            color: var(--text-main) !important;
+            border-color: rgba(96,165,250,0.28) !important;
+          }
+
+          /* General final dark safety net for remaining light chips/cards */
+          .dark-app [style*="background: white"],
+          .dark-app [style*="background:white"],
+          .dark-app [style*="rgb(255, 255, 255)"],
+          .dark-app [style*="rgba(255,255,255"],
+          .dark-app [style*="rgba(255, 255, 255"],
+          .dark-app [style*="#ffffff"],
+          .dark-app [style*="#fff"],
+          .dark-app [style*="#fbfcfd"],
+          .dark-app [style*="#f9fafb"],
+          .dark-app [style*="#f8fafc"],
+          .dark-app [style*="#f8fbff"],
+          .dark-app [style*="#f7f8fa"],
+          .dark-app [style*="#f2f4f6"],
+          .dark-app [style*="#eff6ff"],
+          .dark-app [style*="#edf4ff"],
+          .dark-app [style*="#e8f3ff"] {
+            background: rgba(15,23,42,0.94) !important;
+            color: var(--text-main) !important;
+            border-color: var(--border) !important;
+          }
+
+          .dark-app [style*="color: #0f172a"],
+          .dark-app [style*="color:#0f172a"],
+          .dark-app [style*="color: #18181b"],
+          .dark-app [style*="color:#18181b"],
+          .dark-app [style*="color: #191f28"],
+          .dark-app [style*="color:#191f28"],
+          .dark-app [style*="color: #334155"],
+          .dark-app [style*="color:#334155"],
+          .dark-app [style*="color: #1e40af"],
+          .dark-app [style*="color:#1e40af"],
+          .dark-app [style*="color: #1b64da"],
+          .dark-app [style*="color:#1b64da"] {
+            color: var(--text-main) !important;
+          }
+
+          .easy-bottom-nav {
+            overflow: hidden;
+          }
+
+          .dark-app .easy-bottom-nav {
+            background: rgba(15,23,42,0.96) !important;
+            border-color: rgba(96,165,250,0.30) !important;
+          }
+
+          .dark-app .easy-bottom-nav button {
+            background: rgba(30,41,59,0.58) !important;
+            color: var(--text-sub) !important;
+            border-color: rgba(96,165,250,0.16) !important;
+          }
+
+          .dark-app .easy-bottom-nav button:hover {
+            background: rgba(30,41,59,0.82) !important;
+          }
+
+          /* Requested dark action buttons */
+          .dark-app .danger-action-button {
+            background: rgba(127,29,29,0.34) !important;
+            color: #fecaca !important;
+            border-color: rgba(248,113,113,0.45) !important;
+          }
+
+          .dark-app .boarding-action-button {
+            background: linear-gradient(135deg, #2563eb, #0ea5e9) !important;
+            color: #ffffff !important;
+            border-color: rgba(147,197,253,0.62) !important;
+            box-shadow: 0 12px 28px rgba(37,99,235,0.28) !important;
+          }
+
+          .dark-app .landing-action-button,
+          .dark-app .flight-stop {
+            background: linear-gradient(135deg, #7f1d1d, #991b1b) !important;
+            color: #fee2e2 !important;
+            border-color: rgba(248,113,113,0.48) !important;
+            box-shadow: 0 12px 28px rgba(127,29,29,0.28) !important;
+          }
+
+          /* Dark mode world map recolor */
+          .dark-app .flight-map-viewport {
+            background:
+              radial-gradient(circle at 20% 10%, rgba(37,99,235,0.20), transparent 30%),
+              linear-gradient(135deg, #020617 0%, #0f172a 55%, #111827 100%) !important;
+            border-color: rgba(96,165,250,0.34) !important;
+          }
+
+          .dark-app .flight-map {
+            background:
+              radial-gradient(circle at 50% 45%, rgba(14,165,233,0.18), transparent 36%),
+              linear-gradient(135deg, #07111f 0%, #0f172a 100%) !important;
+          }
+
+          .dark-app .flight-map-grid {
+            background:
+              linear-gradient(rgba(96,165,250,0.09) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(96,165,250,0.09) 1px, transparent 1px),
+              radial-gradient(circle at 50% 48%, rgba(37,99,235,0.22), transparent 42%) !important;
+            background-size: 48px 48px, 48px 48px, auto !important;
+          }
+
+          .dark-app .flight-route-line {
+            stroke: #38bdf8 !important;
+            filter:
+              drop-shadow(0 0 8px rgba(56,189,248,0.75))
+              drop-shadow(0 8px 10px rgba(14,165,233,0.22)) !important;
+          }
+
+          .dark-app .flight-country {
+            background: rgba(15,23,42,0.90) !important;
+            color: #bae6fd !important;
+            border-color: rgba(56,189,248,0.55) !important;
+            box-shadow: 0 0 0 1px rgba(14,165,233,0.08), 0 8px 18px rgba(0,0,0,0.30) !important;
+          }
+
+          .dark-app .flight-country.selected {
+            background: linear-gradient(135deg, #0891b2, #2563eb) !important;
+            color: #ffffff !important;
+            border-color: rgba(186,230,253,0.72) !important;
+            box-shadow: 0 0 20px rgba(56,189,248,0.38), 0 10px 24px rgba(37,99,235,0.36) !important;
+          }
+
+          .dark-app .flight-country::after {
+            color: #bae6fd !important;
+            text-shadow: 0 0 10px rgba(56,189,248,0.40);
+          }
+
+          /* Visual timetable like the reference image */
+          .visual-timetable-wrap {
+            margin-top: 10px;
+            overflow: auto;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            background: var(--card-bg-solid);
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.35);
+          }
+
+          .visual-timetable {
+            position: relative;
+            min-width: 270px;
+            background:
+              linear-gradient(to bottom, var(--border) 1px, transparent 1px),
+              linear-gradient(to right, transparent 0 64px, var(--border) 64px 65px, transparent 65px),
+              linear-gradient(to right, transparent 0, transparent 20%, rgba(148,163,184,0.22) 20% calc(20% + 1px), transparent calc(20% + 1px)),
+              linear-gradient(to right, transparent 0, transparent 40%, rgba(148,163,184,0.22) 40% calc(40% + 1px), transparent calc(40% + 1px)),
+              linear-gradient(to right, transparent 0, transparent 60%, rgba(148,163,184,0.22) 60% calc(60% + 1px), transparent calc(60% + 1px)),
+              linear-gradient(to right, transparent 0, transparent 80%, rgba(148,163,184,0.22) 80% calc(80% + 1px), transparent calc(80% + 1px));
+            background-size:
+              100% var(--tt-row-height),
+              100% 100%,
+              100% 100%,
+              100% 100%,
+              100% 100%,
+              100% 100%;
+          }
+
+          .visual-timetable-labels {
+            position: absolute;
+            inset: 0 auto 0 0;
+            width: 64px;
+            z-index: 2;
+            border-right: 1px solid var(--border);
+            background: color-mix(in srgb, var(--card-bg-solid) 82%, transparent);
+          }
+
+          .visual-timetable-hour {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-mid);
+            font-size: 12px;
+            font-weight: 850;
+            border-bottom: 1px solid var(--border);
+          }
+
+          .visual-timetable-grid {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+          }
+
+          .visual-timetable-block {
+            position: absolute;
+            z-index: 3;
+            border: 1px solid;
+            border-radius: 999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 10px;
+            min-width: 92px;
+            box-sizing: border-box;
+            font-size: 12px;
+            font-weight: 900;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            box-shadow: 0 8px 16px rgba(15,23,42,0.08);
+            backdrop-filter: blur(8px);
+          }
+
+          .visual-timetable-block span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          .dark-app .visual-timetable-wrap {
+            background: rgba(15,23,42,0.94) !important;
+            border-color: rgba(96,165,250,0.30) !important;
+            box-shadow: inset 0 0 0 1px rgba(96,165,250,0.08) !important;
+          }
+
+          .dark-app .visual-timetable {
+            background:
+              linear-gradient(to bottom, rgba(96,165,250,0.22) 1px, transparent 1px),
+              linear-gradient(to right, transparent 0 64px, rgba(96,165,250,0.26) 64px 65px, transparent 65px),
+              linear-gradient(to right, transparent 0, transparent 20%, rgba(96,165,250,0.13) 20% calc(20% + 1px), transparent calc(20% + 1px)),
+              linear-gradient(to right, transparent 0, transparent 40%, rgba(96,165,250,0.13) 40% calc(40% + 1px), transparent calc(40% + 1px)),
+              linear-gradient(to right, transparent 0, transparent 60%, rgba(96,165,250,0.13) 60% calc(60% + 1px), transparent calc(60% + 1px)),
+              linear-gradient(to right, transparent 0, transparent 80%, rgba(96,165,250,0.13) 80% calc(80% + 1px), transparent calc(80% + 1px)),
+              linear-gradient(135deg, rgba(15,23,42,0.94), rgba(17,24,39,0.96)) !important;
+            background-size:
+              100% var(--tt-row-height),
+              100% 100%,
+              100% 100%,
+              100% 100%,
+              100% 100%,
+              100% 100%,
+              100% 100% !important;
+          }
+
+          .dark-app .visual-timetable-labels {
+            background: rgba(15,23,42,0.88) !important;
+            border-color: rgba(96,165,250,0.28) !important;
+          }
+
+          .dark-app .visual-timetable-hour {
+            border-color: rgba(96,165,250,0.22) !important;
+            color: #cbd5e1 !important;
+          }
+
+          .dark-app .visual-timetable-block {
+            box-shadow: 0 10px 20px rgba(0,0,0,0.24);
+          }
+
+          /* 10-minute timetable patch: one hour row = 6 cells */
+          .visual-timetable.ten-minute-table {
+            min-width: 310px;
+            background:
+              linear-gradient(to bottom, var(--border) 1px, transparent 1px),
+              linear-gradient(to right, transparent 0 var(--tt-label-width), var(--border) var(--tt-label-width) calc(var(--tt-label-width) + 1px), transparent calc(var(--tt-label-width) + 1px)),
+              repeating-linear-gradient(
+                to right,
+                transparent 0,
+                transparent calc((100% - var(--tt-label-width)) / 6 - 1px),
+                rgba(148,163,184,0.28) calc((100% - var(--tt-label-width)) / 6 - 1px),
+                rgba(148,163,184,0.28) calc((100% - var(--tt-label-width)) / 6)
+              ) !important;
+            background-size:
+              100% var(--tt-row-height),
+              100% 100%,
+              calc(100% - var(--tt-label-width)) 100% !important;
+            background-position:
+              0 0,
+              0 0,
+              var(--tt-label-width) 0 !important;
+          }
+
+          .visual-timetable.ten-minute-table .visual-timetable-labels {
+            width: var(--tt-label-width) !important;
+          }
+
+          .visual-timetable.ten-minute-table .visual-timetable-block {
+            justify-content: center;
+            min-width: 0;
+          }
+
+          .visual-timetable.ten-minute-table .ten-minute-block {
+            border-radius: 999px;
+          }
+
+          .dark-app .visual-timetable.ten-minute-table {
+            background:
+              linear-gradient(to bottom, rgba(96,165,250,0.24) 1px, transparent 1px),
+              linear-gradient(to right, transparent 0 var(--tt-label-width), rgba(96,165,250,0.28) var(--tt-label-width) calc(var(--tt-label-width) + 1px), transparent calc(var(--tt-label-width) + 1px)),
+              repeating-linear-gradient(
+                to right,
+                transparent 0,
+                transparent calc((100% - var(--tt-label-width)) / 6 - 1px),
+                rgba(96,165,250,0.16) calc((100% - var(--tt-label-width)) / 6 - 1px),
+                rgba(96,165,250,0.16) calc((100% - var(--tt-label-width)) / 6)
+              ),
+              linear-gradient(135deg, rgba(15,23,42,0.94), rgba(17,24,39,0.96)) !important;
+            background-size:
+              100% var(--tt-row-height),
+              100% 100%,
+              calc(100% - var(--tt-label-width)) 100%,
+              100% 100% !important;
+            background-position:
+              0 0,
+              0 0,
+              var(--tt-label-width) 0,
+              0 0 !important;
+          }
+
+          /* Final 10-minute highlighter timetable: one row = 6 cells, one cell = 10 minutes */
+          .visual-timetable.ten-minute-table {
+            min-width: 300px;
+            background:
+              linear-gradient(to bottom, var(--border) 1px, transparent 1px),
+              linear-gradient(to right, transparent 0 var(--tt-label-width), var(--border) var(--tt-label-width) calc(var(--tt-label-width) + 1px), transparent calc(var(--tt-label-width) + 1px)),
+              repeating-linear-gradient(
+                to right,
+                transparent 0,
+                transparent calc((100% - var(--tt-label-width)) / 6 - 1px),
+                rgba(148,163,184,0.30) calc((100% - var(--tt-label-width)) / 6 - 1px),
+                rgba(148,163,184,0.30) calc((100% - var(--tt-label-width)) / 6)
+              ) !important;
+            background-size:
+              100% var(--tt-row-height),
+              100% 100%,
+              calc(100% - var(--tt-label-width)) 100% !important;
+            background-position:
+              0 0,
+              0 0,
+              var(--tt-label-width) 0 !important;
+          }
+
+          .visual-timetable.ten-minute-table .visual-timetable-labels {
+            width: var(--tt-label-width) !important;
+          }
+
+          .visual-timetable.ten-minute-table .visual-timetable-block {
+            min-width: 0 !important;
+            padding: 0 !important;
+            border-radius: 999px !important;
+            border-width: 0 !important;
+            opacity: 0.72;
+            box-shadow: none !important;
+            backdrop-filter: blur(2px);
+            pointer-events: auto;
+          }
+
+          .visual-timetable.ten-minute-table .visual-timetable-block::before {
+            content: "";
+            position: absolute;
+            inset: 2px 0;
+            border-radius: inherit;
+            background: inherit;
+            filter: blur(0.2px);
+          }
+
+          .visual-timetable.ten-minute-table .visual-timetable-block span {
+            display: none !important;
+          }
+
+          .dark-app .visual-timetable.ten-minute-table {
+            background:
+              linear-gradient(to bottom, rgba(96,165,250,0.24) 1px, transparent 1px),
+              linear-gradient(to right, transparent 0 var(--tt-label-width), rgba(96,165,250,0.28) var(--tt-label-width) calc(var(--tt-label-width) + 1px), transparent calc(var(--tt-label-width) + 1px)),
+              repeating-linear-gradient(
+                to right,
+                transparent 0,
+                transparent calc((100% - var(--tt-label-width)) / 6 - 1px),
+                rgba(96,165,250,0.16) calc((100% - var(--tt-label-width)) / 6 - 1px),
+                rgba(96,165,250,0.16) calc((100% - var(--tt-label-width)) / 6)
+              ),
+              linear-gradient(135deg, rgba(15,23,42,0.94), rgba(17,24,39,0.96)) !important;
+            background-size:
+              100% var(--tt-row-height),
+              100% 100%,
+              calc(100% - var(--tt-label-width)) 100%,
+              100% 100% !important;
+            background-position:
+              0 0,
+              0 0,
+              var(--tt-label-width) 0,
+              0 0 !important;
+          }
+
+          /* Cell-sized highlighter fix: each row has exactly 6 cells, blocks wrap by hour row */
+          .visual-timetable.ten-minute-table {
+            min-width: 300px;
+            background:
+              linear-gradient(to bottom, var(--border) 1px, transparent 1px),
+              linear-gradient(to right, transparent 0 var(--tt-label-width), var(--border) var(--tt-label-width) calc(var(--tt-label-width) + 1px), transparent calc(var(--tt-label-width) + 1px)),
+              repeating-linear-gradient(
+                to right,
+                transparent 0,
+                transparent calc((100% - var(--tt-label-width)) / 6 - 1px),
+                rgba(148,163,184,0.30) calc((100% - var(--tt-label-width)) / 6 - 1px),
+                rgba(148,163,184,0.30) calc((100% - var(--tt-label-width)) / 6)
+              ) !important;
+            background-size:
+              100% var(--tt-row-height),
+              100% 100%,
+              calc(100% - var(--tt-label-width)) 100% !important;
+            background-position:
+              0 0,
+              0 0,
+              var(--tt-label-width) 0 !important;
+          }
+
+          .visual-timetable.ten-minute-table .visual-timetable-block {
+            min-width: 0 !important;
+            max-width: none !important;
+            padding: 0 !important;
+            border-width: 0 !important;
+            border-radius: 999px !important;
+            opacity: 0.72;
+            box-shadow: none !important;
+            overflow: hidden;
+            pointer-events: auto;
+          }
+
+          .visual-timetable.ten-minute-table .visual-timetable-block span {
+            display: none !important;
+          }
+
+          .visual-timetable.ten-minute-table .visual-timetable-block::after {
+            content: "";
+            position: absolute;
+            inset: 2px 0;
+            border-radius: inherit;
+            background: inherit;
+            opacity: 0.84;
+            filter: blur(0.15px);
+          }
+
+          .dark-app .visual-timetable.ten-minute-table {
+            background:
+              linear-gradient(to bottom, rgba(96,165,250,0.24) 1px, transparent 1px),
+              linear-gradient(to right, transparent 0 var(--tt-label-width), rgba(96,165,250,0.28) var(--tt-label-width) calc(var(--tt-label-width) + 1px), transparent calc(var(--tt-label-width) + 1px)),
+              repeating-linear-gradient(
+                to right,
+                transparent 0,
+                transparent calc((100% - var(--tt-label-width)) / 6 - 1px),
+                rgba(96,165,250,0.16) calc((100% - var(--tt-label-width)) / 6 - 1px),
+                rgba(96,165,250,0.16) calc((100% - var(--tt-label-width)) / 6)
+              ),
+              linear-gradient(135deg, rgba(15,23,42,0.94), rgba(17,24,39,0.96)) !important;
+            background-size:
+              100% var(--tt-row-height),
+              100% 100%,
+              calc(100% - var(--tt-label-width)) 100%,
+              100% 100% !important;
+            background-position:
+              0 0,
+              0 0,
+              var(--tt-label-width) 0,
+              0 0 !important;
+          }
+
+          /* Final fix: 시간 표시는 칸으로 세지 않게 분리하고, 실제 칸은 가로 6칸만 보이게 함 */
+          .visual-timetable.ten-minute-table {
+            min-width: 300px;
+            background:
+              linear-gradient(to bottom, var(--border) 1px, transparent 1px),
+              repeating-linear-gradient(
+                to right,
+                transparent 0,
+                transparent calc((100% - var(--tt-label-width)) / 6 - 1px),
+                rgba(148,163,184,0.34) calc((100% - var(--tt-label-width)) / 6 - 1px),
+                rgba(148,163,184,0.34) calc((100% - var(--tt-label-width)) / 6)
+              ) !important;
+            background-size:
+              calc(100% - var(--tt-label-width)) var(--tt-row-height),
+              calc(100% - var(--tt-label-width)) 100% !important;
+            background-position:
+              var(--tt-label-width) 0,
+              var(--tt-label-width) 0 !important;
+            background-repeat: repeat, repeat !important;
+          }
+
+          .visual-timetable.ten-minute-table .visual-timetable-labels {
+            background: transparent !important;
+            border-right: 0 !important;
+            box-shadow: none !important;
+          }
+
+          .visual-timetable.ten-minute-table .visual-timetable-hour {
+            border-bottom: 0 !important;
+            justify-content: flex-end;
+            padding-right: 10px;
+            box-sizing: border-box;
+          }
+
+          .visual-timetable.ten-minute-table .visual-timetable-block {
+            min-width: 0 !important;
+            padding: 0 !important;
+            border-width: 0 !important;
+            border-radius: 999px !important;
+            opacity: 0.72;
+            box-shadow: none !important;
+            overflow: hidden;
+          }
+
+          .visual-timetable.ten-minute-table .visual-timetable-block span {
+            display: none !important;
+          }
+
+          .dark-app .visual-timetable.ten-minute-table {
+            background:
+              linear-gradient(to bottom, rgba(96,165,250,0.24) 1px, transparent 1px),
+              repeating-linear-gradient(
+                to right,
+                transparent 0,
+                transparent calc((100% - var(--tt-label-width)) / 6 - 1px),
+                rgba(96,165,250,0.17) calc((100% - var(--tt-label-width)) / 6 - 1px),
+                rgba(96,165,250,0.17) calc((100% - var(--tt-label-width)) / 6)
+              ),
+              linear-gradient(135deg, rgba(15,23,42,0.94), rgba(17,24,39,0.96)) !important;
+            background-size:
+              calc(100% - var(--tt-label-width)) var(--tt-row-height),
+              calc(100% - var(--tt-label-width)) 100%,
+              100% 100% !important;
+            background-position:
+              var(--tt-label-width) 0,
+              var(--tt-label-width) 0,
+              0 0 !important;
+            background-repeat: repeat, repeat, no-repeat !important;
+          }
+
+          /* Absolute final timetable: real DOM grid = label + exactly six 10-minute cells */
+          .cell-timetable-wrap {
+            margin-top: 10px;
+            overflow: auto;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            background: var(--card-bg-solid);
+          }
+
+          .cell-timetable {
+            min-width: 300px;
+            display: grid;
+            grid-template-rows: repeat(24, var(--tt-row-height));
+            background: var(--card-bg-solid);
+          }
+
+          .cell-timetable-row {
+            display: grid;
+            grid-template-columns: var(--tt-label-width) repeat(6, minmax(0, 1fr));
+            border-bottom: 1px solid var(--border);
+          }
+
+          .cell-timetable-row:last-child {
+            border-bottom: 0;
+          }
+
+          .cell-timetable-hour {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
+            box-sizing: border-box;
+            color: var(--text-mid);
+            font-size: 12px;
+            font-weight: 850;
+            background: transparent;
+          }
+
+          .cell-timetable-cell {
+            position: relative;
+            min-width: 0;
+            border-left: 1px solid rgba(148,163,184,0.32);
+            background: transparent;
+            overflow: hidden;
+          }
+
+          .cell-timetable-fill {
+            position: absolute;
+            top: 50%;
+            height: 14px;
+            transform: translateY(-50%);
+            border-radius: 999px;
+            border: 0;
+            opacity: 0.72;
+            box-shadow: none;
+            filter: saturate(1.15);
+          }
+
+          .cell-timetable-fill::after {
+            content: "";
+            position: absolute;
+            inset: 2px 0;
+            border-radius: inherit;
+            background: inherit;
+            opacity: 0.75;
+            filter: blur(0.2px);
+          }
+
+          /* 기존 absolute timetable CSS가 남아 있어도 이 새 격자에는 영향을 주지 않게 차단 */
+          .cell-timetable .visual-timetable-block,
+          .cell-timetable .ten-minute-block {
+            display: none !important;
+          }
+
+          .dark-app .cell-timetable-wrap {
+            background: rgba(15,23,42,0.94) !important;
+            border-color: rgba(96,165,250,0.30) !important;
+          }
+
+          .dark-app .cell-timetable {
+            background: linear-gradient(135deg, rgba(15,23,42,0.94), rgba(17,24,39,0.96)) !important;
+          }
+
+          .dark-app .cell-timetable-row {
+            border-bottom-color: rgba(96,165,250,0.24) !important;
+          }
+
+          .dark-app .cell-timetable-cell {
+            border-left-color: rgba(96,165,250,0.18) !important;
+          }
+
+          .dark-app .cell-timetable-hour {
+            color: #cbd5e1 !important;
+          }
+
+          /* Empty timetable cells must stay unfilled. Only actual study/meal <i> bars get color. */
+          .cell-timetable-cell {
+            background: transparent !important;
+          }
+
+          .cell-timetable-fill {
+            display: block !important;
+          }
+
+          .cell-timetable-cell:empty::before {
+            content: none !important;
+            display: none !important;
+          }
+
+          /* Fill each 10-minute cell vertically */
+          .cell-timetable-fill {
+            top: 0 !important;
+            bottom: 0 !important;
+            height: 100% !important;
+            transform: none !important;
+            border-radius: 0 !important;
+            opacity: 0.68;
+          }
+
+          .cell-timetable-fill::after {
+            inset: 0 !important;
+            border-radius: 0 !important;
+          }
+
+          .cell-timetable-cell {
+            overflow: hidden;
+          }
+
+          .task-color-picker {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            margin-top: 6px;
+            flex-wrap: wrap;
+          }
+
+          .task-color-dot {
+            appearance: none;
+            border: 2px solid transparent;
+            border-radius: 999px;
+            padding: 0;
+            cursor: pointer;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.38);
+            transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+          }
+
+          .task-color-dot:hover {
+            transform: translateY(-1px) scale(1.06);
+          }
+
+          .task-color-dot.selected {
+            box-shadow:
+              0 0 0 2px rgba(37,99,235,0.18),
+              inset 0 0 0 1px rgba(255,255,255,0.55);
+            transform: scale(1.08);
+          }
+
+          .dark-app .task-color-dot.selected {
+            box-shadow:
+              0 0 0 2px rgba(147,197,253,0.20),
+              0 0 12px rgba(96,165,250,0.16),
+              inset 0 0 0 1px rgba(255,255,255,0.22);
+          }
+
+          /* More color choices + hide/show palette */
+          .task-color-picker {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 6px;
+            flex-wrap: wrap;
+          }
+
+          .task-color-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: var(--input-bg);
+            color: var(--text-main);
+            font-size: 10px;
+            font-weight: 900;
+            padding: 4px 7px;
+            cursor: pointer;
+          }
+
+          .task-color-toggle i {
+            width: 12px;
+            height: 12px;
+            border: 1px solid;
+            border-radius: 999px;
+            display: block;
+          }
+
+          .task-color-palette {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            flex-wrap: wrap;
+          }
+
+          .dark-app .task-color-toggle {
+            background: rgba(30,41,59,0.92) !important;
+            color: #dbeafe !important;
+            border-color: rgba(96,165,250,0.30) !important;
+          }
+
+          /* Dark mode uses the newly provided world map image */
+          .dark-app .flight-map,
+          .dark-app .flight-dashboard-card .flight-map {
+            background:
+              linear-gradient(rgba(2,6,23,0.08), rgba(2,6,23,0.10)),
+              url("/images/blue-world-map-dark.jpg") !important;
+            background-size: cover !important;
+            background-position: center !important;
+            background-color: #020617 !important;
+          }
+
+          .dark-app .flight-map-grid {
+            background:
+              radial-gradient(circle at 50% 50%, rgba(56,189,248,0.10), transparent 42%),
+              linear-gradient(rgba(56,189,248,0.04), rgba(37,99,235,0.06)) !important;
+          }
+
+          .dark-app .flight-country {
+            background: rgba(2,6,23,0.78) !important;
+            color: #bae6fd !important;
+            border-color: rgba(56,189,248,0.64) !important;
+            box-shadow: 0 0 0 1px rgba(56,189,248,0.12), 0 0 14px rgba(56,189,248,0.20) !important;
+          }
+
+          .dark-app .flight-country.selected {
+            background: linear-gradient(135deg, #0ea5e9, #2563eb) !important;
+            color: #ffffff !important;
+            border-color: rgba(186,230,253,0.86) !important;
+            box-shadow: 0 0 20px rgba(56,189,248,0.42), 0 10px 24px rgba(37,99,235,0.38) !important;
+          }
+
+          .dark-app .flight-dashboard-card.tracking-flight .flight-country.selected::after,
+          .dark-app .flight-country.selected::after {
+            background: rgba(2,6,23,0.88) !important;
+            color: #e0f2fe !important;
+            border: 1px solid rgba(56,189,248,0.60) !important;
+            box-shadow: 0 0 16px rgba(56,189,248,0.24) !important;
+            text-shadow: none !important;
+          }
+
+          .dark-app .flight-route-line {
+            stroke: #38bdf8 !important;
+            filter:
+              drop-shadow(0 0 8px rgba(56,189,248,0.90))
+              drop-shadow(0 8px 10px rgba(14,165,233,0.24)) !important;
+          }
+
+          .flight-mileage-panel {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 180px)) minmax(0, 1fr);
+            gap: 10px;
+            margin: 12px 0;
+          }
+
+          .flight-mileage-card,
+          .flight-passport-book,
+          .easy-flight-mileage-mini {
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            background: var(--card-bg-solid);
+            padding: 12px;
+            box-shadow: 0 10px 26px rgba(15,23,42,0.06);
+          }
+
+          .flight-mileage-card span,
+          .flight-passport-book span,
+          .easy-flight-mileage-mini span {
+            display: block;
+            color: var(--text-sub);
+            font-size: 11px;
+            font-weight: 900;
+          }
+
+          .flight-mileage-card b {
+            display: block;
+            font-size: 22px;
+            margin: 4px 0;
+          }
+
+          .flight-mileage-card small {
+            color: var(--text-sub);
+            font-size: 11px;
+          }
+
+          .flight-unlock-strip {
+            display: flex;
+            gap: 7px;
+            overflow-x: auto;
+            align-items: stretch;
+            padding: 2px;
+          }
+
+          .flight-unlock-strip button {
+            min-width: 70px;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            background: var(--input-bg);
+            color: var(--text-main);
+            font-weight: 900;
+            cursor: pointer;
+            padding: 8px;
+          }
+
+          .flight-unlock-strip button:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+          }
+
+          .flight-unlock-strip button b,
+          .flight-unlock-strip button span {
+            display: block;
+          }
+
+          .flight-passport-book {
+            margin-bottom: 12px;
+          }
+
+          .passport-stamp-list {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            margin-top: 10px;
+          }
+
+          .passport-stamp-list span {
+            min-width: 86px;
+            border: 1px dashed var(--accent);
+            border-radius: 16px;
+            padding: 8px;
+            color: var(--accent-text);
+            background: var(--accent-soft);
+            font-weight: 950;
+            text-align: center;
+          }
+
+          .passport-stamp-list small {
+            display: block;
+            color: var(--text-sub);
+            margin-top: 3px;
+          }
+
+          .flight-country.locked {
+            opacity: 0.58;
+            filter: grayscale(0.15);
+            border-style: dashed !important;
+          }
+
+          .flight-country.locked::after {
+            background: rgba(15,23,42,0.78) !important;
+            color: #fff !important;
+          }
+
+          .easy-flight-mileage-mini {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 10px;
+          }
+
+          .easy-flight-mileage-mini b {
+            font-size: 18px;
+          }
+
+          .arrival-reward-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 150;
+            background: rgba(2,6,23,0.58);
+            display: grid;
+            place-items: center;
+            padding: 18px;
+            backdrop-filter: blur(8px);
+          }
+
+          .arrival-reward-card {
+            width: min(520px, 100%);
+            position: relative;
+            border-radius: 30px;
+            padding: 24px;
+            background:
+              radial-gradient(circle at 12% 0%, rgba(56,189,248,0.18), transparent 34%),
+              linear-gradient(135deg, var(--card-bg-solid), var(--soft-bg));
+            border: 1px solid var(--border);
+            box-shadow: 0 28px 80px rgba(0,0,0,0.28);
+          }
+
+          .arrival-close {
+            position: absolute;
+            right: 14px;
+            top: 12px;
+            width: 34px;
+            height: 34px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: var(--input-bg);
+            color: var(--text-main);
+            font-size: 20px;
+            cursor: pointer;
+          }
+
+          .arrival-kicker {
+            color: var(--accent);
+            font-size: 12px;
+            letter-spacing: 2px;
+            font-weight: 950;
+          }
+
+          .arrival-reward-card h2 {
+            margin: 8px 0 6px;
+            font-size: 28px;
+          }
+
+          .arrival-reward-card p {
+            color: var(--text-sub);
+            line-height: 1.5;
+          }
+
+          .arrival-stamp {
+            margin: 16px 0;
+            border: 2px dashed var(--accent);
+            border-radius: 24px;
+            padding: 18px;
+            text-align: center;
+            background: var(--accent-soft);
+            transform: rotate(-1.5deg);
+          }
+
+          .arrival-stamp span,
+          .arrival-stamp small {
+            display: block;
+            color: var(--text-sub);
+            font-size: 11px;
+            font-weight: 900;
+          }
+
+          .arrival-stamp b {
+            display: block;
+            font-size: 28px;
+            margin: 5px 0;
+            color: var(--accent-text);
+          }
+
+          .arrival-reward-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+          }
+
+          .arrival-reward-grid div {
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 12px;
+          }
+
+          .arrival-reward-grid span {
+            display: block;
+            color: var(--text-sub);
+            font-size: 11px;
+            font-weight: 900;
+          }
+
+          .arrival-reward-grid b {
+            display: block;
+            margin-top: 4px;
+            font-size: 18px;
+          }
+
+          .dark-app .flight-mileage-card,
+          .dark-app .flight-passport-book,
+          .dark-app .easy-flight-mileage-mini,
+          .dark-app .arrival-reward-card {
+            background: rgba(15,23,42,0.94) !important;
+            border-color: rgba(96,165,250,0.30) !important;
+            color: var(--text-main) !important;
+          }
+
+          .dark-app .flight-unlock-strip button {
+            background: rgba(30,41,59,0.92) !important;
+            color: #dbeafe !important;
+            border-color: rgba(96,165,250,0.30) !important;
+          }
+
+          .dark-app .passport-stamp-list span,
+          .dark-app .arrival-stamp {
+            background: rgba(37,99,235,0.18) !important;
+            border-color: rgba(56,189,248,0.60) !important;
+            color: #dbeafe !important;
+          }
+
+          .dark-app .arrival-reward-grid div,
+          .dark-app .arrival-close {
+            background: rgba(30,41,59,0.92) !important;
+            border-color: rgba(96,165,250,0.30) !important;
+            color: #e5e7eb !important;
+          }
+
+          .passport-open-button,
+          .easy-flight-mileage-mini button {
+            margin-top: 8px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: var(--input-bg);
+            color: var(--text-main);
+            padding: 6px 10px;
+            font-weight: 900;
+            cursor: pointer;
+          }
+
+          .passport-stat-list {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            margin-top: 10px;
+            padding-bottom: 2px;
+          }
+
+          .passport-stat-list span {
+            min-width: 92px;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            background: var(--input-bg);
+            padding: 8px;
+            color: var(--text-main);
+            font-size: 11px;
+            font-weight: 850;
+          }
+
+          .passport-stat-list b,
+          .passport-stat-list small {
+            display: block;
+          }
+
+          .passport-stat-list small {
+            color: var(--accent);
+            margin-top: 3px;
+            font-weight: 950;
+          }
+
+          .passport-page-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 155;
+            background: rgba(2,6,23,0.62);
+            display: grid;
+            place-items: center;
+            padding: 18px;
+            backdrop-filter: blur(8px);
+          }
+
+          .passport-page-shell {
+            width: min(980px, 100%);
+            max-height: calc(100dvh - 36px);
+            overflow: hidden;
+            border-radius: 32px;
+            background:
+              radial-gradient(circle at 10% 0%, rgba(37,99,235,0.16), transparent 32%),
+              var(--card-bg-solid);
+            border: 1px solid var(--border);
+            box-shadow: 0 30px 90px rgba(0,0,0,0.30);
+            padding: 18px;
+          }
+
+          .passport-page-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 14px;
+          }
+
+          .passport-page-top span {
+            color: var(--accent);
+            letter-spacing: 2px;
+            font-size: 11px;
+            font-weight: 950;
+          }
+
+          .passport-page-top h2 {
+            margin: 4px 0 0;
+          }
+
+          .passport-page-top button {
+            width: 38px;
+            height: 38px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: var(--input-bg);
+            color: var(--text-main);
+            font-size: 22px;
+            cursor: pointer;
+          }
+
+          .passport-book-layout {
+            display: grid;
+            grid-template-columns: 48px 1fr 48px;
+            gap: 12px;
+            align-items: stretch;
+          }
+
+          .passport-page-nav {
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            background: var(--input-bg);
+            color: var(--text-main);
+            font-size: 34px;
+            cursor: pointer;
+          }
+
+          .passport-page-nav:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+          }
+
+          .passport-paper-page {
+            min-height: 520px;
+            border-radius: 28px;
+            padding: 24px;
+            background:
+              linear-gradient(90deg, rgba(15,23,42,0.05), transparent 12%, transparent 88%, rgba(15,23,42,0.05)),
+              #fffaf0;
+            border: 1px solid rgba(180,148,92,0.38);
+            box-shadow:
+              inset 20px 0 30px rgba(120,80,30,0.06),
+              inset -20px 0 30px rgba(120,80,30,0.04),
+              0 18px 44px rgba(15,23,42,0.16);
+            animation: passportPageFlip 360ms cubic-bezier(0.16, 1, 0.3, 1);
+            color: #1f2937;
+          }
+
+          @keyframes passportPageFlip {
+            from { transform: rotateY(-8deg) translateX(8px); opacity: 0.35; }
+            to { transform: rotateY(0) translateX(0); opacity: 1; }
+          }
+
+          .passport-cover-page {
+            min-height: 470px;
+            display: grid;
+            place-items: center;
+            text-align: center;
+            align-content: center;
+            gap: 12px;
+          }
+
+          .passport-emblem {
+            width: 104px;
+            height: 104px;
+            border-radius: 30px;
+            display: grid;
+            place-items: center;
+            background: #0f172a;
+            color: #dbeafe;
+            font-weight: 950;
+            letter-spacing: -2px;
+            box-shadow: 0 16px 34px rgba(15,23,42,0.22);
+          }
+
+          .passport-cover-page h3 {
+            font-size: 30px;
+            margin: 0;
+          }
+
+          .passport-cover-page p {
+            max-width: 420px;
+            margin: 0 auto;
+            color: #64748b;
+          }
+
+          .passport-cover-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            width: min(520px, 100%);
+            margin-top: 12px;
+          }
+
+          .passport-cover-stats div,
+          .passport-page-stamp {
+            border: 1px solid rgba(180,148,92,0.34);
+            border-radius: 22px;
+            background: rgba(255,255,255,0.46);
+            padding: 14px;
+          }
+
+          .passport-cover-stats span {
+            display: block;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 900;
+          }
+
+          .passport-cover-stats b {
+            display: block;
+            margin-top: 5px;
+            font-size: 22px;
+          }
+
+          .passport-page-label {
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 950;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+          }
+
+          .passport-page-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+          }
+
+          .passport-page-stamp {
+            min-height: 118px;
+            display: grid;
+            place-items: center;
+            text-align: center;
+            border: 2px dashed rgba(37,99,235,0.44);
+            color: #1e3a8a;
+            transform: rotate(-1deg);
+          }
+
+          .passport-page-stamp:nth-child(even) {
+            transform: rotate(1.2deg);
+            color: #7f1d1d;
+            border-color: rgba(220,38,38,0.38);
+          }
+
+          .passport-page-stamp span,
+          .passport-page-stamp small {
+            display: block;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 900;
+          }
+
+          .passport-page-stamp b {
+            font-size: 22px;
+          }
+
+          .passport-empty-page {
+            color: #64748b;
+          }
+
+          .passport-country-stats {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+          }
+
+          .passport-country-stats span {
+            border-radius: 999px;
+            background: rgba(15,23,42,0.06);
+            padding: 6px 10px;
+            font-size: 11px;
+            font-weight: 850;
+          }
+
+          .dev-flight-tools {
+            display: grid;
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(148,163,184,0.24);
+          }
+
+          .dev-flight-tools label {
+            display: grid;
+            gap: 4px;
+            font-size: 11px;
+            color: var(--text-sub);
+            font-weight: 900;
+          }
+
+          .dev-flight-tools input,
+          .dev-flight-tools select {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--input-bg);
+            color: var(--text-main);
+            padding: 8px;
+          }
+
+          .dev-stamp-row {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 6px;
+            align-items: center;
+          }
+
+          .dark-app .passport-page-shell,
+          .dark-app .passport-page-top button,
+          .dark-app .passport-page-nav,
+          .dark-app .passport-open-button,
+          .dark-app .easy-flight-mileage-mini button,
+          .dark-app .passport-stat-list span {
+            background: rgba(15,23,42,0.94) !important;
+            color: var(--text-main) !important;
+            border-color: rgba(96,165,250,0.30) !important;
+          }
+
+          .dark-app .passport-paper-page {
+            background:
+              linear-gradient(90deg, rgba(96,165,250,0.09), transparent 12%, transparent 88%, rgba(96,165,250,0.08)),
+              #111827 !important;
+            color: #e5e7eb !important;
+            border-color: rgba(96,165,250,0.30) !important;
+          }
+
+          .dark-app .passport-cover-page p,
+          .dark-app .passport-cover-stats span,
+          .dark-app .passport-page-label,
+          .dark-app .passport-page-stamp span,
+          .dark-app .passport-page-stamp small,
+          .dark-app .passport-empty-page {
+            color: #94a3b8 !important;
+          }
+
+          .dark-app .passport-cover-stats div,
+          .dark-app .passport-page-stamp {
+            background: rgba(30,41,59,0.78) !important;
+            border-color: rgba(96,165,250,0.30) !important;
+            color: #dbeafe !important;
+          }
+
+          .dark-app .passport-page-stamp:nth-child(even) {
+            color: #fecaca !important;
+            border-color: rgba(248,113,113,0.36) !important;
+          }
+
+          .dark-app .passport-country-stats span {
+            background: rgba(96,165,250,0.14) !important;
+            color: #dbeafe !important;
+          }
+
+          .top-mode-controls {
+            display: flex;
+            gap: 4px;
+            padding: 4px;
+            border-radius: 999px;
+            background: var(--input-bg);
+            border: 1px solid var(--border-soft);
+            flex: 0 0 auto;
+            align-items: center;
+            box-shadow: var(--accent-shadow) 0 8px 20px -18px;
+          }
+
+          .top-mode-button,
+          .top-appearance-button {
+            border: none;
+            height: 30px;
+            padding: 0 10px;
+            border-radius: 999px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 950;
+            background: transparent;
+            color: var(--text-main);
+            transition: background 260ms ease, color 220ms ease, box-shadow 260ms ease, transform 200ms ease;
+          }
+
+          .top-appearance-button {
+            background: var(--card-bg-solid);
+            border: 1px solid var(--border);
+            color: var(--text-mid);
+          }
+
+          .top-mode-button.active {
+            background: var(--accent);
+            color: white;
+            box-shadow: 0 8px 18px var(--accent-shadow);
+          }
+
+          .top-mode-button.flight.active {
+            background: linear-gradient(135deg, #2563eb, #0ea5e9);
+            color: white;
+            box-shadow: 0 8px 18px rgba(37,99,235,0.24);
+          }
+
+          .top-mode-button:hover,
+          .top-appearance-button:hover {
+            transform: translateY(-1px);
+          }
+
+          .flight-unlock-box {
+            min-width: 0;
+            display: grid;
+            gap: 8px;
+          }
+
+          .flight-unlock-box-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+          }
+
+          .flight-unlock-box-head span {
+            color: var(--text-sub);
+            font-size: 11px;
+            font-weight: 950;
+          }
+
+          .flight-unlock-box-head button {
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: var(--input-bg);
+            color: var(--text-main);
+            padding: 6px 9px;
+            font-size: 11px;
+            font-weight: 950;
+            cursor: pointer;
+          }
+
+          .all-unlocked-message {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 120px;
+            color: var(--text-sub);
+            font-size: 12px;
+            font-weight: 900;
+          }
+
+          .unlock-list-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 156;
+            background: rgba(2,6,23,0.62);
+            display: grid;
+            place-items: center;
+            padding: 18px;
+            backdrop-filter: blur(8px);
+          }
+
+          .unlock-list-modal {
+            width: min(860px, 100%);
+            max-height: calc(100dvh - 36px);
+            overflow: hidden;
+            border-radius: 30px;
+            background: var(--card-bg-solid);
+            border: 1px solid var(--border);
+            box-shadow: 0 30px 90px rgba(0,0,0,0.30);
+            padding: 18px;
+            display: grid;
+            gap: 14px;
+          }
+
+          .unlock-list-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: flex-start;
+          }
+
+          .unlock-list-head span {
+            color: var(--accent);
+            font-size: 11px;
+            font-weight: 950;
+            letter-spacing: 2px;
+          }
+
+          .unlock-list-head h2 {
+            margin: 4px 0 4px;
+          }
+
+          .unlock-list-head p {
+            margin: 0;
+            color: var(--text-sub);
+            font-size: 13px;
+          }
+
+          .unlock-list-head button {
+            width: 38px;
+            height: 38px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: var(--input-bg);
+            color: var(--text-main);
+            font-size: 22px;
+            cursor: pointer;
+          }
+
+          .unlock-list-grid {
+            overflow: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 10px;
+            padding-right: 4px;
+          }
+
+          .unlock-country-card,
+          .unlock-empty-card {
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            background: var(--input-bg);
+            padding: 12px;
+            display: grid;
+            gap: 8px;
+          }
+
+          .unlock-country-card b {
+            display: block;
+            font-size: 20px;
+          }
+
+          .unlock-country-card span,
+          .unlock-country-card small {
+            display: block;
+            color: var(--text-sub);
+            font-size: 12px;
+            font-weight: 850;
+          }
+
+          .unlock-country-card strong {
+            color: var(--accent);
+            font-size: 18px;
+          }
+
+          .unlock-country-card button {
+            border: 0;
+            border-radius: 14px;
+            padding: 9px 10px;
+            background: linear-gradient(135deg, #2563eb, #0ea5e9);
+            color: white;
+            font-weight: 950;
+            cursor: pointer;
+          }
+
+          .unlock-country-card button:disabled {
+            background: var(--soft-bg-2);
+            color: var(--text-sub);
+            cursor: not-allowed;
+          }
+
+          .dark-app .top-mode-controls,
+          .dark-app .unlock-list-modal,
+          .dark-app .unlock-country-card,
+          .dark-app .unlock-empty-card,
+          .dark-app .flight-unlock-box-head button {
+            background: rgba(15,23,42,0.94) !important;
+            border-color: rgba(96,165,250,0.30) !important;
+            color: var(--text-main) !important;
+          }
+
+          .dark-app .top-appearance-button {
+            background: rgba(30,41,59,0.92) !important;
+            color: #dbeafe !important;
+            border-color: rgba(96,165,250,0.30) !important;
+          }
+
+          /* Modal scroll lock: 자세히 보기 내부만 스크롤되고 홈 화면은 움직이지 않게 */
+          .unlock-list-overlay,
+          .passport-page-overlay,
+          .arrival-reward-overlay {
+            overscroll-behavior: none !important;
+            touch-action: none;
+          }
+
+          .unlock-list-modal,
+          .unlock-list-grid,
+          .passport-page-shell {
+            overscroll-behavior: contain !important;
+            touch-action: pan-y;
+          }
+
+          .unlock-list-grid {
+            max-height: min(62dvh, 560px);
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            -webkit-overflow-scrolling: touch;
+          }
+
+          .dev-flight-tools .dev-danger-button {
+            background: #dc2626 !important;
+            color: #ffffff !important;
+          }
+
+          .dev-flight-tools .dev-danger-button:disabled {
+            background: #94a3b8 !important;
+            cursor: not-allowed;
+            opacity: 0.65;
+          }
+
+          .dark-app .dev-flight-tools .dev-danger-button {
+            background: linear-gradient(135deg, #7f1d1d, #dc2626) !important;
+            color: #fee2e2 !important;
+            border: 1px solid rgba(248,113,113,0.35) !important;
+          }
+
         `}
       </style>
+
+      <button
+        type="button"
+        className="dev-time-toggle"
+        onClick={() => setDevPanelOpen((value) => !value)}
+        title="개발자 시간 테스트"
+      >
+        DEV
+      </button>
+
+      {devPanelOpen && (
+        <div className="dev-time-panel">
+          <div className="dev-time-head">
+            <div>
+              <b>Developer Time Test</b>
+              <span>비행기 진행 테스트용</span>
+            </div>
+            <button type="button" onClick={() => setDevPanelOpen(false)}>×</button>
+          </div>
+
+          {!devAuthed ? (
+            <div className="dev-time-login">
+              <input
+                type="password"
+                value={devPassword}
+                onChange={(e) => setDevPassword(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && devPassword === "iinnuutt") {
+                    setDevAuthed(true);
+                    setDevPassword("");
+                  }
+                }}
+                placeholder="개발자 비밀번호"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (devPassword === "iinnuutt") {
+                    setDevAuthed(true);
+                    setDevPassword("");
+                  } else {
+                    alert("비밀번호가 맞지 않습니다.");
+                  }
+                }}
+              >
+                로그인
+              </button>
+            </div>
+          ) : (
+            <div className="dev-time-controls">
+              <div className="dev-time-current">
+                <span>현재 추가 시간</span>
+                <b>
+                  {Math.floor(devTimeOffsetSec / 3600)}시간 {Math.floor((devTimeOffsetSec % 3600) / 60)}분
+                </b>
+              </div>
+
+              <div className="dev-time-grid">
+                <button type="button" onClick={() => setDevTimeOffsetSec((v) => v + 60)}>+1분</button>
+                <button type="button" onClick={() => setDevTimeOffsetSec((v) => v + 300)}>+5분</button>
+                <button type="button" onClick={() => setDevTimeOffsetSec((v) => v + 1800)}>+30분</button>
+                <button type="button" onClick={() => setDevTimeOffsetSec((v) => v + 3600)}>+1시간</button>
+                <button type="button" onClick={() => setDevTimeOffsetSec((v) => Math.max(0, v - 300))}>-5분</button>
+                <button type="button" onClick={() => setDevTimeOffsetSec(0)}>초기화</button>
+              </div>
+
+              <div className="dev-flight-tools">
+                <b>Flight Developer Tools</b>
+                <label>
+                  마일리지 추가
+                  <input
+                    type="number"
+                    value={devMileageAmount}
+                    onChange={(e) => setDevMileageAmount(e.target.value)}
+                    min="0"
+                  />
+                </label>
+                <button type="button" onClick={addDevFlightMiles}>마일리지 올리기</button>
+
+                <label>
+                  마일리지 삭제
+                  <input
+                    type="number"
+                    value={devMileageRemoveAmount}
+                    onChange={(e) => setDevMileageRemoveAmount(e.target.value)}
+                    min="0"
+                  />
+                </label>
+                <button type="button" className="dev-danger-button" onClick={removeDevFlightMiles}>마일리지 삭제</button>
+
+                <div className="dev-stamp-row">
+                  <select value={devStampFromCode} onChange={(e) => setDevStampFromCode(e.target.value)}>
+                    {FLIGHT_COUNTRIES.map((country) => (
+                      <option key={country.code} value={country.code}>{country.code} · {country.name}</option>
+                    ))}
+                  </select>
+                  <span>→</span>
+                  <select value={devStampToCode} onChange={(e) => setDevStampToCode(e.target.value)}>
+                    {FLIGHT_COUNTRIES.map((country) => (
+                      <option key={country.code} value={country.code}>{country.code} · {country.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <button type="button" onClick={addDevPassportStamp}>선택 국가 도장 찍기</button>
+
+                <label>
+                  스탬프 삭제
+                  <select
+                    value={devDeleteStampId || passportStamps[0]?.id || ""}
+                    onChange={(e) => setDevDeleteStampId(e.target.value)}
+                    disabled={!passportStamps.length}
+                  >
+                    {!passportStamps.length ? (
+                      <option value="">삭제할 스탬프 없음</option>
+                    ) : (
+                      passportStamps.map((stamp) => (
+                        <option key={stamp.id} value={stamp.id}>
+                          {stamp.date} · {stamp.fromCode} → {stamp.toCode}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  className="dev-danger-button"
+                  onClick={deleteDevPassportStamp}
+                  disabled={!passportStamps.length}
+                >
+                  선택 스탬프 삭제
+                </button>
+              </div>
+
+              <p>
+                이 기능은 Firebase 시간을 바꾸지 않고, 화면의 비행기 위치와 IN-FLIGHT STATUS 진행률만 빠르게 테스트합니다.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {flightFullscreenOpen && flightFeatureOpen && (
+        <div className="flight-fullscreen">
+          <div className="flight-fullscreen-top">
+            <div>
+              <div className="flight-kicker">FLIGHT FOCUS SCREEN</div>
+              <h2>비행기 집중 화면</h2>
+            </div>
+            <button type="button" onClick={() => setFlightFullscreenOpen(false)}>
+              전체화면 닫기
+            </button>
+          </div>
+          <div className="flight-fullscreen-grid">
+            <div className="flight-fullscreen-map">
+              {renderFlightModeUi()}
+            </div>
+            {renderFlightFullscreenSummary()}
+          </div>
+        </div>
+      )}
+
+      {unlockListOpen && (
+        <div
+          className="unlock-list-overlay"
+          onWheel={(event) => event.stopPropagation()}
+          onTouchMove={(event) => event.stopPropagation()}
+        >
+          <div
+            className="unlock-list-modal"
+            onWheel={(event) => event.stopPropagation()}
+            onTouchMove={(event) => event.stopPropagation()}
+          >
+            <div className="unlock-list-head">
+              <div>
+                <span>FLIGHT UNLOCK</span>
+                <h2>해금 가능한 모든 나라</h2>
+                <p>보유 마일리지 {flightMiles.toLocaleString()}M · 잠긴 나라는 마일리지로 여행을 열 수 있어요.</p>
+              </div>
+              <button type="button" onClick={() => setUnlockListOpen(false)}>×</button>
+            </div>
+
+            <div className="unlock-list-grid">
+              {FLIGHT_COUNTRIES
+                .filter((country) => !isFlightCountryUnlocked(country.code))
+                .map((country) => {
+                  const cost = flightUnlockCost(country);
+                  const enough = flightMiles >= cost;
+
+                  return (
+                    <div key={country.code} className="unlock-country-card">
+                      <div>
+                        <b>{country.code}</b>
+                        <span>{country.name}</span>
+                        <small>{country.city}</small>
+                      </div>
+                      <strong>{cost}M</strong>
+                      <button
+                        type="button"
+                        disabled={!enough}
+                        onClick={() => unlockFlightCountry(country)}
+                      >
+                        {enough ? "해금" : "마일 부족"}
+                      </button>
+                    </div>
+                  );
+                })}
+
+              {!FLIGHT_COUNTRIES.some((country) => !isFlightCountryUnlocked(country.code)) && (
+                <div className="unlock-empty-card">
+                  모든 나라를 해금했습니다.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {passportOpen && (
+        <div className="passport-page-overlay">
+          <div className="passport-page-shell">
+            <div className="passport-page-top">
+              <div>
+                <span>STUDY AIR PASSPORT</span>
+                <h2>나의 비행 여권</h2>
+              </div>
+              <button type="button" onClick={() => setPassportOpen(false)}>×</button>
+            </div>
+
+            <div className="passport-book-layout">
+              <button
+                type="button"
+                className="passport-page-nav"
+                disabled={passportPage <= 0}
+                onClick={() => setPassportPage((page) => Math.max(0, page - 1))}
+              >
+                ‹
+              </button>
+
+              <div className="passport-paper-page" key={passportPage}>
+                {passportPage === 0 ? (
+                  <div className="passport-cover-page">
+                    <div className="passport-emblem">ㅅㅌㄷㄹ</div>
+                    <h3>Study Room Passport</h3>
+                    <p>비행 집중 공부를 완료하면 도착 국가의 스탬프가 찍힙니다.</p>
+                    <div className="passport-cover-stats">
+                      <div><span>총 스탬프</span><b>{passportStamps.length}</b></div>
+                      <div><span>국가 수</span><b>{getPassportStats().length}</b></div>
+                      <div><span>마일리지</span><b>{flightMiles.toLocaleString()}M</b></div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="passport-stamp-page">
+                    <div className="passport-page-label">PAGE {passportPage}</div>
+                    <div className="passport-page-grid">
+                      {passportStamps.slice((passportPage - 1) * 6, passportPage * 6).map((stamp) => (
+                        <div className="passport-page-stamp" key={stamp.id}>
+                          <span>{stamp.toName || stamp.toCode}</span>
+                          <b>{stamp.fromCode} → {stamp.toCode}</b>
+                          <small>{stamp.date} · {stamp.landedAt}</small>
+                        </div>
+                      ))}
+                      {passportStamps.slice((passportPage - 1) * 6, passportPage * 6).length === 0 && (
+                        <p className="passport-empty-page">이 페이지에는 아직 스탬프가 없습니다.</p>
+                      )}
+                    </div>
+                    <div className="passport-country-stats">
+                      {getPassportStats().slice(0, 8).map((stat) => (
+                        <span key={stat.code}>{stat.name} {stat.count}개</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="button"
+                className="passport-page-nav"
+                disabled={passportPage >= Math.max(0, Math.ceil(passportStamps.length / 6))}
+                onClick={() => setPassportPage((page) => Math.min(Math.ceil(passportStamps.length / 6), page + 1))}
+              >
+                ›
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {arrivalReward && (
+        <div className="arrival-reward-overlay">
+          <div className="arrival-reward-card">
+            <button type="button" className="arrival-close" onClick={() => setArrivalReward(null)}>×</button>
+            <div className="arrival-kicker">ARRIVAL REWARD</div>
+            <h2>{arrivalReward.title}</h2>
+            <p>
+              {arrivalReward.from?.name || "출발지"}에서 {arrivalReward.to?.name || "도착지"}까지의 비행 집중 공부를 완료했습니다.
+            </p>
+            <div className="arrival-stamp">
+              <span>PASSPORT STAMP</span>
+              <b>{arrivalReward.from?.code} → {arrivalReward.to?.code}</b>
+              <small>{arrivalReward.to?.city} 착륙</small>
+            </div>
+            <div className="arrival-reward-grid">
+              <div><span>획득 마일</span><b>+{arrivalReward.milesEarned}M</b></div>
+              <div><span>총 마일</span><b>{arrivalReward.totalMiles.toLocaleString()}M</b></div>
+              <div><span>공부 시간</span><b>{formatStudy(arrivalReward.seconds)}</b></div>
+              <div><span>여권 스탬프</span><b>{arrivalReward.stampCount}개</b></div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {weatherToast && (
         <div
@@ -6193,25 +10684,25 @@ export default function App() {
               style={{
                 width: 42,
                 height: 42,
-                border: "none",
+                border: darkMode ? "1px solid rgba(96,165,250,0.28)" : "none",
                 borderRadius: 16,
-                background: false ? "rgba(2,6,23,0.72)" : "#f2f6ff",
+                background: darkMode ? "rgba(30,41,59,0.86)" : "#f2f6ff",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 marginBottom: 8,
-                boxShadow: "0 8px 18px rgba(49,130,246,0.12)",
+                boxShadow: darkMode ? "0 8px 20px rgba(0,0,0,0.24)" : "0 8px 18px rgba(49,130,246,0.12)",
                 cursor: "pointer",
                 padding: 0,
               }}
             >
-              <IconImage src={currentIcons.profile} alt="내 정보" size={34} />
+              <NavSvgIcon type="profile" dark={darkMode} size={27} />
             </button>
             {[
-              { label: "홈", icon: currentIcons.home },
-              { label: "방", icon: currentIcons.room },
-              { label: "플래너", icon: currentIcons.planner },
-              { label: "채팅", icon: currentIcons.chat },
+              { label: "홈", type: "home" },
+              { label: "방", type: "room" },
+              { label: "플래너", type: "planner" },
+              { label: "채팅", type: "chat" },
             ].map((item, idx) => (
               <button
                 key={item.label}
@@ -6224,9 +10715,12 @@ export default function App() {
                 style={{
                   width: 42,
                   height: 42,
-                  border: "none",
                   borderRadius: 16,
-                  background: false ? "rgba(2,6,23,0.58)" : idx === 0 ? "#edf4ff" : "transparent",
+                  background: idx === 0
+                    ? (darkMode ? "linear-gradient(135deg, var(--accent), var(--accent-dark))" : "#edf4ff")
+                    : (darkMode ? "rgba(15,23,42,0.34)" : "transparent"),
+                  border: darkMode ? "1px solid rgba(96,165,250,0.18)" : "none",
+                  boxShadow: idx === 0 && darkMode ? "0 10px 24px rgba(37,99,235,0.22)" : "none",
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
@@ -6234,7 +10728,7 @@ export default function App() {
                   padding: 0,
                 }}
               >
-                <IconImage src={item.icon} alt={item.label} size={28} />
+                <NavSvgIcon type={item.type} active={idx === 0 && darkMode} dark={darkMode} size={26} />
               </button>
             ))}
           </aside>
@@ -6255,7 +10749,7 @@ export default function App() {
           >
             <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                <IconImage src={currentIcons.logo} alt="Study Room" size={34} />
+                <StudyRoomLogo dark={darkMode} size={34} />
                 <h1
                   style={{
                     margin: 0,
@@ -6291,73 +10785,7 @@ export default function App() {
             </div>
 
             <div style={{ display: isCompactScreen && mobileTab !== "home" ? "none" : "flex", alignItems: "center", gap: 8, width: easyLayout ? "100%" : "auto", flexWrap: "wrap" }}>
-              {!isCompactScreen && (
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 4,
-                    padding: 4,
-                    borderRadius: 999,
-                    background: false ? "rgba(0,229,255,0.08)" : "var(--input-bg)",
-                    border: "1px solid var(--border-soft)",
-                    flex: "0 0 auto",
-                    boxShadow: false ? "0 0 22px rgba(0,229,255,0.16)" : "none",
-                  }}
-                >
-                  {(isCompactScreen
-                    ? [{ id: "easy", label: "쉬운" }]
-                    : [
-                        { id: "advanced", label: "고급" },
-                        { id: "easy", label: "쉬운" },
-                      ]
-                  ).map((mode) => {
-                    const active = appMode === mode.id;
-
-                    return (
-                      <button
-                        key={mode.id}
-                        type="button"
-                        onClick={() => changeAppMode(mode.id)}
-                        style={{
-                          border: "none",
-                          height: 30,
-                          padding: "0 10px",
-                          borderRadius: 999,
-                          cursor: "pointer",
-                          fontSize: 12,
-                          fontWeight: 950,
-                          background: active ? "var(--accent)" : "transparent",
-                          color: active ? (false ? "#020617" : "white") : "var(--text-main)",
-                          boxShadow: active ? "0 8px 18px var(--accent-shadow)" : "none",
-                        }}
-                      >
-                        {mode.label}
-                      </button>
-                    );
-                  })}
-
-                  <button
-                    type="button"
-                    onClick={toggleFlightFeature}
-                    style={{
-                      border: "none",
-                      height: 30,
-                      padding: "0 11px",
-                      borderRadius: 999,
-                      cursor: "pointer",
-                      fontSize: 12,
-                      fontWeight: 950,
-                      background: flightFeatureOpen ? "linear-gradient(135deg, #2563eb, #0ea5e9)" : "transparent",
-                      color: flightFeatureOpen ? "white" : "var(--text-main)",
-                      boxShadow: flightFeatureOpen ? "0 8px 18px rgba(37,99,235,0.24)" : "none",
-                      transition: "background 360ms cubic-bezier(0.16, 1, 0.3, 1), color 280ms ease, box-shadow 360ms ease, opacity 260ms ease",
-                      minWidth: 68,
-                    }}
-                  >
-                    {flightFeatureOpen ? "비행 ON" : "비행 OFF"}
-                  </button>
-                </div>
-              )}
+              {renderTopModeControls()}
               <select
                 style={{ ...S.input, flex: easyLayout ? 1 : "0 0 auto", width: easyLayout ? "auto" : 190, height: 38, padding: "7px 10px" }}
                 value={selectedDdayId}
@@ -6454,7 +10882,7 @@ export default function App() {
                   ...S.card,
                   padding: 14,
                   marginBottom: 12,
-                  background: "linear-gradient(180deg, #ffffff 0%, #fbfcfd 100%)",
+                  background: darkMode ? "linear-gradient(180deg, rgba(15,23,42,0.96) 0%, rgba(17,24,39,0.94) 100%)" : "linear-gradient(180deg, #ffffff 0%, #fbfcfd 100%)",
                   border: "1px solid var(--border-soft)",
                 }}
               >
@@ -6666,7 +11094,8 @@ export default function App() {
                       </button>
                       {selectedGroup?.ownerUid === uid && (
                         <button
-                          style={{ ...S.lightButton, color: "#dc2626", borderColor: "#fecaca", background: "#fff1f2" }}
+                          className="danger-action-button"
+                          style={{ ...S.lightButton, color: "#dc2626", borderColor: "#fecaca", background: darkMode ? "rgba(127,29,29,0.28)" : "#fff1f2" }}
                           disabled={studying}
                           onClick={() => deleteGroup(selectedGroup)}
                         >
@@ -6675,18 +11104,55 @@ export default function App() {
                       )}
                     </div>
 
+                    {(currentGroup || selectedGroup) && (
+                      <div
+                        style={{
+                          marginTop: 10,
+                          display: "grid",
+                          gap: 8,
+                        }}
+                      >
+                        <div
+                          style={{
+                            background: "var(--input-bg)",
+                            border: "1px solid var(--border)",
+                            borderRadius: 14,
+                            padding: 10,
+                          }}
+                        >
+                          <b style={{ display: "block", fontSize: 12, color: "var(--text-mid)" }}>방 설명</b>
+                          <p style={{ ...S.small, margin: "4px 0 0", lineHeight: 1.45 }}>
+                            {(currentGroup || selectedGroup)?.description || "아직 방 설명이 없습니다."}
+                          </p>
+                        </div>
+                        <div
+                          style={{
+                            background: "var(--input-bg)",
+                            border: "1px solid var(--border)",
+                            borderRadius: 14,
+                            padding: 10,
+                          }}
+                        >
+                          <b style={{ display: "block", fontSize: 12, color: "var(--text-mid)" }}>방 목표</b>
+                          <p style={{ ...S.small, margin: "4px 0 0", lineHeight: 1.45 }}>
+                            {(currentGroup || selectedGroup)?.goal || "아직 방 목표가 없습니다."}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
                     {selectedGroup?.ownerUid === uid && (
                       <div
                         className=""
                         style={{
                           marginTop: 10,
                           padding: "10px 12px",
-                          borderRadius: false ? 2 : 14,
-                          background: false
+                          borderRadius: 18,
+                          background: darkMode
                             ? "linear-gradient(135deg, rgba(30,41,59,0.96), rgba(15,23,42,0.92))"
-                            : "#f8fafc",
-                          border: false ? "1px solid rgba(250,204,21,0.38)" : "1px solid #e2e8f0",
-                          boxShadow: false ? "inset 0 0 14px rgba(250,204,21,0.05), 0 0 16px rgba(96,165,250,0.06)" : "none",
+                            : "linear-gradient(135deg, #f8fafc, #ffffff)",
+                          border: darkMode ? "1px solid rgba(96,165,250,0.34)" : "1px solid #e2e8f0",
+                          boxShadow: darkMode ? "inset 0 0 14px rgba(96,165,250,0.05), 0 0 16px rgba(96,165,250,0.06)" : "0 8px 20px rgba(15,23,42,0.04)",
                         }}
                       >
                         <div
@@ -6698,7 +11164,7 @@ export default function App() {
                           }}
                         >
                           <div>
-                            <div style={{ fontSize: 12, fontWeight: 900, color: "#334155" }}>
+                            <div style={{ fontSize: 12, fontWeight: 900, color: "var(--text-main)" }}>
                               방 비밀번호
                             </div>
                             <div style={{ ...S.small, fontSize: 11 }}>
@@ -6711,9 +11177,9 @@ export default function App() {
                               ...S.lightButton,
                               padding: "6px 9px",
                               fontSize: 12,
-                              color: "var(--accent)",
-                              borderColor: "var(--accent-soft-3)",
-                              background: "var(--accent-soft)",
+                              color: darkMode ? "#dbeafe" : "var(--accent)",
+                              borderColor: darkMode ? "rgba(96,165,250,0.36)" : "var(--accent-soft-3)",
+                              background: darkMode ? "rgba(30,41,59,0.92)" : "var(--accent-soft)",
                             }}
                             onClick={() => setShowRoomPassword((v) => !v)}
                           >
@@ -6727,7 +11193,7 @@ export default function App() {
                             fontSize: 18,
                             fontWeight: 900,
                             letterSpacing: 2,
-                            color: "#0f172a",
+                            color: "var(--text-main)",
                             textShadow: "none",
                           }}
                         >
@@ -6759,8 +11225,8 @@ export default function App() {
                                   gap: 8,
                                   padding: "8px 10px",
                                   borderRadius: 12,
-                                  background: false ? "rgba(255,90,79,0.12)" : "#fff7ed",
-                                  border: false ? "1px solid rgba(255,90,79,0.34)" : "1px solid #fed7aa",
+                                  background: darkMode ? "rgba(255,90,79,0.12)" : "#fff7ed",
+                                  border: darkMode ? "1px solid rgba(255,90,79,0.34)" : "1px solid #fed7aa",
                                 }}
                               >
                                 <div style={{ minWidth: 0 }}>
@@ -6793,8 +11259,8 @@ export default function App() {
                               style={{
                                 padding: "8px 10px",
                                 borderRadius: 12,
-                                background: false ? "rgba(13,30,51,0.72)" : "#f8fafc",
-                                border: false ? "1px solid rgba(125,211,252,0.24)" : "1px solid #e2e8f0",
+                                background: darkMode ? "rgba(13,30,51,0.72)" : "#f8fafc",
+                                border: darkMode ? "1px solid rgba(125,211,252,0.24)" : "1px solid #e2e8f0",
                                 ...S.small,
                                 fontSize: 11,
                               }}
@@ -6820,7 +11286,7 @@ export default function App() {
                               borderRadius: 999,
                               fontSize: 11,
                               fontWeight: 900,
-                              background: false
+                              background: darkMode
                                 ? soundPlaying
                                   ? "rgba(96,165,250,0.14)"
                                   : "rgba(13,30,51,0.82)"
@@ -6962,7 +11428,7 @@ export default function App() {
                       </button>
                       {selectedGroup?.ownerUid === uid && (
                         <button
-                          style={{ ...S.lightButton, flex: 1, color: "#dc2626", borderColor: "#fecaca", background: "#fff1f2" }}
+                          style={{ ...S.lightButton, flex: 1, color: "#dc2626", borderColor: "#fecaca", background: darkMode ? "rgba(127,29,29,0.28)" : "#fff1f2" }}
                           disabled={studying}
                           onClick={() => deleteGroup(selectedGroup)}
                         >
@@ -6978,12 +11444,12 @@ export default function App() {
                       style={{
                         marginTop: 12,
                         padding: "10px 12px",
-                        borderRadius: false ? 2 : 16,
-                        background: false
+                        borderRadius: 18,
+                        background: darkMode
                           ? "linear-gradient(135deg, rgba(30,41,59,0.96), rgba(15,23,42,0.92))"
                           : "var(--soft-bg)",
-                        border: false ? "1px solid rgba(250,204,21,0.38)" : "1px solid var(--border-soft)",
-                        boxShadow: false ? "inset 0 0 14px rgba(250,204,21,0.05), 0 0 16px rgba(96,165,250,0.06)" : "none",
+                        border: darkMode ? "1px solid rgba(96,165,250,0.34)" : "1px solid var(--border-soft)",
+                        boxShadow: darkMode ? "inset 0 0 14px rgba(96,165,250,0.05), 0 0 16px rgba(96,165,250,0.06)" : "0 8px 20px rgba(15,23,42,0.04)",
                       }}
                     >
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
@@ -7033,7 +11499,7 @@ export default function App() {
                                 gap: 8,
                                 padding: "8px 10px",
                                 borderRadius: 12,
-                                background: "#fff7ed",
+                                background: darkMode ? "rgba(154,52,18,0.25)" : "#fff7ed",
                                 border: "1px solid #fed7aa",
                               }}
                             >
@@ -7263,6 +11729,7 @@ export default function App() {
 
         {easyLayout && (
           <nav
+            className="easy-bottom-nav"
             style={{
               position: "fixed",
               left: easyLayout && !isCompactScreen ? "50%" : 10,
@@ -7277,18 +11744,18 @@ export default function App() {
               gap: 6,
               padding: 8,
               borderRadius: 24,
-              background: "rgba(255,255,255,0.96)",
-              border: "1px solid var(--border-soft)",
-              boxShadow: "0 18px 42px rgba(25,31,40,0.16)",
+              background: darkMode ? "rgba(15,23,42,0.96)" : "rgba(255,255,255,0.96)",
+              border: darkMode ? "1px solid rgba(96,165,250,0.30)" : "1px solid var(--border-soft)",
+              boxShadow: darkMode ? "0 18px 42px rgba(0,0,0,0.32)" : "0 18px 42px rgba(25,31,40,0.16)",
               backdropFilter: "blur(14px)",
             }}
           >
             {[
-              { id: "home", label: "홈", icon: currentIcons.home },
-              { id: "group", label: "그룹", icon: currentIcons.room },
-              { id: "planner", label: "플래너", icon: currentIcons.planner },
-              { id: "chat", label: "채팅", icon: currentIcons.chat },
-              { id: "settings", label: "설정", icon: currentIcons.profile },
+              { id: "home", label: "홈", type: "home" },
+              { id: "group", label: "그룹", type: "room" },
+              { id: "planner", label: "플래너", type: "planner" },
+              { id: "chat", label: "채팅", type: "chat" },
+              { id: "settings", label: "설정", type: "profile" },
             ].map((item) => {
               const active = mobileTab === item.id;
 
@@ -7298,9 +11765,13 @@ export default function App() {
                   type="button"
                   onClick={() => switchEasyTab(item.id)}
                   style={{
-                    border: "none",
-                    background: active ? "var(--accent-soft)" : "transparent",
-                    boxShadow: active ? "0 8px 20px var(--accent-shadow)" : "none",
+                    border: darkMode ? "1px solid rgba(96,165,250,0.16)" : "none",
+                    background: active
+                      ? (darkMode ? "linear-gradient(135deg, var(--accent), var(--accent-dark))" : "var(--accent-soft)")
+                      : (darkMode ? "rgba(30,41,59,0.58)" : "transparent"),
+                    boxShadow: active
+                      ? (darkMode ? "0 10px 24px rgba(37,99,235,0.26)" : "0 8px 20px var(--accent-shadow)")
+                      : "none",
                     transform: active ? "translateY(-2px)" : "translateY(0)",
                     padding: "8px 4px",
                     borderRadius: 18,
@@ -7309,7 +11780,9 @@ export default function App() {
                     alignItems: "center",
                     justifyContent: "center",
                     gap: 4,
-                    color: active ? "var(--accent-text)" : "var(--text-sub)",
+                    color: active
+                      ? (darkMode ? "#ffffff" : "var(--accent-text)")
+                      : "var(--text-sub)",
                     fontSize: 11,
                     fontWeight: 900,
                     cursor: "pointer",
@@ -7317,7 +11790,7 @@ export default function App() {
                     transition: "background 340ms cubic-bezier(0.16, 1, 0.3, 1), color 340ms cubic-bezier(0.16, 1, 0.3, 1), transform 260ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 340ms cubic-bezier(0.16, 1, 0.3, 1)",
                   }}
                 >
-                  <IconImage src={item.icon} alt={item.label} size={25} />
+                  <NavSvgIcon type={item.type} active={active && darkMode} dark={darkMode} size={25} />
                   <span>{item.label}</span>
                   {item.id === "chat" && unread > 0 && chatNotice && (
                     <span
@@ -7357,11 +11830,11 @@ export default function App() {
               gap: 6,
               padding: 6,
               borderRadius: 999,
-              background: false
+              background: darkMode
                 ? "linear-gradient(135deg, rgba(3,10,22,0.92), rgba(13,30,51,0.86))"
                 : "rgba(255,255,255,0.92)",
-              border: false ? "1px solid rgba(125,211,252,0.34)" : "1px solid var(--border-soft)",
-              boxShadow: false ? "0 0 26px rgba(96,165,250,0.14)" : "0 14px 32px rgba(25,31,40,0.18)",
+              border: darkMode ? "1px solid rgba(125,211,252,0.34)" : "1px solid var(--border-soft)",
+              boxShadow: darkMode ? "0 0 26px rgba(96,165,250,0.14)" : "0 14px 32px rgba(25,31,40,0.18)",
               backdropFilter: "blur(14px)",
             }}
           >
@@ -7386,7 +11859,7 @@ export default function App() {
                     fontWeight: 950,
                     cursor: "pointer",
                     background: active ? "var(--accent)" : "transparent",
-                    color: active ? (false ? "#020617" : "white") : "var(--text-main)",
+                    color: active ? (darkMode ? "#020617" : "white") : "var(--text-main)",
                   }}
                 >
                   {mode.label}
@@ -7911,14 +12384,14 @@ export default function App() {
                           minHeight: 60,
                           border: "1px solid var(--border)",
                           borderRadius: 14,
-                          background: false
+                          background: darkMode
                             ? selected
                               ? "rgba(56,213,255,0.22)"
                               : "rgba(13,30,51,0.72)"
                             : selected
                             ? "#18181b"
                             : "white",
-                          color: false ? "#eefaff" : selected ? "white" : "#18181b",
+                          color: darkMode ? "#eefaff" : selected ? "white" : "#18181b",
                           opacity: date ? 1 : 0,
                           cursor: date ? "pointer" : "default",
                         }}
@@ -7964,7 +12437,7 @@ export default function App() {
                 border: "1px solid var(--border)",
                 borderRadius: 18,
                 padding: 14,
-                background: false
+                background: darkMode
                   ? "linear-gradient(135deg, rgba(3,10,22,0.96), rgba(13,30,51,0.86))"
                   : "#f9fafb",
               }}
@@ -7982,19 +12455,19 @@ export default function App() {
                     <div
                       style={{
                         maxWidth: "75%",
-                        background: false
+                        background: darkMode
                           ? m.senderUid === uid
-                            ? "linear-gradient(135deg, rgba(96,165,250,0.18), rgba(14,165,233,0.12))"
-                            : "rgba(13,30,51,0.78)"
+                            ? "linear-gradient(135deg, rgba(96,165,250,0.22), rgba(14,165,233,0.14))"
+                            : "rgba(30,41,59,0.86)"
                           : m.senderUid === uid
                           ? "#18181b"
                           : "#e4e4e7",
-                        color: false
+                        color: darkMode
                           ? "#eefaff"
                           : m.senderUid === uid
                           ? "white"
                           : "#18181b",
-                        border: false ? "1px solid rgba(125,211,252,0.24)" : "none",
+                        border: darkMode ? "1px solid rgba(125,211,252,0.24)" : "none",
                         padding: 12,
                         borderRadius: 18,
                         fontSize: 14,
