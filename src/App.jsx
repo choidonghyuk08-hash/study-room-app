@@ -167,6 +167,146 @@ const FLIGHT_MILES_PER_MINUTE = 1;
 const FLIGHT_UNLOCK_BASE_COST = 80;
 const FLIGHT_UNLOCK_DISTANCE_DIVISOR = 180;
 
+const STDR_AIR_TIERS = [
+  {
+    id: "economy",
+    label: "Economy",
+    korean: "이코노미",
+    threshold: 0,
+    badge: "EA",
+    plane: "#2563eb",
+    accent: "#2563eb",
+    accent2: "#0ea5e9",
+    stamp: "#1d4ed8",
+    ticketBg: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 55%, #bfdbfe 100%)",
+    ticketText: "#1e3a8a",
+    passportBg: "linear-gradient(135deg, #f8fbff 0%, #eff6ff 58%, #dbeafe 100%)",
+    rewardBg: "linear-gradient(135deg, #ffffff 0%, #eff6ff 55%, #dbeafe 100%)",
+  },
+  {
+    id: "premium",
+    label: "Premium",
+    korean: "프리미엄",
+    threshold: 1000,
+    badge: "PA",
+    plane: "#db2777",
+    accent: "#7c3aed",
+    accent2: "#ec4899",
+    stamp: "#be185d",
+    ticketBg: "linear-gradient(135deg, #f5f3ff 0%, #fce7f3 55%, #fbcfe8 100%)",
+    ticketText: "#4c1d95",
+    passportBg: "linear-gradient(135deg, #fff1f2 0%, #f5f3ff 55%, #e9d5ff 100%)",
+    rewardBg: "linear-gradient(135deg, #fff7fb 0%, #fce7f3 52%, #f5f3ff 100%)",
+  },
+  {
+    id: "business",
+    label: "Business",
+    korean: "비즈니스",
+    threshold: 3500,
+    badge: "BA",
+    plane: "#0f766e",
+    accent: "#0f766e",
+    accent2: "#14b8a6",
+    stamp: "#0f766e",
+    ticketBg: "linear-gradient(135deg, #ecfeff 0%, #ccfbf1 54%, #99f6e4 100%)",
+    ticketText: "#134e4a",
+    passportBg: "linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 52%, #a7f3d0 100%)",
+    rewardBg: "linear-gradient(135deg, #ffffff 0%, #ccfbf1 55%, #a7f3d0 100%)",
+  },
+  {
+    id: "first",
+    label: "First",
+    korean: "퍼스트",
+    threshold: 8000,
+    badge: "FA",
+    plane: "#d97706",
+    accent: "#b45309",
+    accent2: "#f59e0b",
+    stamp: "#92400e",
+    ticketBg: "linear-gradient(135deg, #fff7ed 0%, #fde68a 52%, #f59e0b 100%)",
+    ticketText: "#78350f",
+    passportBg: "linear-gradient(135deg, #fff7ed 0%, #fffbeb 48%, #fde68a 100%)",
+    rewardBg: "linear-gradient(135deg, #ffffff 0%, #fef3c7 55%, #fde68a 100%)",
+  },
+  {
+    id: "captain",
+    label: "Captain",
+    korean: "캡틴",
+    threshold: 18000,
+    badge: "CP",
+    plane: "#fbbf24",
+    accent: "#fbbf24",
+    accent2: "#f59e0b",
+    stamp: "#facc15",
+    ticketBg: "linear-gradient(135deg, #1f2937 0%, #92400e 44%, #fbbf24 100%)",
+    ticketText: "#fff7ed",
+    passportBg: "linear-gradient(135deg, #111827 0%, #451a03 45%, #b45309 100%)",
+    rewardBg: "linear-gradient(135deg, #111827 0%, #78350f 52%, #f59e0b 100%)",
+  },
+];
+
+function getStdrAirTier(totalMiles = 0) {
+  const safeMiles = Math.max(0, Number(totalMiles) || 0);
+  let current = STDR_AIR_TIERS[0];
+
+  STDR_AIR_TIERS.forEach((tier) => {
+    if (safeMiles >= tier.threshold) current = tier;
+  });
+
+  const index = STDR_AIR_TIERS.findIndex((tier) => tier.id === current.id);
+  const next = STDR_AIR_TIERS[index + 1] || null;
+  const progress = next
+    ? Math.max(0, Math.min(100, Math.round(((safeMiles - current.threshold) / (next.threshold - current.threshold)) * 100)))
+    : 100;
+
+  return {
+    current,
+    next,
+    progress,
+    remaining: next ? Math.max(0, next.threshold - safeMiles) : 0,
+  };
+}
+
+function getStdrTierStyle(tierOrId) {
+  const id = typeof tierOrId === "string" ? tierOrId : tierOrId?.id;
+  return STDR_AIR_TIERS.find((tier) => tier.id === id) || STDR_AIR_TIERS[0];
+}
+
+function getStdrTierAppTheme(tierOrId) {
+  const tier = getStdrTierStyle(tierOrId);
+  const softByTier = {
+    economy: ["#eff6ff", "#dbeafe", "#bfdbfe", "rgba(37,99,235,0.24)"],
+    premium: ["#f5f3ff", "#ede9fe", "#ddd6fe", "rgba(124,58,237,0.24)"],
+    business: ["#ecfeff", "#ccfbf1", "#99f6e4", "rgba(15,118,110,0.24)"],
+    first: ["#fffbeb", "#fef3c7", "#fde68a", "rgba(180,83,9,0.24)"],
+    captain: ["#fffbeb", "#fef3c7", "#fde68a", "rgba(251,191,36,0.30)"],
+  };
+  const [accentSoft, accentSoft2, accentSoft3, accentShadow] =
+    softByTier[tier.id] || softByTier.economy;
+
+  const readableAccentTextByTier = {
+    economy: "#1d4ed8",
+    premium: "#6d28d9",
+    business: "#047857",
+    first: "#92400e",
+    captain: "#92400e",
+  };
+
+  return {
+    id: tier.id,
+    label: tier.label,
+    korean: tier.korean,
+    threshold: tier.threshold,
+    accent: tier.accent,
+    accentDark: tier.accent2,
+    accentSoft,
+    accentSoft2,
+    accentSoft3,
+    accentText: readableAccentTextByTier[tier.id] || tier.ticketText,
+    accentShadow,
+  };
+}
+
 function storageGetJson(key, fallback) {
   if (typeof window === "undefined") return fallback;
 
@@ -1078,15 +1218,26 @@ export default function App() {
   const toggleDesktopMode = () => {
     changeAppMode(appMode === "advanced" ? "easy" : "advanced");
   };
-  const [themeKey, setThemeKey] = useState(() => {
-    if (typeof window === "undefined") return "blue";
-    return window.localStorage.getItem("studyRoomTheme") || "blue";
+  const [totalFlightMilesEarned, setTotalFlightMilesEarned] = useState(() => {
+    const saved = Number(typeof window !== "undefined" ? window.localStorage.getItem("studyRoomTotalFlightMilesEarned") : 0);
+    return Number.isFinite(saved) ? saved : 0;
+  });
+  const [stdrThemeId, setStdrThemeId] = useState(() => {
+    if (typeof window === "undefined") return "economy";
+    return window.localStorage.getItem("studyRoomStdrThemeId") || "economy";
   });
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem("studyRoomDarkMode") === "true";
   });
-  const currentTheme = THEME_COLORS[themeKey] || THEME_COLORS.blue;
+  const unlockedStdrThemeIds = STDR_AIR_TIERS
+    .filter((tier) => totalFlightMilesEarned >= tier.threshold)
+    .map((tier) => tier.id);
+  const highestUnlockedStdrTheme = getStdrAirTier(totalFlightMilesEarned).current;
+  const selectedStdrThemeId = unlockedStdrThemeIds.includes(stdrThemeId)
+    ? stdrThemeId
+    : highestUnlockedStdrTheme.id;
+  const currentTheme = getStdrTierAppTheme(selectedStdrThemeId);
   const modeAccent = currentTheme.accent;
   const currentIcons = ICONS;
   const themeVars = {
@@ -1114,10 +1265,15 @@ export default function App() {
     "--flight-navy": darkMode ? "#e5e7eb" : "#0f172a",
     "--flight-green": "#22c55e",
   };
-  const changeTheme = (nextTheme) => {
-    setThemeKey(nextTheme);
+  const changeStdrTheme = (nextThemeId) => {
+    const safeThemeId = unlockedStdrThemeIds.includes(nextThemeId)
+      ? nextThemeId
+      : highestUnlockedStdrTheme.id;
+
+    setStdrThemeId(safeThemeId);
     if (typeof window !== "undefined") {
-      window.localStorage.setItem("studyRoomTheme", nextTheme);
+      window.localStorage.setItem("studyRoomStdrThemeId", safeThemeId);
+      window.localStorage.removeItem("studyRoomTheme");
     }
   };
   const toggleDarkMode = () => {
@@ -1130,11 +1286,11 @@ export default function App() {
     });
   };
 
-  const cycleTheme = () => {
-    const keys = Object.keys(THEME_COLORS);
-    const currentIndex = Math.max(0, keys.indexOf(themeKey));
-    const nextTheme = keys[(currentIndex + 1) % keys.length] || "blue";
-    changeTheme(nextTheme);
+  const cycleUnlockedStdrTheme = () => {
+    const keys = unlockedStdrThemeIds.length ? unlockedStdrThemeIds : ["economy"];
+    const currentIndex = Math.max(0, keys.indexOf(selectedStdrThemeId));
+    const nextTheme = keys[(currentIndex + 1) % keys.length] || highestUnlockedStdrTheme.id;
+    changeStdrTheme(nextTheme);
   };
 
   const renderTopModeControls = (compact = false) => {
@@ -1149,11 +1305,11 @@ export default function App() {
       <div className="top-mode-controls">
         <button
           type="button"
-          className="top-appearance-button"
-          onClick={cycleTheme}
-          title="테마 색상 변경"
+          className="top-appearance-button stdr-theme-button"
+          onClick={cycleUnlockedStdrTheme}
+          title={`STDR Air 등급 해금 테마 변경 · 현재 ${currentTheme.label}`}
         >
-          색상
+          테마 {currentTheme.label}
         </button>
         <button
           type="button"
@@ -1286,6 +1442,7 @@ export default function App() {
   const flightMapZoomTargetRef = useRef(null);
   const flightAutoLandingRef = useRef(false);
   const inactiveAutoStopRef = useRef(false);
+  const chatSendingRef = useRef(false);
   const [soundType, setSoundType] = useState("white");
   const [soundVolume, setSoundVolume] = useState(45);
   const [soundPlaying, setSoundPlaying] = useState(false);
@@ -1365,11 +1522,14 @@ export default function App() {
   });
   const [arrivalReward, setArrivalReward] = useState(null);
   const [flightProfileLoaded, setFlightProfileLoaded] = useState(false);
+  const [tierPreviewOpen, setTierPreviewOpen] = useState(false);
   const [passportOpen, setPassportOpen] = useState(false);
   const [passportPage, setPassportPage] = useState(0);
   const [unlockListOpen, setUnlockListOpen] = useState(false);
   const [devMileageAmount, setDevMileageAmount] = useState(100);
   const [devMileageRemoveAmount, setDevMileageRemoveAmount] = useState(100);
+  const [devTotalMileageAmount, setDevTotalMileageAmount] = useState(1000);
+  const [devTotalMileageSetValue, setDevTotalMileageSetValue] = useState(0);
   const [devStampFromCode, setDevStampFromCode] = useState("KR");
   const [devStampToCode, setDevStampToCode] = useState("JP");
   const [devDeleteStampId, setDevDeleteStampId] = useState("");
@@ -1512,6 +1672,9 @@ export default function App() {
     (a, b) => (b.bannedAtMs || 0) - (a.bannedAtMs || 0)
   );
   const currentSound = SOUND_OPTIONS.find((item) => item.id === soundType) || SOUND_OPTIONS[0];
+  const stdrAirTier = getStdrAirTier(totalFlightMilesEarned);
+  const stdrAirTierStyle = getStdrTierStyle(stdrAirTier.current);
+  const selectedStdrThemeStyle = getStdrTierStyle(selectedStdrThemeId);
 
   const isFlightCountryUnlocked = (code) => unlockedFlightCountries.includes(code);
 
@@ -1561,6 +1724,16 @@ export default function App() {
       window.localStorage.setItem("studyRoomFlightMiles", String(safeMiles));
     }
     syncFlightProfileToServer({ flightMiles: safeMiles });
+    return safeMiles;
+  };
+
+  const saveTotalFlightMilesEarned = (nextMiles) => {
+    const safeMiles = Math.max(0, Math.round(Number(nextMiles) || 0));
+    setTotalFlightMilesEarned(safeMiles);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("studyRoomTotalFlightMilesEarned", String(safeMiles));
+    }
+    syncFlightProfileToServer({ totalFlightMilesEarned: safeMiles });
     return safeMiles;
   };
 
@@ -1627,6 +1800,7 @@ export default function App() {
     }
 
     saveFlightMiles(flightMiles + amount);
+    saveTotalFlightMilesEarned(totalFlightMilesEarned + amount);
   };
 
   const removeDevFlightMiles = () => {
@@ -1639,6 +1813,37 @@ export default function App() {
 
     const nextMiles = Math.max(0, flightMiles - amount);
     saveFlightMiles(nextMiles);
+  };
+
+  const addDevTotalFlightMiles = () => {
+    const amount = Math.max(0, Math.round(Number(devTotalMileageAmount || 0)));
+
+    if (!amount) {
+      alert("추가할 누적 마일리지를 입력해 주세요.");
+      return;
+    }
+
+    saveTotalFlightMilesEarned(totalFlightMilesEarned + amount);
+  };
+
+  const removeDevTotalFlightMiles = () => {
+    const amount = Math.max(0, Math.round(Number(devTotalMileageAmount || 0)));
+
+    if (!amount) {
+      alert("삭제할 누적 마일리지를 입력해 주세요.");
+      return;
+    }
+
+    saveTotalFlightMilesEarned(Math.max(0, totalFlightMilesEarned - amount));
+  };
+
+  const setDevTotalFlightMiles = () => {
+    const nextValue = Math.max(0, Math.round(Number(devTotalMileageSetValue || 0)));
+
+    const ok = window.confirm(`누적 획득 마일리지를 ${nextValue.toLocaleString()}M로 직접 설정할까요?`);
+    if (!ok) return;
+
+    saveTotalFlightMilesEarned(nextValue);
   };
 
   const deleteDevPassportStamp = () => {
@@ -1687,6 +1892,10 @@ export default function App() {
       seconds: 0,
       milesEarned: 0,
       totalMiles: flightMiles,
+      totalFlightMilesEarned,
+      airlineTier: stdrAirTier.current,
+      nextAirlineTier: stdrAirTier.next,
+      airlineTierProgress: stdrAirTier.progress,
       stampCount: nextStamps.length,
       title: `${to.name} 개발자 스탬프 추가`,
     });
@@ -2046,6 +2255,7 @@ export default function App() {
           ref,
           {
             flightMiles,
+            totalFlightMilesEarned,
             unlockedFlightCountries,
             passportStamps,
             createdAt: serverTimestamp(),
@@ -2064,14 +2274,20 @@ export default function App() {
       ]);
       const serverStamps = Array.isArray(data.passportStamps) ? data.passportStamps : [];
       const serverMiles = Math.max(0, Math.round(Number(data.flightMiles || 0)));
+      const serverTotalEarned = Math.max(
+        serverMiles,
+        Math.round(Number(data.totalFlightMilesEarned ?? data.totalMilesEarned ?? serverMiles) || 0)
+      );
 
       setFlightMiles(serverMiles);
+      setTotalFlightMilesEarned(serverTotalEarned);
       setUnlockedFlightCountries(serverUnlocked);
       setPassportStamps(serverStamps);
       setFlightProfileLoaded(true);
 
       if (typeof window !== "undefined") {
         window.localStorage.setItem("studyRoomFlightMiles", String(serverMiles));
+        window.localStorage.setItem("studyRoomTotalFlightMilesEarned", String(serverTotalEarned));
         storageSetJson("studyRoomUnlockedFlightCountries", serverUnlocked);
         storageSetJson("studyRoomPassportStamps", serverStamps);
       }
@@ -3381,6 +3597,9 @@ export default function App() {
           Math.floor((result.finalSeconds || 0) / 60) * FLIGHT_MILES_PER_MINUTE
         );
 
+        const nextTotalFlightMilesEarned = saveTotalFlightMilesEarned(totalFlightMilesEarned + earnedMiles);
+        const nextStdrAirTier = getStdrAirTier(nextTotalFlightMilesEarned);
+
         saveFlightMiles(flightMiles + earnedMiles);
         const nextStamps = addPassportStamp({
           from: rewardFrom,
@@ -3395,6 +3614,10 @@ export default function App() {
           seconds: result.finalSeconds || 0,
           milesEarned: earnedMiles,
           totalMiles: flightMiles + earnedMiles,
+          totalFlightMilesEarned: nextTotalFlightMilesEarned,
+          airlineTier: nextStdrAirTier.current,
+          nextAirlineTier: nextStdrAirTier.next,
+          airlineTierProgress: nextStdrAirTier.progress,
           stampCount: nextStamps.length,
           title: options.autoLanding
             ? `${flightRewardTitle(rewardTo)} · 자동 착륙`
@@ -3430,16 +3653,29 @@ export default function App() {
   };
 
   const sendMessage = async () => {
-    if (!enteredGroupId || !chatText.trim() || studying) return;
+    const messageText = chatText.trim();
 
-    await addDoc(collection(db, "groups", enteredGroupId, "messages"), {
-      senderUid: uid,
-      senderName: displayName,
-      text: chatText.trim(),
-      createdAt: serverTimestamp(),
-    });
+    if (!enteredGroupId || !messageText || studying || chatSendingRef.current) return;
 
+    chatSendingRef.current = true;
     setChatText("");
+
+    try {
+      await addDoc(collection(db, "groups", enteredGroupId, "messages"), {
+        senderUid: uid,
+        senderName: displayName,
+        text: messageText,
+        clientMessageId: `${uid}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        createdAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error("메시지 전송 실패:", error);
+      setChatText(messageText);
+    } finally {
+      window.setTimeout(() => {
+        chatSendingRef.current = false;
+      }, 450);
+    }
   };
 
   const saveMemo = async (date, text) => {
@@ -3931,7 +4167,23 @@ export default function App() {
     };
 
     return (
-      <section className={flightInProgress ? "flight-dashboard-card tracking-flight" : "flight-dashboard-card"}>
+      <section
+        className={[
+          "flight-dashboard-card",
+          flightInProgress ? "tracking-flight" : "",
+          `stdr-tier-${selectedStdrThemeId}`,
+        ].filter(Boolean).join(" ")}
+        style={{
+          "--stdr-tier-accent": selectedStdrThemeStyle.accent,
+          "--stdr-tier-accent-2": selectedStdrThemeStyle.accent2,
+          "--stdr-plane-color": stdrAirTierStyle.plane,
+          "--stdr-stamp-color": selectedStdrThemeStyle.stamp || selectedStdrThemeStyle.accent,
+          "--stdr-ticket-bg": selectedStdrThemeStyle.ticketBg,
+          "--stdr-ticket-text": selectedStdrThemeStyle.ticketText,
+          "--stdr-passport-bg": selectedStdrThemeStyle.passportBg,
+          "--stdr-reward-bg": stdrAirTierStyle.rewardBg,
+        }}
+      >
         <div className="flight-dashboard-head">
           <div>
             <div className="flight-kicker">FLIGHT STUDY MODE</div>
@@ -3960,7 +4212,28 @@ export default function App() {
             <b>{flightMiles.toLocaleString()}M</b>
             <small>{flightProfileLoaded ? "서버 저장됨" : "서버 동기화 중"} · 공부 1분당 {FLIGHT_MILES_PER_MINUTE}마일</small>
           </div>
-          <div className="flight-mileage-card">
+          <div className={`flight-mileage-card stdr-air-tier-card stdr-class-${stdrAirTier.current.id}`}>
+            <span>STDR AIR CLASS</span>
+            <b>{stdrAirTier.current.label}</b>
+            <small>등급 해금은 사용 후 남은 마일이 아니라 누적 획득 마일리지 기준입니다.</small>
+            <div className="stdr-class-mile-grid">
+              <div>
+                <span>누적 마일리지</span>
+                <strong>{totalFlightMilesEarned.toLocaleString()}M</strong>
+              </div>
+              <div>
+                <span>다음 등급</span>
+                <strong>{stdrAirTier.next ? `${stdrAirTier.remaining.toLocaleString()}M 남음` : "최고 등급"}</strong>
+              </div>
+            </div>
+            <div className="stdr-tier-progress">
+              <i style={{ width: `${stdrAirTier.progress}%` }} />
+            </div>
+            <button type="button" className="stdr-tier-preview-button" onClick={() => setTierPreviewOpen(true)}>
+              등급 디자인 미리보기
+            </button>
+          </div>
+          <div className="flight-mileage-card flight-passport-card">
             <span>PASSPORT</span>
             <b>{passportStamps.length} STAMPS</b>
             <small>{getPassportStats().length}개 국가 스탬프 보유</small>
@@ -4118,6 +4391,7 @@ export default function App() {
                     left: `${(planePoint.x / FLIGHT_MAP_WIDTH) * 100}%`,
                     top: `${(planePoint.y / FLIGHT_MAP_HEIGHT) * 100}%`,
                     transform: `translate(-50%, -50%) rotate(${planeRotate}deg)`,
+                    color: stdrAirTierStyle.plane,
                   }}
                 >
                   ✈
@@ -4146,18 +4420,19 @@ export default function App() {
       <section className="easy-flight-controls">
         <div className="easy-flight-mileage-mini">
           <b>{flightMiles.toLocaleString()}M</b>
-          <span>비행 마일리지 · 여권 {passportStamps.length}개 · 국가 {getPassportStats().length}개</span>
+          <span>STDR Air {stdrAirTier.current.label} · 여권 {passportStamps.length}개 · 국가 {getPassportStats().length}개</span>
           <button type="button" onClick={() => setPassportOpen(true)}>여권</button>
         </div>
         <div
           className={[
             "flight-ticket",
+            `stdr-tier-${selectedStdrThemeId}`,
             "easy-flight-boarding-pass",
             flightTicketUsed || (studying && activeFlight) ? "ticket-used" : "",
           ].filter(Boolean).join(" ")}
         >
           <div className="flight-ticket-main">
-            <span>STUDY AIR</span>
+            <span>STDR AIR · {stdrAirTier.current.label}</span>
             <h2>{from.code} → {to.code}</h2>
             <p>{from.name} {from.city} 출발 · {to.name} {to.city} 도착</p>
             <div className="flight-ticket-row">
@@ -5057,10 +5332,14 @@ export default function App() {
             value={chatText}
             disabled={studying || !enteredGroupId}
             onChange={(e) => setChatText(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter" || e.nativeEvent?.isComposing) return;
+              e.preventDefault();
+              sendMessage();
+            }}
             placeholder={studying ? "순공 중에는 채팅할 수 없습니다" : "메시지를 입력해 주세요"}
           />
-          <button style={S.button} disabled={studying || !enteredGroupId} onClick={sendMessage}>
+          <button style={S.button} disabled={studying || !enteredGroupId || chatSendingRef.current} onClick={sendMessage}>
             전송
           </button>
         </div>
@@ -5120,11 +5399,12 @@ export default function App() {
             <div
               className={[
                 "flight-ticket",
+                `stdr-tier-${selectedStdrThemeId}`,
                 flightTicketUsed || (studying && activeFlight) ? "ticket-used" : "",
               ].filter(Boolean).join(" ")}
             >
               <div className="flight-ticket-main">
-                <span>STUDY AIR</span>
+                <span>STDR AIR · {stdrAirTier.current.label}</span>
                 <h2>{from.code} → {to.code}</h2>
                 <p>{from.name} {from.city} 출발 · {to.name} {to.city} 도착</p>
                 <div className="flight-ticket-row">
@@ -10316,6 +10596,1662 @@ export default function App() {
             border: 1px solid rgba(248,113,113,0.35) !important;
           }
 
+          .stdr-air-tier-card {
+            background:
+              radial-gradient(circle at 12% 0%, rgba(59,130,246,0.16), transparent 42%),
+              linear-gradient(135deg, var(--card-bg-solid), var(--soft-bg)) !important;
+          }
+
+          .stdr-tier-progress {
+            position: relative;
+            height: 8px;
+            border-radius: 999px;
+            overflow: hidden;
+            background: var(--soft-bg-2);
+            border: 1px solid var(--border);
+            margin-top: 9px;
+          }
+
+          .stdr-tier-progress i {
+            display: block;
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, #2563eb, #0ea5e9, #22c55e);
+            transition: width 420ms cubic-bezier(0.16, 1, 0.3, 1);
+          }
+
+          .arrival-airline-tier {
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 14px;
+            background: var(--input-bg);
+            margin: 14px 0;
+          }
+
+          .arrival-airline-tier span,
+          .arrival-airline-tier small {
+            display: block;
+            color: var(--text-sub);
+            font-size: 11px;
+            font-weight: 900;
+          }
+
+          .arrival-airline-tier b {
+            display: block;
+            margin: 5px 0;
+            font-size: 26px;
+            font-weight: 950;
+            color: var(--accent-text);
+          }
+
+          .dark-app .stdr-air-tier-card,
+          .dark-app .arrival-airline-tier {
+            background: rgba(15,23,42,0.94) !important;
+            border-color: rgba(96,165,250,0.30) !important;
+            color: var(--text-main) !important;
+          }
+
+          /* STDR Air tier visual system */
+          .flight-dashboard-card {
+            border-color: color-mix(in srgb, var(--stdr-tier-accent, #2563eb) 48%, rgba(147,197,253,0.65)) !important;
+            box-shadow: 0 18px 42px color-mix(in srgb, var(--stdr-tier-accent, #2563eb) 18%, transparent) !important;
+          }
+
+          .flight-dashboard-card .flight-kicker,
+          .flight-mileage-card.stdr-air-tier-card span {
+            color: var(--stdr-tier-accent, var(--flight-blue)) !important;
+          }
+
+          .flight-dashboard-card .flight-route-line {
+            stroke: var(--stdr-tier-accent-2, #0ea5e9) !important;
+            filter: drop-shadow(0 0 8px color-mix(in srgb, var(--stdr-tier-accent-2, #0ea5e9) 70%, transparent)) !important;
+          }
+
+          .flight-plane {
+            color: var(--stdr-plane-color, #2563eb);
+            text-shadow:
+              0 0 12px color-mix(in srgb, var(--stdr-plane-color, #2563eb) 48%, transparent),
+              0 8px 18px rgba(15,23,42,0.20);
+          }
+
+          .flight-ticket {
+            background: var(--stdr-ticket-bg, linear-gradient(135deg, #eff6ff, #dbeafe)) !important;
+            color: var(--stdr-ticket-text, #1e3a8a) !important;
+            border-color: color-mix(in srgb, var(--stdr-tier-accent, #2563eb) 34%, white) !important;
+          }
+
+          .flight-ticket-main span,
+          .flight-ticket-main small,
+          .flight-ticket-stub span,
+          .flight-ticket-stub small {
+            color: color-mix(in srgb, var(--stdr-ticket-text, #1e3a8a) 72%, #64748b) !important;
+          }
+
+          .flight-ticket-stub {
+            border-left-color: color-mix(in srgb, var(--stdr-tier-accent, #2563eb) 38%, transparent) !important;
+          }
+
+          .passport-paper-page {
+            background: var(--stdr-passport-bg, linear-gradient(135deg, #fffaf0, #eff6ff)) !important;
+            border-color: color-mix(in srgb, var(--stdr-tier-accent, #2563eb) 32%, rgba(180,148,92,0.38)) !important;
+          }
+
+          .passport-emblem {
+            background: linear-gradient(135deg, var(--stdr-tier-accent, #111827), var(--stdr-tier-accent-2, #2563eb)) !important;
+            color: white !important;
+          }
+
+          .passport-page-stamp {
+            border-color: color-mix(in srgb, var(--stdr-tier-accent, #2563eb) 45%, rgba(37,99,235,0.34)) !important;
+            color: var(--stdr-ticket-text, #1e3a8a) !important;
+          }
+
+          .arrival-reward-card {
+            background:
+              radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--stdr-tier-accent-2, #0ea5e9) 20%, transparent), transparent 34%),
+              var(--stdr-reward-bg, linear-gradient(135deg, var(--card-bg-solid), var(--soft-bg))) !important;
+            border-color: color-mix(in srgb, var(--stdr-tier-accent, #2563eb) 40%, var(--border)) !important;
+          }
+
+          .arrival-stamp,
+          .arrival-airline-tier {
+            border-color: color-mix(in srgb, var(--stdr-tier-accent, #2563eb) 55%, var(--border)) !important;
+          }
+
+          .arrival-airline-tier b {
+            color: var(--stdr-ticket-text, var(--accent-text)) !important;
+          }
+
+          .stdr-tier-preview-button {
+            width: 100%;
+            margin-top: 10px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: var(--input-bg);
+            color: var(--text-main);
+            padding: 8px 10px;
+            font-weight: 950;
+            cursor: pointer;
+          }
+
+          .tier-preview-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 158;
+            background: rgba(2,6,23,0.64);
+            display: grid;
+            place-items: center;
+            padding: 18px;
+            backdrop-filter: blur(8px);
+            overscroll-behavior: none;
+          }
+
+          .tier-preview-modal {
+            width: min(1120px, 100%);
+            max-height: calc(100dvh - 36px);
+            overflow: hidden;
+            border-radius: 32px;
+            background: var(--card-bg-solid);
+            border: 1px solid var(--border);
+            box-shadow: 0 30px 90px rgba(0,0,0,0.32);
+            padding: 18px;
+            display: grid;
+            gap: 14px;
+          }
+
+          .tier-preview-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: flex-start;
+          }
+
+          .tier-preview-head span {
+            color: var(--accent);
+            font-size: 11px;
+            font-weight: 950;
+            letter-spacing: 2px;
+          }
+
+          .tier-preview-head h2 {
+            margin: 5px 0;
+          }
+
+          .tier-preview-head p {
+            margin: 0;
+            color: var(--text-sub);
+            font-size: 13px;
+            line-height: 1.45;
+          }
+
+          .tier-preview-head button {
+            width: 38px;
+            height: 38px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: var(--input-bg);
+            color: var(--text-main);
+            font-size: 22px;
+            cursor: pointer;
+          }
+
+          .tier-preview-grid {
+            overflow: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 12px;
+            padding-right: 4px;
+            max-height: min(70dvh, 680px);
+            overscroll-behavior: contain;
+          }
+
+          .tier-preview-card {
+            border: 1px solid color-mix(in srgb, var(--stdr-tier-accent) 36%, var(--border));
+            border-radius: 26px;
+            padding: 14px;
+            background:
+              radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--stdr-tier-accent-2) 16%, transparent), transparent 42%),
+              var(--card-bg-solid);
+            display: grid;
+            gap: 12px;
+            opacity: 0.74;
+            position: relative;
+            overflow: hidden;
+          }
+
+          .tier-preview-card.unlocked {
+            opacity: 1;
+            box-shadow: 0 16px 34px color-mix(in srgb, var(--stdr-tier-accent) 14%, transparent);
+          }
+
+          .tier-preview-title span {
+            display: inline-flex;
+            border-radius: 999px;
+            padding: 4px 8px;
+            background: color-mix(in srgb, var(--stdr-tier-accent) 14%, transparent);
+            color: var(--stdr-tier-accent);
+            font-size: 11px;
+            font-weight: 950;
+          }
+
+          .tier-preview-title h3 {
+            margin: 7px 0 2px;
+            font-size: 24px;
+          }
+
+          .tier-preview-title small {
+            color: var(--text-sub);
+            font-weight: 850;
+          }
+
+          .tier-preview-ticket {
+            min-height: 94px;
+            border-radius: 22px;
+            padding: 12px;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 54px;
+            gap: 10px;
+            align-items: center;
+            background: var(--stdr-ticket-bg);
+            color: var(--stdr-ticket-text);
+            border: 1px solid color-mix(in srgb, var(--stdr-tier-accent) 28%, white);
+          }
+
+          .tier-preview-ticket span,
+          .tier-preview-ticket small,
+          .tier-preview-passport span,
+          .tier-preview-passport small,
+          .tier-preview-plane small,
+          .tier-preview-reward span,
+          .tier-preview-reward small {
+            display: block;
+            font-size: 11px;
+            font-weight: 900;
+            opacity: 0.72;
+          }
+
+          .tier-preview-ticket b {
+            display: block;
+            font-size: 24px;
+            margin: 4px 0;
+          }
+
+          .tier-preview-ticket i {
+            width: 48px;
+            height: 48px;
+            border-radius: 16px;
+            display: grid;
+            place-items: center;
+            font-style: normal;
+            font-weight: 950;
+            background: color-mix(in srgb, var(--stdr-tier-accent) 18%, rgba(255,255,255,0.56));
+            border: 1px dashed color-mix(in srgb, var(--stdr-tier-accent) 42%, transparent);
+          }
+
+          .tier-preview-middle {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+          }
+
+          .tier-preview-passport,
+          .tier-preview-plane,
+          .tier-preview-reward {
+            border-radius: 22px;
+            padding: 12px;
+            border: 1px solid color-mix(in srgb, var(--stdr-tier-accent) 28%, var(--border));
+            background: var(--stdr-passport-bg);
+            min-height: 96px;
+            color: var(--stdr-ticket-text);
+          }
+
+          .tier-preview-passport b {
+            display: block;
+            font-size: 30px;
+            margin: 6px 0;
+          }
+
+          .tier-preview-plane {
+            display: grid;
+            place-items: center;
+            text-align: center;
+          }
+
+          .tier-preview-plane span {
+            font-size: 42px;
+            color: var(--stdr-plane-color);
+            filter: drop-shadow(0 0 10px color-mix(in srgb, var(--stdr-plane-color) 40%, transparent));
+          }
+
+          .tier-preview-reward {
+            background: var(--stdr-reward-bg);
+            min-height: 82px;
+          }
+
+          .tier-preview-reward b {
+            display: block;
+            margin: 5px 0;
+            color: var(--stdr-ticket-text);
+          }
+
+          .dark-app .tier-preview-modal,
+          .dark-app .tier-preview-head button,
+          .dark-app .stdr-tier-preview-button {
+            background: rgba(15,23,42,0.94) !important;
+            border-color: rgba(96,165,250,0.30) !important;
+            color: var(--text-main) !important;
+          }
+
+          .dark-app .tier-preview-card {
+            background:
+              radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--stdr-tier-accent-2) 18%, transparent), transparent 42%),
+              rgba(15,23,42,0.96) !important;
+          }
+
+          /* Fix tier preview clipping: make every preview card fully visible */
+          .tier-preview-overlay {
+            align-items: start !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch;
+            padding: 18px !important;
+          }
+
+          .tier-preview-modal {
+            max-height: none !important;
+            height: auto !important;
+            overflow: visible !important;
+            margin: 0 auto 18px !important;
+          }
+
+          .tier-preview-grid {
+            max-height: none !important;
+            overflow: visible !important;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
+            align-items: stretch !important;
+          }
+
+          .tier-preview-card {
+            min-height: 500px;
+            overflow: visible !important;
+            align-content: start;
+          }
+
+          .tier-preview-ticket,
+          .tier-preview-passport,
+          .tier-preview-plane,
+          .tier-preview-reward {
+            overflow: visible !important;
+          }
+
+          @media (max-width: 760px) {
+            .tier-preview-modal {
+              border-radius: 24px !important;
+              padding: 14px !important;
+            }
+
+            .tier-preview-grid {
+              grid-template-columns: 1fr !important;
+            }
+
+            .tier-preview-card {
+              min-height: auto;
+            }
+
+            .tier-preview-middle {
+              grid-template-columns: 1fr !important;
+            }
+          }
+
+          /* Show more locked destinations without opening detail modal */
+          .flight-mileage-panel {
+            grid-template-columns: minmax(170px, 0.7fr) minmax(190px, 0.85fr) minmax(190px, 0.85fr) minmax(420px, 1.8fr) !important;
+            align-items: stretch !important;
+          }
+
+          .flight-unlock-box {
+            min-width: 420px;
+          }
+
+          .flight-unlock-strip {
+            display: grid !important;
+            grid-auto-flow: column !important;
+            grid-auto-columns: minmax(82px, 96px) !important;
+            grid-template-rows: repeat(2, minmax(58px, auto)) !important;
+            gap: 8px !important;
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
+            padding: 2px 4px 8px 2px !important;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+          }
+
+          .flight-unlock-strip button {
+            min-width: 0 !important;
+            width: 100% !important;
+            min-height: 58px !important;
+          }
+
+          .flight-unlock-strip .all-unlocked-message {
+            min-width: 180px;
+            grid-row: 1 / span 2;
+          }
+
+          @media (max-width: 1240px) {
+            .flight-mileage-panel {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+
+            .flight-unlock-box {
+              grid-column: 1 / -1;
+              min-width: 0;
+            }
+          }
+
+          @media (max-width: 720px) {
+            .flight-mileage-panel {
+              grid-template-columns: 1fr !important;
+            }
+
+            .flight-unlock-strip {
+              grid-template-rows: repeat(2, minmax(54px, auto)) !important;
+              grid-auto-columns: minmax(76px, 88px) !important;
+            }
+          }
+
+          .stdr-theme-button {
+            min-width: 96px;
+            color: var(--accent-text) !important;
+            background:
+              linear-gradient(135deg, var(--accent-soft), var(--accent-soft-2)) !important;
+            border-color: color-mix(in srgb, var(--accent) 34%, var(--border)) !important;
+          }
+
+          .stdr-theme-unlock-strip {
+            display: flex;
+            gap: 7px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+          }
+
+          .stdr-theme-unlock-strip button {
+            display: inline-grid;
+            grid-template-columns: 13px auto;
+            grid-template-rows: auto auto;
+            column-gap: 6px;
+            align-items: center;
+            border: 1px solid color-mix(in srgb, var(--stdr-tier-accent) 36%, var(--border));
+            border-radius: 999px;
+            background: var(--input-bg);
+            color: var(--text-main);
+            padding: 6px 9px;
+            font-size: 11px;
+            font-weight: 950;
+            cursor: pointer;
+          }
+
+          .stdr-theme-unlock-strip button:disabled {
+            opacity: 0.42;
+            cursor: not-allowed;
+          }
+
+          .stdr-theme-unlock-strip button.active {
+            background:
+              linear-gradient(135deg, color-mix(in srgb, var(--stdr-tier-accent) 16%, white), color-mix(in srgb, var(--stdr-tier-accent-2) 16%, white));
+            box-shadow: 0 8px 20px color-mix(in srgb, var(--stdr-tier-accent) 18%, transparent);
+          }
+
+          .stdr-theme-unlock-strip i {
+            grid-row: 1 / span 2;
+            width: 13px;
+            height: 13px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, var(--stdr-tier-accent), var(--stdr-tier-accent-2));
+          }
+
+          .stdr-theme-unlock-strip span,
+          .stdr-theme-unlock-strip small {
+            line-height: 1.05;
+          }
+
+          .stdr-theme-unlock-strip small {
+            opacity: 0.68;
+            font-size: 10px;
+          }
+
+          .dark-app .stdr-theme-unlock-strip button.active {
+            background:
+              linear-gradient(135deg, color-mix(in srgb, var(--stdr-tier-accent) 22%, #0f172a), color-mix(in srgb, var(--stdr-tier-accent-2) 18%, #0f172a)) !important;
+          }
+
+          /* Stronger STDR Air tier differentiation + preview overlap fix */
+          .tier-preview-overlay {
+            align-items: start !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch;
+          }
+
+          .tier-preview-modal {
+            overflow: visible !important;
+            max-height: none !important;
+          }
+
+          .tier-preview-head {
+            align-items: flex-start !important;
+          }
+
+          .tier-preview-head > div {
+            min-width: 0;
+          }
+
+          .stdr-theme-unlock-strip {
+            display: grid !important;
+            grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)) !important;
+            gap: 8px !important;
+            width: 100%;
+            max-width: 760px;
+          }
+
+          .stdr-theme-unlock-strip button {
+            min-height: 50px !important;
+            border-radius: 18px !important;
+            padding: 8px 10px !important;
+            overflow: hidden;
+          }
+
+          .stdr-theme-unlock-strip span,
+          .stdr-theme-unlock-strip small {
+            display: block;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          .tier-preview-grid {
+            max-height: none !important;
+            overflow: visible !important;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)) !important;
+            align-items: stretch !important;
+          }
+
+          .tier-preview-card {
+            min-height: 560px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 14px !important;
+            overflow: visible !important;
+            border-width: 2px !important;
+            background:
+              radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--stdr-tier-accent-2) 22%, transparent), transparent 42%),
+              linear-gradient(135deg, color-mix(in srgb, var(--stdr-tier-accent) 6%, var(--card-bg-solid)), var(--card-bg-solid)) !important;
+          }
+
+          .tier-preview-card.locked {
+            filter: grayscale(0.18);
+          }
+
+          .tier-preview-title {
+            min-height: 96px;
+          }
+
+          .tier-preview-title h3,
+          .tier-preview-title small {
+            display: block;
+            overflow: visible;
+          }
+
+          .tier-preview-ticket {
+            min-height: 122px !important;
+            flex-shrink: 0;
+            box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--stdr-tier-accent) 18%, rgba(255,255,255,0.35));
+          }
+
+          .tier-preview-ticket b {
+            line-height: 1.05;
+          }
+
+          .tier-preview-middle {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 12px !important;
+            flex-shrink: 0;
+          }
+
+          .tier-preview-passport,
+          .tier-preview-plane {
+            min-height: 132px !important;
+            display: grid !important;
+            align-content: center !important;
+            justify-items: center !important;
+            text-align: center !important;
+          }
+
+          .tier-preview-passport {
+            background: var(--stdr-passport-bg) !important;
+            border-width: 2px !important;
+          }
+
+          .tier-preview-plane span {
+            font-size: 52px !important;
+            line-height: 1 !important;
+          }
+
+          .tier-preview-reward {
+            min-height: 142px !important;
+            display: grid !important;
+            align-content: center !important;
+            gap: 5px !important;
+            margin-top: auto;
+            border-width: 2px !important;
+            background: var(--stdr-reward-bg) !important;
+          }
+
+          .tier-preview-reward b,
+          .tier-preview-reward small,
+          .tier-preview-reward span {
+            display: block;
+            position: relative;
+            z-index: 1;
+          }
+
+          .tier-preview-reward em {
+            display: inline-grid;
+            place-items: center;
+            justify-self: start;
+            margin-top: 8px;
+            width: 92px;
+            height: 42px;
+            border-radius: 999px;
+            border: 2px dashed var(--stdr-tier-accent);
+            color: var(--stdr-tier-accent);
+            background: color-mix(in srgb, var(--stdr-tier-accent) 12%, rgba(255,255,255,0.68));
+            font-style: normal;
+            font-size: 11px;
+            font-weight: 950;
+            transform: rotate(-4deg);
+          }
+
+          @media (max-width: 760px) {
+            .tier-preview-grid {
+              grid-template-columns: 1fr !important;
+            }
+
+            .tier-preview-card {
+              min-height: auto !important;
+            }
+
+            .tier-preview-middle {
+              grid-template-columns: 1fr !important;
+            }
+
+            .stdr-theme-unlock-strip {
+              grid-template-columns: 1fr 1fr !important;
+            }
+          }
+
+          /* Current tier should affect real app visuals strongly */
+          .flight-dashboard-card {
+            border-color: color-mix(in srgb, var(--stdr-tier-accent, #2563eb) 62%, var(--border)) !important;
+            box-shadow:
+              0 18px 42px color-mix(in srgb, var(--stdr-tier-accent, #2563eb) 18%, transparent),
+              inset 0 0 0 1px color-mix(in srgb, var(--stdr-tier-accent-2, #0ea5e9) 14%, transparent) !important;
+          }
+
+          .flight-plane {
+            color: var(--stdr-plane-color, #2563eb) !important;
+            text-shadow:
+              0 0 16px color-mix(in srgb, var(--stdr-plane-color, #2563eb) 62%, transparent),
+              0 8px 22px rgba(15,23,42,0.28) !important;
+          }
+
+          .flight-dashboard-card.tracking-flight .flight-plane {
+            filter:
+              drop-shadow(0 0 12px color-mix(in srgb, var(--stdr-plane-color, #2563eb) 76%, white))
+              drop-shadow(0 14px 24px color-mix(in srgb, var(--stdr-plane-color, #2563eb) 30%, transparent)) !important;
+          }
+
+          .flight-ticket {
+            background: var(--stdr-ticket-bg, linear-gradient(135deg, #eff6ff, #dbeafe)) !important;
+            color: var(--stdr-ticket-text, #1e3a8a) !important;
+            border: 2px solid color-mix(in srgb, var(--stdr-tier-accent, #2563eb) 44%, white) !important;
+          }
+
+          .passport-paper-page {
+            background: var(--stdr-passport-bg, linear-gradient(135deg, #fffaf0, #eff6ff)) !important;
+            border: 2px solid color-mix(in srgb, var(--stdr-tier-accent, #2563eb) 42%, rgba(180,148,92,0.38)) !important;
+          }
+
+          .passport-emblem {
+            background: linear-gradient(135deg, var(--stdr-tier-accent, #111827), var(--stdr-tier-accent-2, #2563eb)) !important;
+            color: var(--stdr-ticket-text, white) !important;
+          }
+
+          .passport-page-stamp {
+            border-color: color-mix(in srgb, var(--stdr-tier-accent, #2563eb) 70%, rgba(37,99,235,0.34)) !important;
+            color: var(--stdr-ticket-text, #1e3a8a) !important;
+            background: color-mix(in srgb, var(--stdr-tier-accent, #2563eb) 10%, rgba(255,255,255,0.56)) !important;
+          }
+
+          .arrival-reward-card {
+            background:
+              radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--stdr-tier-accent-2, #0ea5e9) 25%, transparent), transparent 34%),
+              var(--stdr-reward-bg, linear-gradient(135deg, var(--card-bg-solid), var(--soft-bg))) !important;
+            border: 2px solid color-mix(in srgb, var(--stdr-tier-accent, #2563eb) 48%, var(--border)) !important;
+          }
+
+          .arrival-stamp {
+            border-color: color-mix(in srgb, var(--stdr-tier-accent, #2563eb) 75%, var(--border)) !important;
+            background: color-mix(in srgb, var(--stdr-tier-accent, #2563eb) 14%, var(--accent-soft)) !important;
+            color: var(--stdr-ticket-text, var(--accent-text)) !important;
+          }
+
+          .arrival-stamp b {
+            color: var(--stdr-ticket-text, var(--accent-text)) !important;
+          }
+
+          .stdr-tier-captain .flight-ticket-main span,
+          .stdr-tier-captain .flight-ticket-main h2,
+          .stdr-tier-captain .flight-ticket-main p,
+          .stdr-tier-captain .flight-ticket-main small,
+          .stdr-tier-captain .flight-ticket-stub span,
+          .stdr-tier-captain .flight-ticket-stub b,
+          .stdr-tier-captain .flight-ticket-stub small {
+            color: #fff7ed !important;
+          }
+
+          .stdr-tier-captain .passport-paper-page,
+          .stdr-tier-captain.passport-paper-page {
+            color: #fff7ed !important;
+          }
+
+          .dark-app .tier-preview-card,
+          .dark-app .tier-preview-ticket,
+          .dark-app .tier-preview-passport,
+          .dark-app .tier-preview-plane,
+          .dark-app .tier-preview-reward {
+            border-color: color-mix(in srgb, var(--stdr-tier-accent) 44%, rgba(96,165,250,0.22)) !important;
+          }
+
+          /* Preview/real consistency pass: 기존 차별화 강도는 유지하고 실제 디자인과 미리보기를 일치 */
+          .tier-preview-ticket-mock {
+            min-height: 142px !important;
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) 68px !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+          }
+
+          .tier-preview-ticket-mock .flight-ticket-main {
+            padding: 14px !important;
+            min-width: 0;
+          }
+
+          .tier-preview-ticket-mock .flight-ticket-main h2 {
+            font-size: 30px !important;
+            line-height: 1 !important;
+            margin: 4px 0 !important;
+          }
+
+          .tier-preview-ticket-mock .flight-ticket-main p {
+            margin: 0 0 10px !important;
+            font-size: 11px !important;
+            line-height: 1.3 !important;
+          }
+
+          .tier-preview-ticket-mock .flight-ticket-row {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 6px !important;
+          }
+
+          .tier-preview-ticket-mock .flight-ticket-row b {
+            font-size: 13px !important;
+          }
+
+          .tier-preview-ticket-mock .flight-ticket-stub {
+            display: grid !important;
+            place-items: center !important;
+            align-content: center !important;
+            gap: 3px !important;
+            border-left: 1px dashed color-mix(in srgb, var(--stdr-tier-accent) 42%, transparent) !important;
+          }
+
+          .passport-preview-mock {
+            background: var(--stdr-passport-bg) !important;
+            border: 2px solid color-mix(in srgb, var(--stdr-tier-accent) 36%, var(--border)) !important;
+            box-shadow:
+              inset 14px 0 22px color-mix(in srgb, var(--stdr-tier-accent) 10%, transparent),
+              inset -14px 0 22px color-mix(in srgb, var(--stdr-tier-accent-2) 8%, transparent) !important;
+            position: relative;
+            overflow: hidden;
+          }
+
+          .passport-preview-mock::before {
+            content: "";
+            position: absolute;
+            left: 12px;
+            top: 12px;
+            bottom: 12px;
+            width: 5px;
+            border-radius: 999px;
+            background: color-mix(in srgb, var(--stdr-tier-accent) 34%, transparent);
+          }
+
+          .passport-preview-mock b {
+            width: 56px;
+            height: 56px;
+            border-radius: 18px;
+            display: grid !important;
+            place-items: center;
+            margin: 8px auto !important;
+            background: linear-gradient(135deg, var(--stdr-tier-accent), var(--stdr-tier-accent-2));
+            color: var(--stdr-ticket-text, white) !important;
+            box-shadow: 0 10px 22px color-mix(in srgb, var(--stdr-tier-accent) 22%, transparent);
+          }
+
+          .passport-preview-mock em {
+            display: inline-grid;
+            place-items: center;
+            width: 78px;
+            height: 32px;
+            margin-top: 4px;
+            border-radius: 999px;
+            border: 2px dashed var(--stdr-stamp-color, var(--stdr-tier-accent));
+            color: var(--stdr-stamp-color, var(--stdr-tier-accent));
+            background: color-mix(in srgb, var(--stdr-stamp-color, var(--stdr-tier-accent)) 10%, rgba(255,255,255,0.62));
+            font-style: normal;
+            font-size: 10px;
+            font-weight: 950;
+            transform: rotate(-4deg);
+          }
+
+          .tier-preview-plane-icon {
+            color: var(--stdr-plane-color) !important;
+            text-shadow:
+              0 0 12px color-mix(in srgb, var(--stdr-plane-color) 54%, transparent),
+              0 10px 22px rgba(15,23,42,0.22) !important;
+            filter: drop-shadow(0 0 8px color-mix(in srgb, var(--stdr-plane-color) 45%, transparent)) !important;
+          }
+
+          .arrival-preview-mock {
+            background: var(--stdr-reward-bg) !important;
+            border: 2px solid color-mix(in srgb, var(--stdr-tier-accent) 36%, var(--border)) !important;
+          }
+
+          .arrival-preview-mock em {
+            display: inline-grid;
+            place-items: center;
+            justify-self: start;
+            width: 92px;
+            height: 42px;
+            margin-top: 8px;
+            border-radius: 999px;
+            border: 2px dashed var(--stdr-stamp-color, var(--stdr-tier-accent));
+            color: var(--stdr-stamp-color, var(--stdr-tier-accent));
+            background: color-mix(in srgb, var(--stdr-stamp-color, var(--stdr-tier-accent)) 12%, rgba(255,255,255,0.68));
+            font-style: normal;
+            font-size: 11px;
+            font-weight: 950;
+            transform: rotate(-4deg);
+          }
+
+          .passport-page-stamp,
+          .arrival-stamp {
+            border-color: var(--stdr-stamp-color, var(--stdr-tier-accent)) !important;
+            color: var(--stdr-stamp-color, var(--stdr-tier-accent)) !important;
+            background: color-mix(in srgb, var(--stdr-stamp-color, var(--stdr-tier-accent)) 10%, var(--accent-soft)) !important;
+          }
+
+          .passport-page-stamp b,
+          .arrival-stamp b {
+            color: var(--stdr-stamp-color, var(--stdr-tier-accent)) !important;
+          }
+
+          .stdr-tier-captain .flight-ticket-main span,
+          .stdr-tier-captain .flight-ticket-main h2,
+          .stdr-tier-captain .flight-ticket-main p,
+          .stdr-tier-captain .flight-ticket-main small,
+          .stdr-tier-captain .flight-ticket-main b,
+          .stdr-tier-captain .flight-ticket-stub span,
+          .stdr-tier-captain .flight-ticket-stub b,
+          .stdr-tier-captain .flight-ticket-stub small,
+          .tier-preview-ticket-mock.stdr-tier-captain * {
+            color: #fff7ed !important;
+          }
+
+          .passport-preview-mock.stdr-tier-captain,
+          .passport-paper-page.stdr-tier-captain {
+            color: #fff7ed !important;
+          }
+
+          .passport-preview-mock.stdr-tier-captain span,
+          .passport-preview-mock.stdr-tier-captain small,
+          .passport-preview-mock.stdr-tier-captain em {
+            color: #fff7ed !important;
+          }
+
+          /* Ticket differentiation + light-mode readability fix */
+          .flight-ticket {
+            position: relative;
+            isolation: isolate;
+            overflow: hidden;
+            border-width: 2px !important;
+          }
+
+          .flight-ticket::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+            opacity: 0.95;
+          }
+
+          .flight-ticket::after {
+            content: "";
+            position: absolute;
+            left: 14px;
+            right: 14px;
+            bottom: 10px;
+            height: 5px;
+            border-radius: 999px;
+            pointer-events: none;
+            background: color-mix(in srgb, var(--stdr-tier-accent, #2563eb) 42%, transparent);
+          }
+
+          .flight-ticket.stdr-tier-economy,
+          .stdr-tier-economy .flight-ticket {
+            background:
+              linear-gradient(135deg, #ffffff 0%, #e0f2fe 42%, #bfdbfe 100%) !important;
+            color: #0f172a !important;
+            border-color: rgba(37,99,235,0.34) !important;
+          }
+
+          .flight-ticket.stdr-tier-economy::before,
+          .stdr-tier-economy .flight-ticket::before {
+            background:
+              radial-gradient(circle at 12% 18%, rgba(59,130,246,0.20), transparent 26%),
+              repeating-linear-gradient(135deg, rgba(37,99,235,0.08) 0 8px, transparent 8px 18px);
+          }
+
+          .flight-ticket.stdr-tier-premium,
+          .stdr-tier-premium .flight-ticket {
+            background:
+              linear-gradient(135deg, #fff7fb 0%, #f5f3ff 34%, #fce7f3 72%, #e9d5ff 100%) !important;
+            color: #3b0764 !important;
+            border-color: rgba(168,85,247,0.42) !important;
+          }
+
+          .flight-ticket.stdr-tier-premium::before,
+          .stdr-tier-premium .flight-ticket::before {
+            background:
+              radial-gradient(circle at 16% 18%, rgba(236,72,153,0.24), transparent 26%),
+              radial-gradient(circle at 88% 82%, rgba(124,58,237,0.20), transparent 30%),
+              repeating-linear-gradient(45deg, rgba(236,72,153,0.09) 0 7px, transparent 7px 18px);
+          }
+
+          .flight-ticket.stdr-tier-business,
+          .stdr-tier-business .flight-ticket {
+            background:
+              linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 42%, #99f6e4 100%) !important;
+            color: #064e3b !important;
+            border-color: rgba(15,118,110,0.42) !important;
+          }
+
+          .flight-ticket.stdr-tier-business::before,
+          .stdr-tier-business .flight-ticket::before {
+            background:
+              radial-gradient(circle at 18% 18%, rgba(20,184,166,0.22), transparent 28%),
+              linear-gradient(90deg, rgba(15,118,110,0.10), transparent 26%, rgba(45,212,191,0.12));
+          }
+
+          .flight-ticket.stdr-tier-first,
+          .stdr-tier-first .flight-ticket {
+            background:
+              linear-gradient(135deg, #fff7ed 0%, #fffbeb 34%, #fde68a 74%, #fbbf24 100%) !important;
+            color: #451a03 !important;
+            border-color: rgba(180,83,9,0.48) !important;
+          }
+
+          .flight-ticket.stdr-tier-first::before,
+          .stdr-tier-first .flight-ticket::before {
+            background:
+              radial-gradient(circle at 14% 18%, rgba(251,191,36,0.30), transparent 30%),
+              repeating-linear-gradient(135deg, rgba(180,83,9,0.12) 0 9px, transparent 9px 22px);
+          }
+
+          .flight-ticket.stdr-tier-captain,
+          .stdr-tier-captain .flight-ticket {
+            background:
+              linear-gradient(135deg, #111827 0%, #451a03 42%, #b45309 72%, #fbbf24 100%) !important;
+            color: #fff7ed !important;
+            border-color: rgba(251,191,36,0.72) !important;
+            box-shadow:
+              inset 0 0 0 1px rgba(255,247,237,0.22),
+              0 0 0 2px rgba(251,191,36,0.18),
+              0 18px 38px rgba(180,83,9,0.24) !important;
+          }
+
+          .flight-ticket.stdr-tier-captain::before,
+          .stdr-tier-captain .flight-ticket::before {
+            background:
+              radial-gradient(circle at 14% 22%, rgba(251,191,36,0.26), transparent 30%),
+              linear-gradient(90deg, rgba(255,255,255,0.08), transparent 36%),
+              repeating-linear-gradient(135deg, rgba(251,191,36,0.14) 0 8px, transparent 8px 20px);
+          }
+
+          .flight-ticket.stdr-tier-captain::after,
+          .stdr-tier-captain .flight-ticket::after {
+            background: rgba(255,247,237,0.72) !important;
+          }
+
+          .flight-ticket-main,
+          .flight-ticket-stub {
+            position: relative;
+            z-index: 1;
+          }
+
+          .flight-ticket-main h2,
+          .flight-ticket-main p,
+          .flight-ticket-main b,
+          .flight-ticket-main span,
+          .flight-ticket-main small,
+          .flight-ticket-stub b,
+          .flight-ticket-stub span,
+          .flight-ticket-stub small {
+            color: currentColor !important;
+            opacity: 1 !important;
+            text-shadow: none !important;
+          }
+
+          .flight-ticket-main span,
+          .flight-ticket-main small,
+          .flight-ticket-stub span,
+          .flight-ticket-stub small {
+            opacity: 0.72 !important;
+          }
+
+          .flight-ticket-row > div {
+            background: rgba(255,255,255,0.36);
+            border: 1px solid rgba(255,255,255,0.34);
+            border-radius: 14px;
+            padding: 7px 8px;
+          }
+
+          .stdr-tier-captain .flight-ticket-row > div,
+          .flight-ticket.stdr-tier-captain .flight-ticket-row > div {
+            background: rgba(15,23,42,0.24) !important;
+            border-color: rgba(255,247,237,0.22) !important;
+          }
+
+          .flight-ticket-stub {
+            background: color-mix(in srgb, var(--stdr-tier-accent, #2563eb) 12%, rgba(255,255,255,0.20));
+          }
+
+          .stdr-tier-captain .flight-ticket-stub,
+          .flight-ticket.stdr-tier-captain .flight-ticket-stub {
+            background: rgba(3,7,18,0.18) !important;
+          }
+
+          /* Light mode readability after tier themes */
+          :not(.dark-app) .flight-mileage-card,
+          :not(.dark-app) .flight-passport-book,
+          :not(.dark-app) .flight-side-card,
+          :not(.dark-app) .flight-status-panel-inner,
+          :not(.dark-app) .flight-ticket-panel-inner,
+          :not(.dark-app) .arrival-reward-card,
+          :not(.dark-app) .arrival-airline-tier,
+          :not(.dark-app) .passport-page-shell,
+          :not(.dark-app) .tier-preview-modal,
+          :not(.dark-app) .unlock-list-modal {
+            color: #0f172a !important;
+          }
+
+          :not(.dark-app) .flight-mileage-card small,
+          :not(.dark-app) .flight-mileage-card span,
+          :not(.dark-app) .flight-passport-book span,
+          :not(.dark-app) .flight-passport-book small,
+          :not(.dark-app) .arrival-reward-card p,
+          :not(.dark-app) .arrival-airline-tier span,
+          :not(.dark-app) .arrival-airline-tier small,
+          :not(.dark-app) .tier-preview-head p,
+          :not(.dark-app) .tier-preview-title small,
+          :not(.dark-app) .passport-cover-page p,
+          :not(.dark-app) .passport-cover-stats span,
+          :not(.dark-app) .passport-page-label,
+          :not(.dark-app) .passport-page-stamp span,
+          :not(.dark-app) .passport-page-stamp small {
+            color: #475569 !important;
+            opacity: 1 !important;
+          }
+
+          :not(.dark-app) .stdr-theme-button,
+          :not(.dark-app) .stdr-tier-preview-button,
+          :not(.dark-app) .passport-open-button,
+          :not(.dark-app) .flight-unlock-box-head button,
+          :not(.dark-app) .top-appearance-button {
+            color: #0f172a !important;
+            background: rgba(255,255,255,0.88) !important;
+            border-color: color-mix(in srgb, var(--accent) 28%, #dbe4ee) !important;
+          }
+
+          :not(.dark-app) .stdr-air-tier-card b,
+          :not(.dark-app) .arrival-airline-tier b,
+          :not(.dark-app) .passport-stat-list b,
+          :not(.dark-app) .passport-cover-stats b {
+            color: #0f172a !important;
+          }
+
+          :not(.dark-app) .stdr-tier-captain .stdr-air-tier-card span,
+          :not(.dark-app) .stdr-tier-captain .flight-mileage-card.stdr-air-tier-card span {
+            color: #92400e !important;
+          }
+
+          .tier-preview-ticket-mock {
+            min-height: 152px !important;
+          }
+
+          .tier-preview-ticket-mock .flight-ticket-row > div {
+            padding: 6px 7px !important;
+          }
+
+          /* Selected theme should control the overall app color, even when user's class is Captain */
+          .top-mode-controls,
+          .stdr-theme-button,
+          .stdr-tier-preview-button,
+          .passport-open-button,
+          .flight-unlock-box-head button,
+          .flight-fullscreen-open {
+            border-color: color-mix(in srgb, var(--accent) 34%, var(--border)) !important;
+          }
+
+          .top-mode-button.active,
+          .top-mode-button.flight.active {
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark)) !important;
+            box-shadow: 0 8px 18px var(--accent-shadow) !important;
+          }
+
+          .stdr-theme-button {
+            background:
+              linear-gradient(135deg, var(--accent-soft), var(--accent-soft-2)) !important;
+            color: var(--accent-text) !important;
+          }
+
+          .flight-dashboard-card {
+            border-color: color-mix(in srgb, var(--accent) 52%, var(--border)) !important;
+            box-shadow:
+              0 18px 42px color-mix(in srgb, var(--accent) 18%, transparent),
+              inset 0 0 0 1px color-mix(in srgb, var(--accent) 12%, transparent) !important;
+          }
+
+          .flight-dashboard-card .flight-kicker,
+          .flight-panel-head b,
+          .flight-mileage-card.stdr-air-tier-card span {
+            color: var(--accent-text) !important;
+          }
+
+          .flight-dashboard-card .flight-route-line {
+            stroke: var(--accent) !important;
+            filter: drop-shadow(0 0 8px color-mix(in srgb, var(--accent) 68%, transparent)) !important;
+          }
+
+          .stdr-tier-progress i {
+            background: linear-gradient(90deg, var(--accent), var(--accent-dark), var(--accent-soft-3)) !important;
+          }
+
+          /* Dark mode class readability */
+          .dark-app .stdr-air-tier-card {
+            background:
+              radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 42%),
+              linear-gradient(135deg, rgba(15,23,42,0.98), rgba(30,41,59,0.94)) !important;
+            border: 1px solid color-mix(in srgb, var(--accent) 42%, rgba(96,165,250,0.28)) !important;
+            color: #f8fafc !important;
+          }
+
+          .dark-app .stdr-air-tier-card span,
+          .dark-app .stdr-air-tier-card small {
+            color: #cbd5e1 !important;
+            opacity: 1 !important;
+          }
+
+          .dark-app .stdr-air-tier-card > b {
+            color: #ffffff !important;
+            text-shadow:
+              0 0 10px color-mix(in srgb, var(--accent) 32%, transparent),
+              0 2px 12px rgba(0,0,0,0.28);
+          }
+
+          .dark-app .stdr-air-tier-card.stdr-class-captain > b {
+            color: #fef3c7 !important;
+            text-shadow:
+              0 0 14px rgba(251,191,36,0.52),
+              0 2px 12px rgba(0,0,0,0.40);
+          }
+
+          .dark-app .stdr-air-tier-card.stdr-class-first > b {
+            color: #fde68a !important;
+          }
+
+          .dark-app .stdr-air-tier-card.stdr-class-business > b {
+            color: #ccfbf1 !important;
+          }
+
+          .dark-app .stdr-air-tier-card.stdr-class-premium > b {
+            color: #fce7f3 !important;
+          }
+
+          .dark-app .stdr-tier-progress {
+            background: rgba(2,6,23,0.82) !important;
+            border-color: color-mix(in srgb, var(--accent) 32%, rgba(148,163,184,0.26)) !important;
+          }
+
+          .dark-app .stdr-tier-preview-button {
+            background: rgba(2,6,23,0.72) !important;
+            color: #f8fafc !important;
+            border-color: color-mix(in srgb, var(--accent) 38%, rgba(148,163,184,0.28)) !important;
+          }
+
+          /* Keep ticket/passport/plane design based on the real class, not selected global theme */
+          .flight-ticket,
+          .passport-paper-page,
+          .arrival-reward-card {
+            --real-class-note: "class visual remains separate from selected app theme";
+          }
+
+          /* Mode-aware ticket/passport designs: light and dark use different palettes */
+          :not(.dark-app) .flight-ticket.stdr-tier-economy,
+          :not(.dark-app) .stdr-tier-economy .flight-ticket {
+            background:
+              linear-gradient(135deg, #ffffff 0%, #e0f2fe 44%, #bfdbfe 100%) !important;
+            color: #0f172a !important;
+            border-color: rgba(37,99,235,0.34) !important;
+          }
+
+          :not(.dark-app) .flight-ticket.stdr-tier-premium,
+          :not(.dark-app) .stdr-tier-premium .flight-ticket {
+            background:
+              linear-gradient(135deg, #fff7fb 0%, #f5f3ff 36%, #fce7f3 72%, #e9d5ff 100%) !important;
+            color: #3b0764 !important;
+            border-color: rgba(168,85,247,0.42) !important;
+          }
+
+          :not(.dark-app) .flight-ticket.stdr-tier-business,
+          :not(.dark-app) .stdr-tier-business .flight-ticket {
+            background:
+              linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 44%, #99f6e4 100%) !important;
+            color: #064e3b !important;
+            border-color: rgba(15,118,110,0.42) !important;
+          }
+
+          :not(.dark-app) .flight-ticket.stdr-tier-first,
+          :not(.dark-app) .stdr-tier-first .flight-ticket {
+            background:
+              linear-gradient(135deg, #fff7ed 0%, #fffbeb 34%, #fde68a 74%, #fbbf24 100%) !important;
+            color: #451a03 !important;
+            border-color: rgba(180,83,9,0.48) !important;
+          }
+
+          :not(.dark-app) .flight-ticket.stdr-tier-captain,
+          :not(.dark-app) .stdr-tier-captain .flight-ticket {
+            background:
+              linear-gradient(135deg, #111827 0%, #451a03 42%, #b45309 72%, #fbbf24 100%) !important;
+            color: #fff7ed !important;
+            border-color: rgba(251,191,36,0.72) !important;
+          }
+
+          .dark-app .flight-ticket.stdr-tier-economy,
+          .dark-app .stdr-tier-economy .flight-ticket {
+            background:
+              linear-gradient(135deg, #020617 0%, #0f274f 48%, #1d4ed8 100%) !important;
+            color: #dbeafe !important;
+            border-color: rgba(96,165,250,0.58) !important;
+            box-shadow:
+              inset 0 0 0 1px rgba(147,197,253,0.14),
+              0 18px 42px rgba(29,78,216,0.24) !important;
+          }
+
+          .dark-app .flight-ticket.stdr-tier-premium,
+          .dark-app .stdr-tier-premium .flight-ticket {
+            background:
+              linear-gradient(135deg, #1e1038 0%, #581c87 46%, #be185d 100%) !important;
+            color: #fce7f3 !important;
+            border-color: rgba(244,114,182,0.58) !important;
+            box-shadow:
+              inset 0 0 0 1px rgba(244,114,182,0.16),
+              0 18px 42px rgba(190,24,93,0.24) !important;
+          }
+
+          .dark-app .flight-ticket.stdr-tier-business,
+          .dark-app .stdr-tier-business .flight-ticket {
+            background:
+              linear-gradient(135deg, #021713 0%, #064e3b 48%, #0f766e 100%) !important;
+            color: #ccfbf1 !important;
+            border-color: rgba(45,212,191,0.56) !important;
+            box-shadow:
+              inset 0 0 0 1px rgba(94,234,212,0.14),
+              0 18px 42px rgba(15,118,110,0.24) !important;
+          }
+
+          .dark-app .flight-ticket.stdr-tier-first,
+          .dark-app .stdr-tier-first .flight-ticket {
+            background:
+              linear-gradient(135deg, #1c1917 0%, #451a03 48%, #b45309 100%) !important;
+            color: #fef3c7 !important;
+            border-color: rgba(252,211,77,0.60) !important;
+            box-shadow:
+              inset 0 0 0 1px rgba(252,211,77,0.16),
+              0 18px 42px rgba(180,83,9,0.26) !important;
+          }
+
+          .dark-app .flight-ticket.stdr-tier-captain,
+          .dark-app .stdr-tier-captain .flight-ticket {
+            background:
+              linear-gradient(135deg, #030712 0%, #171717 36%, #713f12 72%, #fbbf24 100%) !important;
+            color: #fff7ed !important;
+            border-color: rgba(251,191,36,0.78) !important;
+            box-shadow:
+              inset 0 0 0 1px rgba(255,247,237,0.18),
+              0 0 0 2px rgba(251,191,36,0.16),
+              0 22px 54px rgba(251,191,36,0.20) !important;
+          }
+
+          .dark-app .flight-ticket-main h2,
+          .dark-app .flight-ticket-main p,
+          .dark-app .flight-ticket-main b,
+          .dark-app .flight-ticket-main span,
+          .dark-app .flight-ticket-main small,
+          .dark-app .flight-ticket-stub b,
+          .dark-app .flight-ticket-stub span,
+          .dark-app .flight-ticket-stub small {
+            color: currentColor !important;
+            opacity: 1 !important;
+          }
+
+          .dark-app .flight-ticket-main span,
+          .dark-app .flight-ticket-main small,
+          .dark-app .flight-ticket-stub span,
+          .dark-app .flight-ticket-stub small {
+            opacity: 0.78 !important;
+          }
+
+          .dark-app .flight-ticket-row > div {
+            background: rgba(2,6,23,0.28) !important;
+            border-color: rgba(255,255,255,0.16) !important;
+          }
+
+          .dark-app .flight-ticket-stub {
+            background: rgba(2,6,23,0.20) !important;
+            border-left-color: rgba(255,255,255,0.22) !important;
+          }
+
+          :not(.dark-app) .passport-paper-page.stdr-tier-economy {
+            background:
+              linear-gradient(90deg, rgba(37,99,235,0.08), transparent 13%, transparent 87%, rgba(37,99,235,0.06)),
+              linear-gradient(135deg, #ffffff 0%, #eff6ff 48%, #dbeafe 100%) !important;
+            color: #0f172a !important;
+          }
+
+          :not(.dark-app) .passport-paper-page.stdr-tier-premium {
+            background:
+              linear-gradient(90deg, rgba(168,85,247,0.10), transparent 13%, transparent 87%, rgba(236,72,153,0.08)),
+              linear-gradient(135deg, #fff7fb 0%, #f5f3ff 46%, #fce7f3 100%) !important;
+            color: #3b0764 !important;
+          }
+
+          :not(.dark-app) .passport-paper-page.stdr-tier-business {
+            background:
+              linear-gradient(90deg, rgba(15,118,110,0.10), transparent 13%, transparent 87%, rgba(20,184,166,0.08)),
+              linear-gradient(135deg, #ffffff 0%, #f0fdfa 44%, #ccfbf1 100%) !important;
+            color: #064e3b !important;
+          }
+
+          :not(.dark-app) .passport-paper-page.stdr-tier-first {
+            background:
+              linear-gradient(90deg, rgba(180,83,9,0.12), transparent 13%, transparent 87%, rgba(251,191,36,0.12)),
+              linear-gradient(135deg, #fffaf0 0%, #fffbeb 44%, #fde68a 100%) !important;
+            color: #451a03 !important;
+          }
+
+          :not(.dark-app) .passport-paper-page.stdr-tier-captain {
+            background:
+              linear-gradient(90deg, rgba(251,191,36,0.16), transparent 13%, transparent 87%, rgba(251,191,36,0.12)),
+              linear-gradient(135deg, #111827 0%, #451a03 48%, #b45309 100%) !important;
+            color: #fff7ed !important;
+          }
+
+          .dark-app .passport-paper-page.stdr-tier-economy {
+            background:
+              linear-gradient(90deg, rgba(96,165,250,0.13), transparent 13%, transparent 87%, rgba(96,165,250,0.10)),
+              linear-gradient(135deg, #020617 0%, #0f172a 48%, #1e3a8a 100%) !important;
+            color: #dbeafe !important;
+            border-color: rgba(96,165,250,0.44) !important;
+          }
+
+          .dark-app .passport-paper-page.stdr-tier-premium {
+            background:
+              linear-gradient(90deg, rgba(244,114,182,0.15), transparent 13%, transparent 87%, rgba(168,85,247,0.13)),
+              linear-gradient(135deg, #16092b 0%, #3b0764 48%, #831843 100%) !important;
+            color: #fce7f3 !important;
+            border-color: rgba(244,114,182,0.44) !important;
+          }
+
+          .dark-app .passport-paper-page.stdr-tier-business {
+            background:
+              linear-gradient(90deg, rgba(45,212,191,0.15), transparent 13%, transparent 87%, rgba(16,185,129,0.12)),
+              linear-gradient(135deg, #01110e 0%, #022c22 48%, #0f766e 100%) !important;
+            color: #ccfbf1 !important;
+            border-color: rgba(45,212,191,0.42) !important;
+          }
+
+          .dark-app .passport-paper-page.stdr-tier-first {
+            background:
+              linear-gradient(90deg, rgba(252,211,77,0.14), transparent 13%, transparent 87%, rgba(180,83,9,0.13)),
+              linear-gradient(135deg, #1c1917 0%, #451a03 48%, #92400e 100%) !important;
+            color: #fef3c7 !important;
+            border-color: rgba(252,211,77,0.44) !important;
+          }
+
+          .dark-app .passport-paper-page.stdr-tier-captain {
+            background:
+              linear-gradient(90deg, rgba(251,191,36,0.18), transparent 13%, transparent 87%, rgba(251,191,36,0.14)),
+              linear-gradient(135deg, #030712 0%, #171717 42%, #713f12 100%) !important;
+            color: #fff7ed !important;
+            border-color: rgba(251,191,36,0.58) !important;
+            box-shadow:
+              inset 22px 0 34px rgba(251,191,36,0.16),
+              inset -22px 0 34px rgba(251,191,36,0.10),
+              0 0 0 2px rgba(251,191,36,0.12),
+              0 20px 52px rgba(0,0,0,0.30) !important;
+          }
+
+          .dark-app .passport-paper-page .passport-cover-page p,
+          .dark-app .passport-paper-page .passport-cover-stats span,
+          .dark-app .passport-paper-page .passport-page-label,
+          .dark-app .passport-paper-page .passport-page-stamp span,
+          .dark-app .passport-paper-page .passport-page-stamp small,
+          .dark-app .passport-paper-page .passport-empty-page {
+            color: currentColor !important;
+            opacity: 0.74 !important;
+          }
+
+          .dark-app .passport-paper-page .passport-cover-stats b,
+          .dark-app .passport-paper-page h3,
+          .dark-app .passport-paper-page .passport-page-stamp b {
+            color: currentColor !important;
+          }
+
+          .dark-app .passport-paper-page .passport-cover-stats div,
+          .dark-app .passport-paper-page .passport-page-stamp {
+            background: rgba(2,6,23,0.24) !important;
+            border-color: color-mix(in srgb, currentColor 22%, transparent) !important;
+          }
+
+          .dark-app .passport-preview-mock,
+          .dark-app .tier-preview-ticket-mock {
+            color: inherit !important;
+          }
+
+          /* STDR Air cumulative-mileage tier clarity */
+          .stdr-class-mile-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            margin-top: 10px;
+          }
+
+          .stdr-class-mile-grid div {
+            border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border));
+            border-radius: 16px;
+            background: color-mix(in srgb, var(--accent-soft) 52%, var(--card-bg-solid));
+            padding: 9px 10px;
+          }
+
+          .stdr-class-mile-grid span {
+            display: block;
+            font-size: 10px !important;
+            font-weight: 900;
+            color: var(--text-sub) !important;
+          }
+
+          .stdr-class-mile-grid strong {
+            display: block;
+            margin-top: 3px;
+            font-size: 14px;
+            font-weight: 950;
+            color: var(--text-main);
+          }
+
+          .dark-app .stdr-class-mile-grid div {
+            background: rgba(2,6,23,0.38) !important;
+            border-color: color-mix(in srgb, var(--accent) 34%, rgba(148,163,184,0.24)) !important;
+          }
+
+          .dark-app .stdr-class-mile-grid strong {
+            color: #f8fafc !important;
+          }
+
+          /* Place passport open button clearly below the stamp-count text */
+          .flight-passport-card {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: flex-start !important;
+          }
+
+          .flight-passport-card .passport-open-button {
+            margin-top: 10px !important;
+            align-self: stretch;
+          }
+
+          /* Theme affects passport/detail buttons */
+          .passport-open-button,
+          .flight-unlock-box-head button,
+          .stdr-tier-preview-button,
+          .unlock-list-head button {
+            background:
+              linear-gradient(135deg, color-mix(in srgb, var(--accent) 12%, var(--card-bg-solid)), color-mix(in srgb, var(--accent-dark) 10%, var(--input-bg))) !important;
+            border: 1px solid color-mix(in srgb, var(--accent) 42%, var(--border)) !important;
+            color: var(--accent-text) !important;
+            box-shadow: 0 8px 18px color-mix(in srgb, var(--accent) 12%, transparent) !important;
+          }
+
+          .passport-open-button:hover,
+          .flight-unlock-box-head button:hover,
+          .stdr-tier-preview-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 24px color-mix(in srgb, var(--accent) 18%, transparent) !important;
+          }
+
+          .dark-app .passport-open-button,
+          .dark-app .flight-unlock-box-head button,
+          .dark-app .stdr-tier-preview-button,
+          .dark-app .unlock-list-head button {
+            background:
+              linear-gradient(135deg, color-mix(in srgb, var(--accent) 22%, #0f172a), color-mix(in srgb, var(--accent-dark) 18%, #111827)) !important;
+            border-color: color-mix(in srgb, var(--accent) 50%, rgba(148,163,184,0.30)) !important;
+            color: #f8fafc !important;
+          }
+
+          /* Remove the extra "적용중" suffix from theme button */
+          .stdr-theme-button::after {
+            content: none !important;
+          }
+
+          .dev-total-mileage-box {
+            display: grid;
+            gap: 8px;
+            border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border));
+            border-radius: 16px;
+            padding: 10px;
+            background: color-mix(in srgb, var(--accent-soft) 42%, var(--card-bg-solid));
+          }
+
+          .dev-total-mileage-box > b {
+            color: var(--text-main);
+            font-size: 13px;
+          }
+
+          .dev-total-mileage-box > small,
+          .dev-total-mileage-box > em {
+            color: var(--text-sub);
+            font-size: 11px;
+            font-style: normal;
+            font-weight: 800;
+            line-height: 1.35;
+          }
+
+          .dev-mileage-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 6px;
+          }
+
+          .dark-app .dev-total-mileage-box {
+            background: rgba(2,6,23,0.34) !important;
+            border-color: color-mix(in srgb, var(--accent) 32%, rgba(148,163,184,0.24)) !important;
+          }
+
+          /* Final fix: ticket and passport must follow the selected unlocked theme */
+          .flight-ticket.stdr-tier-economy,
+          .stdr-tier-economy .flight-ticket {
+            --selected-ticket-note: "economy selected";
+          }
+
+          .flight-ticket.stdr-tier-premium,
+          .stdr-tier-premium .flight-ticket {
+            --selected-ticket-note: "premium selected";
+          }
+
+          .flight-ticket.stdr-tier-business,
+          .stdr-tier-business .flight-ticket {
+            --selected-ticket-note: "business selected";
+          }
+
+          .flight-ticket.stdr-tier-first,
+          .stdr-tier-first .flight-ticket {
+            --selected-ticket-note: "first selected";
+          }
+
+          .flight-ticket.stdr-tier-captain,
+          .stdr-tier-captain .flight-ticket {
+            --selected-ticket-note: "captain selected";
+          }
+
+          .passport-paper-page.stdr-tier-economy,
+          .passport-paper-page.stdr-tier-premium,
+          .passport-paper-page.stdr-tier-business,
+          .passport-paper-page.stdr-tier-first,
+          .passport-paper-page.stdr-tier-captain {
+            --selected-passport-note: "passport follows selected theme";
+          }
+
+          .flight-dashboard-card .flight-ticket,
+          .easy-flight-controls .flight-ticket,
+          .flight-side-card .flight-ticket {
+            border-color: color-mix(in srgb, var(--stdr-tier-accent) 42%, var(--border)) !important;
+          }
+
+          .passport-paper-page {
+            border-color: color-mix(in srgb, var(--stdr-tier-accent) 42%, rgba(180,148,92,0.38)) !important;
+          }
+
         `}
       </style>
 
@@ -10407,6 +12343,36 @@ export default function App() {
                   />
                 </label>
                 <button type="button" className="dev-danger-button" onClick={removeDevFlightMiles}>마일리지 삭제</button>
+
+                <div className="dev-total-mileage-box">
+                  <b>누적 마일리지 조절</b>
+                  <small>등급 해금은 이 누적 획득 마일리지 기준으로 계산됩니다.</small>
+                  <label>
+                    누적 마일리지 추가/삭제 단위
+                    <input
+                      type="number"
+                      value={devTotalMileageAmount}
+                      onChange={(e) => setDevTotalMileageAmount(e.target.value)}
+                      min="0"
+                    />
+                  </label>
+                  <div className="dev-mileage-actions">
+                    <button type="button" onClick={addDevTotalFlightMiles}>누적 +</button>
+                    <button type="button" className="dev-danger-button" onClick={removeDevTotalFlightMiles}>누적 -</button>
+                  </div>
+                  <label>
+                    누적 마일리지 직접 설정
+                    <input
+                      type="number"
+                      value={devTotalMileageSetValue}
+                      onChange={(e) => setDevTotalMileageSetValue(e.target.value)}
+                      min="0"
+                      placeholder={String(totalFlightMilesEarned)}
+                    />
+                  </label>
+                  <button type="button" onClick={setDevTotalFlightMiles}>누적 마일리지 설정</button>
+                  <em>현재 누적: {totalFlightMilesEarned.toLocaleString()}M · 현재 등급: {stdrAirTier.current.label}</em>
+                </div>
 
                 <div className="dev-stamp-row">
                   <select value={devStampFromCode} onChange={(e) => setDevStampFromCode(e.target.value)}>
@@ -10535,6 +12501,117 @@ export default function App() {
         </div>
       )}
 
+      {tierPreviewOpen && (
+        <div className="tier-preview-overlay">
+          <div className="tier-preview-modal">
+            <div className="tier-preview-head">
+              <div>
+                <span>STDR AIR CLASS PREVIEW</span>
+                <h2>등급별 디자인 미리보기</h2>
+                <p>등급과 테마는 사용 후 남은 마일이 아니라 누적 획득 마일리지 기준으로 해금됩니다. 공부량이 쌓일수록 여권, 탑승권, 비행기 색상, 도착 보상 화면과 앱 테마 색상이 함께 해금됩니다.</p>
+                <div className="stdr-theme-unlock-strip">
+                  {STDR_AIR_TIERS.map((tier) => {
+                    const unlocked = totalFlightMilesEarned >= tier.threshold;
+                    const active = selectedStdrThemeId === tier.id;
+                    return (
+                      <button
+                        key={tier.id}
+                        type="button"
+                        disabled={!unlocked}
+                        className={active ? "active" : ""}
+                        onClick={() => changeStdrTheme(tier.id)}
+                        style={{
+                          "--stdr-tier-accent": tier.accent,
+                          "--stdr-tier-accent-2": tier.accent2,
+                        }}
+                      >
+                        <i />
+                        <span>{tier.label}</span>
+                        <small>{unlocked ? "해금" : `${tier.threshold.toLocaleString()}M`}</small>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <button type="button" onClick={() => setTierPreviewOpen(false)}>×</button>
+            </div>
+
+            <div className="tier-preview-grid">
+              {STDR_AIR_TIERS.map((tier) => {
+                const unlocked = totalFlightMilesEarned >= tier.threshold;
+                const nextTarget = tier.threshold - totalFlightMilesEarned;
+
+                return (
+                  <div
+                    key={tier.id}
+                    className={`tier-preview-card stdr-tier-${tier.id} ${unlocked ? "unlocked" : "locked"}`}
+                    style={{
+                      "--stdr-tier-accent": tier.accent,
+                      "--stdr-tier-accent-2": tier.accent2,
+                      "--stdr-plane-color": tier.plane,
+                      "--stdr-stamp-color": tier.stamp || tier.accent,
+                      "--stdr-ticket-bg": tier.ticketBg,
+                      "--stdr-ticket-text": tier.ticketText,
+                      "--stdr-passport-bg": tier.passportBg,
+                      "--stdr-reward-bg": tier.rewardBg,
+                    }}
+                  >
+                    <div className="tier-preview-title">
+                      <span>{unlocked ? "해금됨" : `${Math.max(0, nextTarget).toLocaleString()}M 필요`}</span>
+                      <h3>{tier.label}</h3>
+                      <small>STDR Air {tier.korean} · 누적 {tier.threshold.toLocaleString()}M 필요</small>
+                    </div>
+
+                    <div className={`flight-ticket tier-preview-ticket-mock stdr-tier-${tier.id}`}>
+                      <div className="flight-ticket-main">
+                        <span>STDR AIR · {tier.label}</span>
+                        <h2>KR → JP</h2>
+                        <p>대한민국 서울 출발 · 일본 도쿄 도착</p>
+                        <div className="flight-ticket-row">
+                          <div>
+                            <small>CLASS</small>
+                            <b>{tier.label}</b>
+                          </div>
+                          <div>
+                            <small>TIME</small>
+                            <b>1H 20M</b>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flight-ticket-stub">
+                        <span>GATE</span>
+                        <b>{tier.badge}</b>
+                        <small>KRJP</small>
+                      </div>
+                    </div>
+
+                    <div className="tier-preview-middle">
+                      <div className={`tier-preview-passport passport-preview-mock stdr-tier-${tier.id}`}>
+                        <span>STDR AIR PASSPORT</span>
+                        <b>{tier.badge}</b>
+                        <small>{tier.label} Passport</small>
+                        <em>{tier.label}</em>
+                      </div>
+                      <div className="tier-preview-plane">
+                        <span className="tier-preview-plane-icon">✈</span>
+                        <small>실제 지도 비행기 색상</small>
+                      </div>
+                    </div>
+
+                    <div className="tier-preview-reward arrival-preview-mock">
+                      <span>ARRIVAL REWARD</span>
+                      <b>{tier.label} 도착 보상</b>
+                      <small>도장 · 마일리지 · 등급 진행률</small>
+                      <em>{tier.badge} STAMP</em>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {passportOpen && (
         <div className="passport-page-overlay">
           <div className="passport-page-shell">
@@ -10556,16 +12633,29 @@ export default function App() {
                 ‹
               </button>
 
-              <div className="passport-paper-page" key={passportPage}>
+              <div
+                className={`passport-paper-page stdr-tier-${selectedStdrThemeId}`}
+                key={passportPage}
+                style={{
+                  "--stdr-tier-accent": selectedStdrThemeStyle.accent,
+                  "--stdr-tier-accent-2": selectedStdrThemeStyle.accent2,
+                  "--stdr-passport-bg": selectedStdrThemeStyle.passportBg,
+                  "--stdr-stamp-color": selectedStdrThemeStyle.stamp || selectedStdrThemeStyle.accent,
+                  "--stdr-ticket-text": selectedStdrThemeStyle.ticketText,
+                }}
+              >
                 {passportPage === 0 ? (
                   <div className="passport-cover-page">
-                    <div className="passport-emblem">ㅅㅌㄷㄹ</div>
-                    <h3>Study Room Passport</h3>
-                    <p>비행 집중 공부를 완료하면 도착 국가의 스탬프가 찍힙니다.</p>
+                    <div className="passport-emblem">STDR</div>
+                    <h3>STDR Air Passport</h3>
+                    <p>비행 집중 공부를 완료하면 도착 국가의 스탬프와 항공사 등급 마일이 쌓입니다.</p>
                     <div className="passport-cover-stats">
+                      <div><span>항공사 등급</span><b>{stdrAirTier.current.label}</b></div>
+                      <div><span>누적 마일</span><b>{totalFlightMilesEarned.toLocaleString()}M</b></div>
+                      <div><span>보유 마일</span><b>{flightMiles.toLocaleString()}M</b></div>
                       <div><span>총 스탬프</span><b>{passportStamps.length}</b></div>
                       <div><span>국가 수</span><b>{getPassportStats().length}</b></div>
-                      <div><span>마일리지</span><b>{flightMiles.toLocaleString()}M</b></div>
+                      <div><span>다음 등급</span><b>{stdrAirTier.next ? `${stdrAirTier.next.label}` : "MAX"}</b></div>
                     </div>
                   </div>
                 ) : (
@@ -10607,7 +12697,16 @@ export default function App() {
 
       {arrivalReward && (
         <div className="arrival-reward-overlay">
-          <div className="arrival-reward-card">
+          <div
+            className={`arrival-reward-card stdr-tier-${arrivalReward.airlineTier?.id || stdrAirTier.current.id}`}
+            style={{
+              "--stdr-tier-accent": getStdrTierStyle(arrivalReward.airlineTier || stdrAirTier.current).accent,
+              "--stdr-tier-accent-2": getStdrTierStyle(arrivalReward.airlineTier || stdrAirTier.current).accent2,
+              "--stdr-stamp-color": getStdrTierStyle(arrivalReward.airlineTier || stdrAirTier.current).stamp || getStdrTierStyle(arrivalReward.airlineTier || stdrAirTier.current).accent,
+              "--stdr-reward-bg": getStdrTierStyle(arrivalReward.airlineTier || stdrAirTier.current).rewardBg,
+              "--stdr-ticket-text": getStdrTierStyle(arrivalReward.airlineTier || stdrAirTier.current).ticketText,
+            }}
+          >
             <button type="button" className="arrival-close" onClick={() => setArrivalReward(null)}>×</button>
             <div className="arrival-kicker">ARRIVAL REWARD</div>
             <h2>{arrivalReward.title}</h2>
@@ -10619,9 +12718,20 @@ export default function App() {
               <b>{arrivalReward.from?.code} → {arrivalReward.to?.code}</b>
               <small>{arrivalReward.to?.city} 착륙</small>
             </div>
+            <div className="arrival-airline-tier">
+              <span>STDR AIR CLASS</span>
+              <b>{arrivalReward.airlineTier?.label || stdrAirTier.current.label}</b>
+              <small>
+                누적 {(arrivalReward.totalFlightMilesEarned ?? totalFlightMilesEarned).toLocaleString()}M
+                {arrivalReward.nextAirlineTier ? ` · 다음 ${arrivalReward.nextAirlineTier.label}` : " · 최고 등급"}
+              </small>
+              <div className="stdr-tier-progress">
+                <i style={{ width: `${arrivalReward.airlineTierProgress ?? stdrAirTier.progress}%` }} />
+              </div>
+            </div>
             <div className="arrival-reward-grid">
               <div><span>획득 마일</span><b>+{arrivalReward.milesEarned}M</b></div>
-              <div><span>총 마일</span><b>{arrivalReward.totalMiles.toLocaleString()}M</b></div>
+              <div><span>보유 마일</span><b>{arrivalReward.totalMiles.toLocaleString()}M</b></div>
               <div><span>공부 시간</span><b>{formatStudy(arrivalReward.seconds)}</b></div>
               <div><span>여권 스탬프</span><b>{arrivalReward.stampCount}개</b></div>
             </div>
@@ -12486,10 +14596,14 @@ export default function App() {
                 value={chatText}
                 disabled={studying || !enteredGroupId}
                 onChange={(e) => setChatText(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                onKeyDown={(e) => {
+              if (e.key !== "Enter" || e.nativeEvent?.isComposing) return;
+              e.preventDefault();
+              sendMessage();
+            }}
                 placeholder={studying ? "순공 중에는 채팅할 수 없습니다" : "메시지를 입력해 주세요"}
               />
-              <button style={S.button} disabled={studying} onClick={sendMessage}>
+              <button style={S.button} disabled={studying || !enteredGroupId || chatSendingRef.current} onClick={sendMessage}>
                 전송
               </button>
             </div>
