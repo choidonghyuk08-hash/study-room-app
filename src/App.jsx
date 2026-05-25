@@ -12830,6 +12830,278 @@ export default function App() {
             }
           }
 
+          /* iPad/tablet hard fix: prevent clipping on 768~1366px and touch tablets */
+          @media (min-width: 760px) and (max-width: 1366px), (pointer: coarse) and (min-width: 760px) {
+            .app-shell,
+            .main-grid,
+            .easy-shell,
+            .content-shell,
+            .flight-feature-shell,
+            .flight-dashboard-card,
+            .flight-dashboard-grid,
+            .flight-mileage-panel,
+            .flight-passport-book,
+            .flight-panel,
+            .flight-map-shell,
+            .flight-map-card {
+              max-width: 100% !important;
+              min-width: 0 !important;
+              box-sizing: border-box !important;
+            }
+
+            .flight-feature-shell.open {
+              overflow: visible !important;
+              max-height: none !important;
+              display: grid !important;
+              gap: 12px !important;
+            }
+
+            .flight-dashboard-card {
+              width: 100% !important;
+              overflow: visible !important;
+              padding: 14px !important;
+              border-radius: 26px !important;
+            }
+
+            .flight-dashboard-head {
+              display: grid !important;
+              grid-template-columns: 1fr !important;
+              gap: 12px !important;
+              width: 100% !important;
+            }
+
+            .flight-route-summary {
+              width: 100% !important;
+              max-width: 100% !important;
+              justify-self: stretch !important;
+              display: grid !important;
+              grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) !important;
+            }
+
+            .flight-route-summary span {
+              min-width: 0 !important;
+              width: 100% !important;
+              box-sizing: border-box !important;
+            }
+
+            .flight-route-summary small,
+            .flight-route-summary .flight-fullscreen-open {
+              grid-column: 1 / -1 !important;
+            }
+
+            .flight-mileage-panel {
+              display: grid !important;
+              grid-template-columns: 1fr 1fr !important;
+              gap: 10px !important;
+              width: 100% !important;
+              overflow: visible !important;
+            }
+
+            .flight-mileage-panel > * {
+              min-width: 0 !important;
+              max-width: 100% !important;
+            }
+
+            .flight-unlock-box {
+              grid-column: 1 / -1 !important;
+              width: 100% !important;
+              min-width: 0 !important;
+              max-width: 100% !important;
+              overflow: visible !important;
+              padding: 12px !important;
+              border-radius: 22px !important;
+              background: var(--card-bg-solid) !important;
+              border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border)) !important;
+              box-sizing: border-box !important;
+            }
+
+            .flight-unlock-box-head {
+              display: grid !important;
+              grid-template-columns: minmax(0, 1fr) auto !important;
+              gap: 10px !important;
+              align-items: center !important;
+              width: 100% !important;
+              max-width: 100% !important;
+            }
+
+            .flight-unlock-box-head span {
+              min-width: 0 !important;
+              overflow: hidden !important;
+              text-overflow: ellipsis !important;
+              white-space: nowrap !important;
+            }
+
+            .flight-unlock-box-head button {
+              display: inline-flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+              flex: 0 0 auto !important;
+              min-width: 104px !important;
+              max-width: 140px !important;
+              white-space: nowrap !important;
+              padding: 8px 12px !important;
+              box-sizing: border-box !important;
+              visibility: visible !important;
+              opacity: 1 !important;
+            }
+
+            .flight-unlock-strip {
+              display: flex !important;
+              flex-wrap: nowrap !important;
+              gap: 8px !important;
+              width: 100% !important;
+              max-width: 100% !important;
+              overflow-x: auto !important;
+              overflow-y: hidden !important;
+              padding: 6px 4px 12px !important;
+              -webkit-overflow-scrolling: touch !important;
+              scrollbar-width: thin !important;
+            }
+
+            .flight-unlock-strip button {
+              flex: 0 0 86px !important;
+              width: 86px !important;
+              min-width: 86px !important;
+              min-height: 58px !important;
+              box-sizing: border-box !important;
+            }
+
+            .flight-passport-book {
+              width: 100% !important;
+              max-width: 100% !important;
+              overflow: visible !important;
+              padding: 14px !important;
+              box-sizing: border-box !important;
+            }
+
+            .passport-stat-list,
+            .passport-stamp-list {
+              display: flex !important;
+              flex-wrap: nowrap !important;
+              width: 100% !important;
+              max-width: 100% !important;
+              overflow-x: auto !important;
+              overflow-y: hidden !important;
+              padding: 2px 4px 10px 0 !important;
+              -webkit-overflow-scrolling: touch !important;
+              scrollbar-width: thin !important;
+            }
+
+            .passport-stat-list span,
+            .passport-stamp-list span {
+              flex: 0 0 auto !important;
+              min-width: 104px !important;
+              max-width: 160px !important;
+              box-sizing: border-box !important;
+            }
+
+            .flight-dashboard-grid {
+              display: grid !important;
+              grid-template-columns: 1fr !important;
+              gap: 12px !important;
+              width: 100% !important;
+              max-width: 100% !important;
+              overflow: visible !important;
+            }
+
+            .flight-panel-head {
+              display: grid !important;
+              grid-template-columns: 1fr !important;
+              gap: 10px !important;
+              width: 100% !important;
+              max-width: 100% !important;
+            }
+
+            .flight-map-tools {
+              display: grid !important;
+              grid-template-columns: 1fr !important;
+              gap: 8px !important;
+              width: 100% !important;
+              max-width: 100% !important;
+              overflow: visible !important;
+            }
+
+            .flight-pick-tabs {
+              display: grid !important;
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 8px !important;
+              width: 100% !important;
+            }
+
+            .flight-pick-tabs button {
+              min-width: 0 !important;
+              width: 100% !important;
+              box-sizing: border-box !important;
+            }
+
+            .flight-zoom-controls {
+              display: grid !important;
+              grid-template-columns: 40px minmax(58px, auto) 40px !important;
+              gap: 8px !important;
+              width: fit-content !important;
+              max-width: 100% !important;
+              align-items: center !important;
+              justify-self: start !important;
+              padding: 5px !important;
+              border-radius: 999px !important;
+              background: var(--input-bg) !important;
+              border: 1px solid var(--border) !important;
+              box-sizing: border-box !important;
+            }
+
+            .flight-zoom-controls button {
+              width: 40px !important;
+              min-width: 40px !important;
+              height: 40px !important;
+              padding: 0 !important;
+              border-radius: 999px !important;
+              display: grid !important;
+              place-items: center !important;
+              font-size: 20px !important;
+              line-height: 1 !important;
+              box-sizing: border-box !important;
+            }
+
+            .flight-zoom-controls span {
+              min-width: 58px !important;
+              text-align: center !important;
+              font-size: 12px !important;
+              font-weight: 950 !important;
+              color: var(--text-main) !important;
+              white-space: nowrap !important;
+            }
+
+            .flight-map-viewport {
+              width: 100% !important;
+              max-width: 100% !important;
+              overflow: auto !important;
+              -webkit-overflow-scrolling: touch !important;
+              border-radius: 22px !important;
+            }
+
+            .flight-dashboard-card .flight-map {
+              min-width: 760px !important;
+              height: 520px !important;
+              min-height: 520px !important;
+            }
+          }
+
+          @media (min-width: 760px) and (max-width: 980px), (pointer: coarse) and (min-width: 760px) and (max-width: 980px) {
+            .flight-mileage-panel {
+              grid-template-columns: 1fr !important;
+            }
+
+            .flight-unlock-box {
+              grid-column: auto !important;
+            }
+
+            .flight-dashboard-card .flight-map {
+              min-width: 720px !important;
+              height: 500px !important;
+              min-height: 500px !important;
+            }
+          }
+
         `}
       </style>
 
