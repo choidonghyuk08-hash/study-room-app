@@ -12631,6 +12631,205 @@ export default function App() {
             }
           }
 
+          /* Tablet layout fix: locked destinations, passport stats, and map buttons */
+          @media (min-width: 721px) and (max-width: 1180px) {
+            .flight-dashboard-card {
+              max-width: 100% !important;
+              overflow: hidden !important;
+              padding: 14px !important;
+            }
+
+            .flight-dashboard-head {
+              grid-template-columns: 1fr !important;
+              gap: 12px !important;
+            }
+
+            .flight-route-summary {
+              justify-self: stretch !important;
+              width: 100% !important;
+            }
+
+            .flight-mileage-panel {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 10px !important;
+              width: 100% !important;
+              max-width: 100% !important;
+              overflow: visible !important;
+            }
+
+            .flight-mileage-card,
+            .flight-unlock-box,
+            .flight-passport-book {
+              min-width: 0 !important;
+              max-width: 100% !important;
+              box-sizing: border-box !important;
+            }
+
+            .flight-unlock-box {
+              grid-column: 1 / -1 !important;
+              width: 100% !important;
+              overflow: visible !important;
+              padding: 12px !important;
+              border-radius: 22px !important;
+              background: var(--card-bg-solid);
+              border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border));
+            }
+
+            .flight-unlock-box-head {
+              display: flex !important;
+              justify-content: space-between !important;
+              align-items: center !important;
+              gap: 10px !important;
+              width: 100% !important;
+            }
+
+            .flight-unlock-box-head button {
+              display: inline-flex !important;
+              flex: 0 0 auto !important;
+              white-space: nowrap !important;
+              min-width: 92px !important;
+              justify-content: center !important;
+            }
+
+            .flight-unlock-strip {
+              display: grid !important;
+              grid-auto-flow: column !important;
+              grid-auto-columns: minmax(86px, 100px) !important;
+              grid-template-rows: repeat(2, minmax(56px, auto)) !important;
+              gap: 8px !important;
+              width: 100% !important;
+              max-width: 100% !important;
+              overflow-x: auto !important;
+              overflow-y: hidden !important;
+              padding: 4px 6px 10px 2px !important;
+              -webkit-overflow-scrolling: touch;
+              scrollbar-width: thin;
+            }
+
+            .flight-unlock-strip button {
+              width: 100% !important;
+              min-width: 0 !important;
+              min-height: 56px !important;
+              box-sizing: border-box !important;
+            }
+
+            .flight-passport-book {
+              overflow: hidden !important;
+              padding: 14px !important;
+            }
+
+            .passport-stat-list,
+            .passport-stamp-list {
+              max-width: 100% !important;
+              overflow-x: auto !important;
+              overflow-y: hidden !important;
+              -webkit-overflow-scrolling: touch;
+              padding-bottom: 8px !important;
+              scroll-snap-type: x proximity;
+            }
+
+            .passport-stat-list span,
+            .passport-stamp-list span {
+              flex: 0 0 auto !important;
+              scroll-snap-align: start;
+            }
+
+            .flight-dashboard-grid {
+              grid-template-columns: 1fr !important;
+              gap: 12px !important;
+              width: 100% !important;
+              max-width: 100% !important;
+              overflow: visible !important;
+            }
+
+            .flight-panel-head {
+              display: grid !important;
+              grid-template-columns: 1fr !important;
+              gap: 10px !important;
+              align-items: start !important;
+            }
+
+            .flight-map-tools {
+              display: flex !important;
+              flex-wrap: wrap !important;
+              justify-content: flex-start !important;
+              align-items: center !important;
+              gap: 8px !important;
+              width: 100% !important;
+              max-width: 100% !important;
+              overflow: visible !important;
+            }
+
+            .flight-pick-tabs,
+            .flight-zoom-controls {
+              flex: 0 0 auto !important;
+              max-width: 100% !important;
+            }
+
+            .flight-pick-tabs {
+              display: flex !important;
+              flex-wrap: wrap !important;
+              gap: 6px !important;
+            }
+
+            .flight-zoom-controls {
+              display: inline-flex !important;
+              align-items: center !important;
+              gap: 6px !important;
+              white-space: nowrap !important;
+              padding: 4px !important;
+              border-radius: 999px !important;
+              background: var(--input-bg) !important;
+              border: 1px solid var(--border) !important;
+            }
+
+            .flight-zoom-controls button {
+              width: 34px !important;
+              min-width: 34px !important;
+              height: 34px !important;
+              padding: 0 !important;
+              display: grid !important;
+              place-items: center !important;
+              border-radius: 999px !important;
+              font-size: 18px !important;
+              line-height: 1 !important;
+            }
+
+            .flight-zoom-controls span {
+              min-width: 48px !important;
+              text-align: center !important;
+              font-size: 12px !important;
+              font-weight: 950 !important;
+              color: var(--text-main) !important;
+            }
+
+            .flight-map-viewport {
+              width: 100% !important;
+              max-width: 100% !important;
+              overflow: auto !important;
+              -webkit-overflow-scrolling: touch;
+            }
+
+            .flight-dashboard-card .flight-map {
+              min-width: 920px !important;
+            }
+          }
+
+          @media (min-width: 901px) and (max-width: 1180px) {
+            .flight-dashboard-card .flight-map {
+              height: clamp(520px, 62vh, 720px) !important;
+              min-height: 520px !important;
+            }
+          }
+
+          @media (min-width: 721px) and (max-width: 900px) {
+            .flight-dashboard-card .flight-map {
+              min-width: 820px !important;
+              height: 520px !important;
+              min-height: 520px !important;
+            }
+          }
+
         `}
       </style>
 
