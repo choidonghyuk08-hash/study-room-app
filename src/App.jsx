@@ -12457,6 +12457,180 @@ export default function App() {
             color: #ffffff !important;
           }
 
+          /* Mobile passport modal fix: prevent right side clipping */
+          @media (max-width: 900px) {
+            .passport-page-overlay {
+              place-items: start center !important;
+              padding: 10px !important;
+              overflow-y: auto !important;
+              overflow-x: hidden !important;
+              -webkit-overflow-scrolling: touch;
+            }
+
+            .passport-page-shell {
+              width: 100% !important;
+              max-width: 100% !important;
+              max-height: none !important;
+              overflow: visible !important;
+              border-radius: 24px !important;
+              padding: 12px !important;
+              margin: 0 auto 12px !important;
+              box-sizing: border-box !important;
+            }
+
+            .passport-page-top {
+              gap: 8px !important;
+              align-items: flex-start !important;
+            }
+
+            .passport-page-top h2 {
+              font-size: 20px !important;
+              line-height: 1.15 !important;
+            }
+
+            .passport-page-top span {
+              font-size: 10px !important;
+              letter-spacing: 1.2px !important;
+            }
+
+            .passport-page-top button {
+              width: 34px !important;
+              height: 34px !important;
+              flex: 0 0 34px !important;
+            }
+
+            .passport-book-layout {
+              grid-template-columns: 34px minmax(0, 1fr) 34px !important;
+              gap: 6px !important;
+              width: 100% !important;
+              max-width: 100% !important;
+              align-items: stretch !important;
+              overflow: visible !important;
+              box-sizing: border-box !important;
+            }
+
+            .passport-page-nav {
+              width: 34px !important;
+              min-width: 34px !important;
+              border-radius: 16px !important;
+              font-size: 26px !important;
+              padding: 0 !important;
+            }
+
+            .passport-paper-page {
+              min-width: 0 !important;
+              width: 100% !important;
+              max-width: 100% !important;
+              min-height: 0 !important;
+              border-radius: 22px !important;
+              padding: 14px !important;
+              overflow: hidden !important;
+              box-sizing: border-box !important;
+            }
+
+            .passport-cover-page {
+              min-height: 0 !important;
+              gap: 10px !important;
+              align-content: start !important;
+              padding: 4px 0 !important;
+            }
+
+            .passport-emblem {
+              width: 76px !important;
+              height: 76px !important;
+              border-radius: 22px !important;
+              font-size: 18px !important;
+            }
+
+            .passport-cover-page h3 {
+              font-size: 22px !important;
+              line-height: 1.12 !important;
+            }
+
+            .passport-cover-page p {
+              font-size: 12px !important;
+              line-height: 1.4 !important;
+              max-width: 100% !important;
+            }
+
+            .passport-cover-stats {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              width: 100% !important;
+              max-width: 100% !important;
+              gap: 8px !important;
+            }
+
+            .passport-cover-stats div {
+              min-width: 0 !important;
+              padding: 10px 8px !important;
+              border-radius: 16px !important;
+            }
+
+            .passport-cover-stats b {
+              font-size: 16px !important;
+              word-break: keep-all !important;
+            }
+
+            .passport-page-grid {
+              grid-template-columns: 1fr !important;
+              gap: 10px !important;
+            }
+
+            .passport-page-stamp {
+              min-height: 94px !important;
+              border-radius: 18px !important;
+              padding: 10px !important;
+            }
+
+            .passport-page-stamp b {
+              font-size: 18px !important;
+            }
+
+            .passport-country-stats {
+              gap: 6px !important;
+              max-height: 92px !important;
+              overflow-y: auto !important;
+              padding-right: 2px !important;
+            }
+
+            .passport-country-stats span {
+              font-size: 10px !important;
+              padding: 5px 8px !important;
+            }
+          }
+
+          @media (max-width: 420px) {
+            .passport-page-overlay {
+              padding: 8px 6px !important;
+            }
+
+            .passport-book-layout {
+              grid-template-columns: 28px minmax(0, 1fr) 28px !important;
+              gap: 4px !important;
+            }
+
+            .passport-page-nav {
+              width: 28px !important;
+              min-width: 28px !important;
+              font-size: 22px !important;
+              border-radius: 14px !important;
+            }
+
+            .passport-page-shell {
+              padding: 10px !important;
+              border-radius: 20px !important;
+            }
+
+            .passport-paper-page {
+              padding: 12px !important;
+              border-radius: 18px !important;
+            }
+
+            .passport-cover-stats {
+              grid-template-columns: 1fr !important;
+            }
+          }
+
         `}
       </style>
 
